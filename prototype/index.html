@@ -333,9 +333,9 @@ fr:{
   h_kicker:"Energ-IACK 2026 · Défi 2 « EDM citoyen et souverain »", h_title:"openEDM",
   h_lede:"Un outil open source pour suivre l'énergie de tous les bâtiments d'une commune : électricité, chaleur, solaire et eau au même endroit. Il complète les outils existants au lieu de les remplacer.",
   h_defi:"L'idée",
-  defi:[["Le problème","Les données d'énergie sont dispersées entre plusieurs systèmes, et chaque commune paie ses propres licences."],["Notre réponse","Un seul code ouvert pour toutes les communes, qui rassemble les données par bâtiment, par énergie et par mois."],["Souverain","Hébergement mutualisé et chiffré, ou installation sur le serveur de la commune. Les données restent à elle."]],
+  defi:[["Le problème","Les données d'énergie sont dispersées entre plusieurs systèmes, et chaque commune paie ses propres licences."],["Notre réponse","Un seul code ouvert pour toutes les communes, qui rassemble les données par bâtiment, par énergie et par mois."],["Souverain","À terme : hébergement mutualisé et chiffré, ou installation sur le serveur de la commune. Les données restent à elle."]],
   h_who:"Pour qui",
-  who:[["Élu·e·s et gestion du patrimoine","Suivre le plan directeur de l'énergie.","Prévu : indice de dépense de chaleur (IDC), électricité par m², CO₂, part de chaleur renouvelable"],["Citoyen·ne·s","Voir les progrès sans exposer la consommation de chaque bâtiment.","Prévu : étiquette A–G comparée aux bâtiments du même type, part du solaire consommée sur place, autonomie électrique"],["Responsable énergie","Repérer les dérives et vérifier les données.","Prévu : rapport de qualité à l'import, COP des pompes à chaleur, cohérence des sous-compteurs"]],
+  who:[["Élu·e·s et gestion du patrimoine","Suivre le plan directeur de l'énergie.","Prévu : indice de dépense de chaleur (IDC), électricité par m², part de chaleur renouvelable (le CO₂ est déjà dans Gestion)"],["Citoyen·ne·s","Voir les progrès sans exposer la consommation de chaque bâtiment.","Prévu : étiquette A–G comparée aux bâtiments du même type, part du solaire consommée sur place, autonomie électrique"],["Responsable énergie","Repérer les dérives et vérifier les données.","Prévu : rapport de qualité complet à l'import, COP des pompes à chaleur, cohérence des sous-compteurs"]],
   h_now:"Déjà en ligne",
   now:[["#gestion","Gestion","48 sites, 172 compteurs, 2021–2025 : consommation, CO₂, coûts estimés, qualité des données.","fake"],["#citoyens","Citoyen·ne·s","Page publique : objectifs et changements, en mots simples.","fake"],["#carte","Carte 3D","Rive-Claire (plan des organisateurs) et Genève centre (10 574 bâtiments réels).",""],["#apropos","Comment ça marche","Pourquoi souverain, format des données, sources.",""]],
   h_fake:"Commune fictive", h_real:"Données publiques réelles",
@@ -412,12 +412,12 @@ en:{
   notice:"Prototype · Rive-Claire, a fictional municipality: organisers' data (Energ-IA Transition, CC BY 4.0)",
   tagline:"Citizen-owned, sovereign EDM",
   nav_home:"Welcome",
-  h_kicker:"Energ-IACK 2026 · Challenge 2 \"Citizen and sovereign EDM\"", h_title:"openEDM",
+  h_kicker:"Energ-IACK 2026 · Challenge 2 \"Citizen-owned, sovereign EDM\"", h_title:"openEDM",
   h_lede:"An open-source tool to track the energy of every building a municipality owns: electricity, heat, solar and water in one place. It complements existing tools instead of replacing them.",
   h_defi:"The idea",
-  defi:[["The problem","Energy data is scattered across several systems, and every municipality pays for its own licences."],["Our answer","One open codebase for every municipality, bringing data together by building, energy source and month."],["Sovereign","Shared, encrypted hosting or an install on the municipality's own server. The data stays theirs."]],
+  defi:[["The problem","Energy data is scattered across several systems, and every municipality pays for its own licences."],["Our answer","One open codebase for every municipality, bringing data together by building, energy source and month."],["Sovereign","The goal: shared, encrypted hosting or an install on the municipality's own server. The data stays theirs."]],
   h_who:"Who it's for",
-  who:[["Elected officials and portfolio managers","Track the energy master plan.","Planned: heat index (IDC), electricity per m², CO₂, renewable share of heat"],["Citizens","See progress without exposing each building's consumption.","Planned: A–G label against similar buildings, share of solar used on site, electricity self-sufficiency"],["Energy manager","Spot drifts and check the data.","Planned: quality report on import, heat-pump COP, sub-meter consistency"]],
+  who:[["Elected officials and portfolio managers","Track the energy master plan.","Planned: heat index (IDC), electricity per m², renewable share of heat (CO₂ is already in Manage)"],["Citizens","See progress without exposing each building's consumption.","Planned: A–G label against similar buildings, share of solar used on site, electricity self-sufficiency"],["Energy manager","Spot drifts and check the data.","Planned: full quality report on import, heat-pump COP, sub-meter consistency"]],
   h_now:"Already online",
   now:[["#gestion","Manage","48 sites, 172 meters, 2021–2025: use, CO₂, estimated costs, data quality.","fake"],["#citoyens","Citizens","Public page: goals and changes, in plain words.","fake"],["#carte","3D map","Rive-Claire (organisers' plan) and central Geneva (10,574 real buildings).",""],["#apropos","How it works","Why sovereign, data format, sources.",""]],
   h_fake:"Fictional municipality", h_real:"Real public data",
@@ -841,7 +841,7 @@ let RZ, LASTW = innerWidth;
 window.addEventListener("resize", () => { clearTimeout(RZ); RZ = setTimeout(() => { if (Math.abs(innerWidth - LASTW) < 40 || !D) return; LASTW = innerWidth; const open = document.getElementById("drawer").classList.contains("open"); renderAll(); if (open) openSite(location.hash.slice(6)); }, 200); });
 matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", renderAll);
 
-const V = "8";
+const V = "9";
 fetch("data.json?v="+V).then(r=>r.json()).then(d => { D = d; compute(); route(); });
 </script>
 </body>
