@@ -1,0 +1,21 @@
+# Web server: the app (prototype/) as static files, /api/* and /data.json from the API.
+# SITE_ADDRESS=":80" serves plain HTTP (local use, or behind another proxy).
+# SITE_ADDRESS="edm.example.ch" makes Caddy fetch and renew an HTTPS certificate for that name by itself.
+{$SITE_ADDRESS} {
+	encode zstd gzip
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+	}
+	handle /api/* {
+		reverse_proxy api:8000
+	}
+	handle /data.json {
+		rewrite * /api/data.json
+		reverse_proxy api:8000
+	}
+	handle {
+		root * /srv
+		file_server
+	}
+}

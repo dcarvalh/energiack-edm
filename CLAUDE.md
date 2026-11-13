@@ -23,6 +23,12 @@ What it does and how to run it: `README.md`. Team plan, decisions and next steps
 - The site is served under `/energiack-edm/`: keep every URL in the app relative (no leading `/`).
 - After changing data or JS, bump the cache constants: `const V` in `prototype/index.html` and `const V` in `prototype/map3d.js`.
 
+## Server stack (`compose.yaml`, `server/`)
+- PostgreSQL + FastAPI + Caddy. The API rebuilds `data.json` with `build()` from `tools/import_rive_claire.py`: keep
+  that function the single source of the format, so the static site and the server never drift.
+- `tools/check_stack.sh` (also run by the Stack workflow on every PR) must pass: `data.json` from the database equals the
+  static build, a re-import adds 0 rows, login works. Hosting and deploys: `docs/deploy.md`. Never commit `.env`.
+
 ## Map (3D tab)
 - Two maps: Rive-Claire (`prototype/map-rc/`, `tools/make_rive_claire_map.py`, default) and Geneva (`prototype/map/`,
   `tools/make_map.py`). Same schema; `map3d.js` branches on `cfg.key === "rc"`. `initMap` returns `destroy()` for the switch.
