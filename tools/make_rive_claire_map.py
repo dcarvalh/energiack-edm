@@ -26,7 +26,7 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 ROOT = Path(__file__).resolve().parent.parent
-GUIDE = ROOT / "ENERG-IACK26-kDrive-OpenData/02-Defis-Données/1-Donnees-Rive-Claire/EIAK-RC-Guide-Donnees-vf.html"
+GUIDE = ROOT / "rive-claire/EIAK-RC-Guide-Donnees-vf.html"
 ap = argparse.ArgumentParser()
 ap.add_argument("--out", default=str(ROOT / "prototype" / "map-rc"))
 ap.add_argument("--scale", type=float, default=2.5, help="footprint and height scale, for legibility (declared in meta)")

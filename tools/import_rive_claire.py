@@ -28,7 +28,7 @@ from collections import defaultdict
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-GUIDE = ROOT / "ENERG-IACK26-kDrive-OpenData/02-Defis-Données/1-Donnees-Rive-Claire/EIAK-RC-Guide-Donnees-vf.html"
+GUIDE = ROOT / "rive-claire/EIAK-RC-Guide-Donnees-vf.html"
 ap = argparse.ArgumentParser()
 ap.add_argument("--out", default=str(ROOT / "prototype" / "data.json"))
 A = ap.parse_args()

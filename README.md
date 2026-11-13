@@ -43,12 +43,13 @@ tools/make_rive_claire_map.py  builds prototype/map-rc/ from the same guide (--o
 tools/make_map.py       builds prototype/map/ from SITG + swisstopo (--box/--out/--step/--px/--tiles)
 tools/check_page.py     headless browser check: all views, FR/EN, desktop/phone, light/dark, JS errors, overflow
 docs/research.md        what Geneva has today, with sources
+rive-claire/            the Rive-Claire dataset as published by the organisers (guide, workbook, CSV tables)
 docs/rive-claire-data.md  the Rive-Claire dataset: tables, rules, known defects
 plan.md                 team plan, decisions, next steps
 ```
 
-The two Rive-Claire tools read the organisers' guide from `ENERG-IACK26-kDrive-OpenData/` at the repo root (not in git:
-copy the organisers' folder there). Set up the tools:
+The two Rive-Claire tools read the organisers' guide from `rive-claire/` (the dataset, CC BY 4.0, with its CSV tables).
+Set up the tools:
 
 ```bash
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt && .venv/bin/playwright install chromium

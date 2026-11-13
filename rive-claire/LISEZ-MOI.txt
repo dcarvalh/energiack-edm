@@ -1,0 +1,51 @@
+﻿RIVE-CLAIRE | ENERG-IACK 2026
+Archive des tables — version 2
+
+Source : EIAK-Donnees-Rive-Claire-v2.xlsx
+Empreinte SHA-256 du classeur source : 2506ab2ab2b3a27fb79f8157852adec8496c2e5bff79eab55dc1a14170d71ac7
+
+MODE D’EMPLOI
+Les 11 CSV reproduisent les en-têtes, les lignes et les valeurs des tables du classeur.
+Format UTF-8 avec marque BOM, point-virgule comme séparateur, point décimal, une ligne d’en-tête.
+Les colonnes mois sont au format AAAA-MM. Une cellule vide reste vide, y compris pour les valeurs manquantes.
+Conserver les identifiants et les mois comme texte. Dans Excel, importer les CSV en choisissant le point-virgule.
+Le classeur et le guide contiennent le schéma illustré. Son contenu graphique est indépendant des tables CSV.
+
+FICHIERS (lignes de données hors en-tête)
+csv/rive-claire-batiments.csv  |  Batiments  |  50 lignes
+csv/rive-claire-installations.csv  |  Installations  |  64 lignes
+csv/rive-claire-compteurs.csv  |  Compteurs  |  172 lignes
+csv/rive-claire-mesures.csv  |  Mesures  |  9437 lignes
+csv/rive-claire-ref-climat.csv  |  Ref_Climat  |  60 lignes
+csv/rive-claire-ref-climat-normale.csv  |  Ref_Climat_Normale  |  12 lignes
+csv/rive-claire-ref-conversion.csv  |  Ref_Conversion  |  62 lignes
+csv/rive-claire-ref-co2.csv  |  Ref_CO2  |  5 lignes
+csv/rive-claire-ref-typologies.csv  |  Ref_Typologies  |  18 lignes
+csv/rive-claire-ref-vecteurs.csv  |  Ref_Vecteurs  |  3 lignes
+csv/rive-claire-dictionnaire.csv  |  Dictionnaire  |  37 lignes
+
+NOTES ET CONDITIONS D’USAGE DU CLASSEUR
+Rive-Claire · Jeu de données du patrimoine communal · v2
+Ce que contient le lot — 48 sites communaux et 172 séries de mesures pour une ville suisse fictive de 25 000 habitants. Les séries comprennent des registres de compteurs et des bons de livraison. Le suivi va de janvier 2021 à décembre 2025.
+Données et climat — Les sites et les consommations sont fictifs. Le climat du jeu utilise Genève-Cointrin comme référence. Les chiffres mensuels et la référence 1991–2020 sont ceux fournis dans les deux feuilles climat.
+Qualité des relevés — Le jeu contient des anomalies et des défauts volontaires. Travaille sur une copie des mesures et garde une trace des doublons, valeurs manquantes et corrections proposées.
+Les feuilles
+Schema — D'où vient l'énergie, où on la mesure, à quoi elle sert : commencer par là.
+Batiments — 50 lignes décrivent les composantes de 48 sites, dont le réseau d’éclairage public. Un site peut regrouper plusieurs bâtiments.
+Installations — Chaudières, pompes à chaleur, photovoltaïque… avec leurs dates de mise en service et de retrait.
+Compteurs — Une série par ligne, avec le site, le rôle, l’unité brute, les bornes de service et le rattachement au site électrique.
+Mesures — Une ligne décrit un relevé ou une livraison. Pour une série mensuelle active, la clé attendue est le couple id_compteur + mois. Vérifie les doublons avant de sommer. Un combustible livré a une ligne uniquement lors d’une livraison.
+Références climatiques — Ref_Climat fournit les valeurs par mois. Ref_Climat_Normale donne la référence mensuelle du jeu (1991–2020), par numéro de mois, de 1 à 12.
+Conversions et CO₂ — Commence par Ref_Vecteurs pour relier les combustibles de Mesures à Ref_Conversion et Ref_CO2. Vérifie le vecteur, la période et l’unité avant chaque calcul.
+Autres références — Ref_Typologies décrit les affectations du parc. Dictionnaire précise les champs et conventions de calcul.
+Premier exercice · S04 — Dans Mesures, filtre id_site sur S04 et mois sur 2023-04. Vérifie les cinq lignes. Identifie EL, PV, EL-INJ, PAC et EAU. Calcule les usages électriques du site (EL + PV − EL-INJ), puis compare la PAC à ce résultat.
+Surface et sous-comptage — Pour S04, additionne la SRE des deux bâtiments ouverts, puis joins une seule ligne de surface par site. Affiche « sans objet » pour un site à SRE nulle. Le sous-compteur PAC est déjà inclus dans les usages du site. Il peut dépasser le soutirage EL si une partie de l’électricité vient du solaire.
+Licence du lot Rive-Claire — Les données fictives Rive-Claire sont diffusées sous Creative Commons Attribution 4.0 (CC BY 4.0). Attribution : Energ-IA Transition, Energ-IACK 2026, Rive-Claire v2. Les autres lots du hackathon relèvent de leurs conditions propres.
+Contact — contact@energ-ia.ch · www.energ-ia.ch
+Vérifier ton calcul — S04, avril 2023 : 7 797 kWh soutirés + 6 212 kWh solaires − 621 kWh injectés = 13 388 kWh utilisés sur site. La PAC en consomme 8 385. Les deux bâtiments ouverts totalisent 3 400 + 900 = 4 300 m². L’eau se lit séparément en m³.
+Stocks et apports — Consommation = livraisons + stock initial − stock final, dans la même unité. Les stocks sont inconnus. Pour les apports suivis de chauffage et d’eau chaude, le guide additionne gaz, combustibles livrés, chaleur du réseau et électricité des PAC.
+Comparer des énergies — Le gaz est facturé en kWh PCS, le mazout et les granulés sont convertis en kWh PCI. Les usages électriques comprennent aussi l’électricité des PAC et le chauffage électrique direct. Signale le périmètre retenu et les valeurs manquantes.
+Lire les émissions — Le gaz conserve un facteur fixe de 2,086 kg CO₂/m³ dans le jeu. Le mazout reçoit 2,65 kg CO₂/litre livré ; l’écart de stock reste inconnu. Électricité et chauffage à distance ont zéro émission directe sur site. Pour le cycle de vie, d’autres facteurs sont nécessaires.
+Ouvrir le guide — Ouvre EIAK-Guide-Donnees-v2.html à côté du classeur. Tu y trouveras le schéma, les fichiers CSV à télécharger et un exemple d’import.
+Importer les CSV — Encodage UTF-8, séparateur point-virgule, point décimal. Dans Excel, utilise Données → À partir d’un fichier texte/CSV. Conserve les identifiants et les périodes AAAA-MM au format texte. Choisis une convention à point décimal pour les colonnes numériques.
+Poursuivre — Compare deux sites de même affectation après contrôle des surfaces, du climat et du périmètre mesuré. Distingue un constat chiffré, une explication possible et la donnée qu’il faudrait vérifier sur le terrain.

@@ -1,0 +1,51 @@
+﻿id_batiment;id_site;nom_site;quartier;typologie;nom_batiment;annee_construction;annee_renovation;sre_m2;niveaux;label;logements;ouverture;x_km;y_km;remarque
+S01-B1;S01;Mairie;Centre;Administration;Hôtel de ville;1912;1998;2600;3;Patrimoine recensé;;;2.04;2.71;
+S01-B2;S01;Mairie;Centre;Administration;Annexe administrative;1975;;900;2;Patrimoine recensé;;;2.04;2.71;
+S02-B1;S02;Centre administratif et technique;Centre;Administration;Centre administratif;1988;;2400;4;;;;2.15;2.53;
+S03-B1;S03;Poste de police municipale;Prés-Verts;Administration;Poste de police municipale;2002;;650;2;;;;1.42;1.36;
+S04-B1;S04;École du Centre;Centre;École primaire;Bâtiment principal;1908;2016;3400;3;Patrimoine recensé;;;2.18;2.99;
+S04-B2;S04;École du Centre;Centre;École primaire;Pavillon;1968;;900;1;Patrimoine recensé;;;2.18;2.99;
+S05-B1;S05;École des Crêts;Les Crêts;École primaire;École des Crêts;1964;;5200;3;;;;0.9;3.39;
+S06-B1;S06;École de Bois-Joli;Bois-Joli;École avec piscine;École et bassin d'apprentissage;1972;2008;6400;3;;;;4;2.97;
+S07-B1;S07;École de Prés-Verts;Prés-Verts;École primaire;École de Prés-Verts;1981;;4800;3;;;;1.65;1.13;
+S08-B1;S08;École des Tilleuls;Les Crêts;École primaire;École des Tilleuls;1995;;4100;3;;;;1.4;3.26;
+S09-B1;S09;École de Champ-Fleuri;Bois-Joli;École primaire;École de Champ-Fleuri;2011;;3800;3;Minergie;;;3.57;3.71;
+S10-B1;S10;École du Moulin;Centre;École primaire;École du Moulin;1959;2019;3600;3;Minergie (rénovation);;;2.05;2.52;
+S11-B1;S11;École de la Chênaie;Prés-Verts;École primaire;École de la Chênaie;1977;;4300;3;;;;1.57;1.36;
+S12-B1;S12;École des Peupliers;La Gravière;École primaire;École des Peupliers;2018;;4200;3;Minergie-P;;;3.79;0.56;
+S13-B1;S13;Crèche du Centre;Centre;Crèche (EVE);Crèche du Centre;1930;2005;650;2;;;;2.28;2.36;
+S14-B1;S14;Crèche des Crêts;Les Crêts;Crèche (EVE);Crèche des Crêts;1985;;820;2;;;;1.07;3.24;
+S15-B1;S15;Crèche de Bois-Joli;Bois-Joli;Crèche (EVE);Crèche de Bois-Joli;2008;;900;2;;;;3.48;3.3;
+S16-B1;S16;Crèche de Prés-Verts;Prés-Verts;Crèche (EVE);Crèche de Prés-Verts;1999;;700;1;;;;1.57;1.4;
+S17-B1;S17;Crèche des Tilleuls;Les Crêts;Crèche (EVE);Crèche des Tilleuls;2014;;1050;2;Minergie;;;1.36;3.22;
+S18-B1;S18;Crèche de Sous-Bois;Bois-Joli;Crèche (EVE);Crèche de Sous-Bois;2023;;1100;2;Minergie-P;;2023-08;4.02;3.09;
+S19-B1;S19;Maison de quartier des Crêts;Les Crêts;Maison de quartier;Maison de quartier des Crêts;1960;1995;520;2;;;;1.4;3.34;
+S20-B1;S20;Maison de quartier de Bois-Joli;Bois-Joli;Maison de quartier;Maison de quartier de Bois-Joli;1979;;780;2;;;;3.56;3.73;
+S21-B1;S21;Maison de quartier de la Gravière;La Gravière;Maison de quartier;Maison de quartier de la Gravière;1992;;450;1;;;;3.85;0.7;
+S22-B1;S22;Salle communale du Centre;Centre;Salle communale;Salle communale du Centre;1967;2003;2300;2;;;;2.77;2.73;
+S23-B1;S23;Salle des fêtes de Prés-Verts;Prés-Verts;Salle communale;Salle des fêtes de Prés-Verts;1986;;1400;2;;;;1.27;1.52;
+S24-B1;S24;Bibliothèque municipale;Centre;Bibliothèque;Bibliothèque municipale;2006;;1500;3;;;;2.83;2.86;
+S25-B1;S25;Théâtre du Moulin;Centre;Salle de spectacle;Théâtre du Moulin;1990;;3600;3;;;;2.44;2.24;
+S26-B1;S26;Centre sportif des Crêts;Les Crêts;Installation sportive;Salle omnisport;1983;;2900;2;;;;1.3;3.4;
+S27-B1;S27;Vestiaires du stade de Bois-Joli;Bois-Joli;Installation sportive;Vestiaires;1975;2013;650;1;;;;3.63;3.18;
+S28-B1;S28;Vestiaires du stade de la Gravière;La Gravière;Installation sportive;Vestiaires;1998;;480;1;;;;3.54;1.2;
+S29-B1;S29;Club-house du tennis;Bois-Joli;Installation sportive;Club-house;1988;;260;1;;;;3.25;3.5;
+S30-B1;S30;Piscine couverte des Crêts;Les Crêts;Piscine couverte;Piscine couverte;1976;2010;4600;2;;;;1.64;3.83;
+S31-B1;S31;Patinoire de la Gravière;La Gravière;Patinoire;Patinoire couverte;1994;;3800;1;;;;3.3;1.06;Exploitation saisonnière : septembre à mars (saison 2022-23 écourtée par mesure de sobriété : glace arrêtée fin février 2023).
+S32-B1;S32;Voirie et ateliers communaux;La Gravière;Voirie et ateliers;Ateliers et dépôt;1979;;3100;2;;;;3.61;1.41;
+S33-B1;S33;Caserne des pompiers;Prés-Verts;Caserne de pompiers;Caserne;2001;;1250;2;;;;1.88;0.9;
+S34-B1;S34;Immeuble Rue du Lac 4-6;Centre;Logements communaux;Immeuble;1958;2012;2600;5;;32;;1.95;2.68;
+S35-B1;S35;Immeuble Chemin des Crêts 12;Les Crêts;Logements communaux;Immeuble;1963;;3400;7;;44;;0.98;3.71;
+S36-B1;S36;Immeuble Avenue de Bois-Joli 21;Bois-Joli;Logements communaux;Immeuble;1969;;4200;8;;56;;3.48;3.16;
+S37-B1;S37;Immeuble Avenue de Bois-Joli 23;Bois-Joli;Logements communaux;Immeuble;1969;;4200;8;;56;;3.74;3.23;
+S38-B1;S38;Immeuble Rue des Prés 3;Prés-Verts;Logements communaux;Immeuble;1974;;2900;6;;38;;1.49;1.08;
+S39-B1;S39;Immeuble Rue des Prés 5;Prés-Verts;Logements communaux;Immeuble;1974;;2900;6;;38;;1.18;1.67;
+S40-B1;S40;Immeuble Chemin du Moulin 8;Centre;Logements communaux;Immeuble;1985;;2100;5;;26;;2.61;2.37;
+S41-B1;S41;Immeuble Route de la Gravière 30;La Gravière;Logements communaux;Immeuble;1992;;1900;4;;24;;3.58;0.6;
+S42-B1;S42;Immeuble Chemin des Tilleuls 2;Les Crêts;Logements communaux;Immeuble;2005;;2400;5;;30;;1.51;3.46;
+S43-B1;S43;Immeuble Champ-Fleuri 14;Bois-Joli;Logements communaux;Immeuble;2016;;3000;6;Minergie;40;;3.2;3.11;
+S44-B1;S44;Abri PC du Centre;Centre;Abri PC;Abri PC;1982;;900;1;;;;2.5;2.96;
+S45-B1;S45;Abri PC des Crêts;Les Crêts;Abri PC;Abri PC;1974;;600;1;;;;1.47;3.52;
+S46-B1;S46;Cimetière et centre funéraire;Prés-Verts;Cimetière;Centre funéraire;1968;;380;1;;;;1.47;0.92;
+S47-B1;S47;Parking souterrain du Centre;Centre;Parking souterrain;Parking (320 places);1996;;0;2;;;;2.35;2.93;Non chauffé : pas de surface de référence énergétique.
+S48-B1;S48;Éclairage public;Tous;Éclairage public;Éclairage public;;;0;;;;;2.11;1.96;"Réseau, pas un bâtiment. 2400 points lumineux ; passage aux LED 2021 à 2025, environ 15 % du parc par an."

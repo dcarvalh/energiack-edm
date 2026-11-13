@@ -1,0 +1,38 @@
+﻿feuille;colonne;description;unite
+Batiments;id_batiment / id_site;Identifiants : un site (S01…) peut avoir plusieurs bâtiments (S01-B1, S01-B2);
+Batiments;typologie;Affectation principale du site;
+Batiments;annee_construction / annee_renovation;"Année de construction ; année de la dernière rénovation énergétique (vide = jamais)";année
+Batiments;sre_m2;Surface de référence énergétique (surface chauffée, SIA 380/1). Pour un ratio, sommer la SRE des bâtiments ouverts par site et joindre une ligne par site. SRE nulle : afficher « sans objet ».;m²
+Batiments;label;Label énergétique ou mention patrimoniale;
+Batiments;ouverture;Mois d'ouverture si le bâtiment ouvre pendant la période;AAAA-MM
+Batiments;x_km / y_km;Position fictive sur le plan de la commune;km
+Installations;type / vecteur;Installation technique et énergie qu'elle utilise;
+Installations;puissance_kw;Puissance nominale (kWc pour le photovoltaïque);kW
+Installations;mise_en_service / retrait;"Période de fonctionnement ; un retrait = remplacée par l'installation suivante";AAAA-MM
+Compteurs;id_compteur;Code = site + fluide : EL électricité soutirée, EL-INJ injectée, PV production, GZ gaz, MZ mazout, GR granulés, CAD chauffage à distance, PAC électricité de la pompe à chaleur, CH-PAC chaleur produite par la PAC, EAU eau, EL-VENT / EL-FROID / EL-BORNES / EL-EAUBASSIN sous-compteurs électriques;
+Compteurs;niveau;"général : registre du distributeur (EL et EL-INJ sont deux registres du même compteur) ; sous-compteur : partie des usages électriques du site ; production : PV ; mesure de chaleur : chaleur de la PAC ; livraison : bon de livraison.";
+Compteurs;parent;Le parent rattache un sous-compteur aux usages électriques du site. Avec du photovoltaïque, usages = EL + PV − EL-INJ. Le sous-compteur peut dépasser EL. Il est déjà compris dans les usages. EL-INJ n’a pas de parent.;
+Mesures;energie_kwh (bases);"Gaz en kWh « facturés » (pouvoir calorifique supérieur, PCS) ; mazout et granulés en pouvoir calorifique inférieur (PCI). Pour comparer, gaz × 0,90 ≈ PCI";kWh
+Compteurs;debut / fin;Début et fin sont des mois inclusifs. Une borne vide ne limite pas la série dans les dates du jeu. Tenir compte du mois d’ouverture des bâtiments concernés.;AAAA-MM
+Mesures;mois;Mois de la consommation;AAAA-MM
+Mesures;valeur / unite;Valeur relevée, dans l'unité du compteur (kWh, m3, litre, kg);
+Mesures;energie_kwh;"Valeur convertie en kWh (gaz : facteur du mois ; mazout et granulés : facteur fixe). Vide pour l'eau";kWh
+Mesures;qualite;mesuré · estimé (valeur estimée par le distributeur) · manquant (pas de relevé);
+Ref_Climat;degres_jours_20_12;Degrés-jours de chauffage (SIA 381/3) : somme de 20 − T moyenne pour les jours sous 12 °C;°C·jour
+Ref_Climat;rayonnement_kwh_m2;Rayonnement global horizontal du mois;kWh/m²
+Mesures;id_compteur / mois;Pour les séries mensuelles actives, le couple attendu est unique. Examiner les doublons sur une copie avant agrégation. Pour les livraisons, conserver les pièces et vérifier la nature des lignes avant toute déduplication.;
+Mesures;id_site / fluide / mesure;Rattacher id_compteur à Compteurs. Vérifier l’accord entre id_site, fluide, mesure et unité. L’unité seule ne détermine jamais le fluide : gaz et eau ont la même unité m3.;
+Ref_Vecteurs;code / fluide_mesures;Correspondance pour les trois combustibles. Joindre Mesures.fluide à fluide_mesures. Une ligne par combustible, identifié par le code GZ, MZ ou GR.;
+Ref_Vecteurs;vecteur_conversion / periode_conversion;Pour la conversion, chercher Ref_Conversion.vecteur avec le mois exact du gaz ou la période « toujours » du mazout et des granulés. Vérifier l’unité brute.;
+Ref_Vecteurs;vecteur_co2 / unite_brute;Relier à Ref_CO2.vecteur et vérifier son unite. Un facteur absent déclenche « facteur manquant ». Zéro est valide uniquement si le référentiel le donne explicitement.;
+Ref_Conversion;vecteur / mois / facteur;Clé unique : vecteur + mois. Valeur brute × facteur = énergie en kWh (arrondie). Le gaz a un facteur distinct par mois. Mazout et granulés ont un facteur fixe.;kWh/unité brute
+Ref_CO2;kg_co2_par_unite / kg_co2_par_kwh;"Privilégier le facteur par unité brute : 2,086 kg/m³ de gaz dans les cinq années ; le facteur par kWh du gaz est approximatif. Pour le mazout, appliquer 2,65 kg au litre livré.";kg CO₂
+Ref_CO2;portee / base_kwh;"Facteurs d’émissions directes sur place. Pour électricité et chaleur à distance, zéro porte sur ce seul périmètre. Le bois suit la convention biogène du lot ; pour le cycle de vie, changer de référentiel.";
+Mesures;livraisons et stocks;Mazout et granulés : consommé = livré + stock initial − stock final. Stocks inconnus. Un mois sans livraison laisse la consommation inconnue. Eau : comptabiliser en m³.;
+Ref_Climat_Normale;mois_calendaire;Mois civil de 1 à 12. Extraire le numéro du mois AAAA-MM de Ref_Climat pour joindre la référence du jeu. La référence 1991–2020 donne des degrés-jours et des températures distincts.;1 à 12
+Ref_Climat;temperature_moy_c / ensoleillement_h;Température moyenne du mois et durée cumulée d’ensoleillement. Le rayonnement est une énergie surfacique. Température mensuelle et degrés-jours issus des journées sont des indicateurs différents.;°C / h
+Batiments;logements / niveaux;Nombre de logements et nombre de niveaux, lorsqu’ils sont renseignés. Dans les logements communaux, le périmètre de l’électricité couvre les parties communes. Chaleur et eau couvrent l’immeuble.;
+Compteurs;releve / fournisseur_donnee;Mode de collecte et détenteur de la donnée. Consulter niveau et mesure pour distinguer soutirage, injection, production, sous-compteur et livraison.;
+Installations;puissance_kw;Puissance nominale de l’installation. Le photovoltaïque s’exprime en kWc. La puissance mensuelle de pointe n’est pas mesurée. Le solaire thermique de S27 est décrit par sa surface de capteurs.;kW / kWc
+Installations;transition S04;La chaudière est retirée en juillet 2022 et la PAC entre en service en septembre. L’origine de la chaleur ou de l’eau chaude en août 2022 reste indéterminée.;
+Ref_Typologies;sites / sre_m2;Nombre de sites et SRE totale de la typologie pour le parc décrit. Pour une analyse à une date précise, tenir compte du mois d’ouverture des bâtiments.;sites / m²
