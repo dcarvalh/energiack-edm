@@ -190,7 +190,7 @@ def run(tables):
 
     order = ["ref_ids", "ref_links", "unknown_meter", "bad_month", "link_mismatch", "unit_mismatch", "bad_value", "duplicate",
              "missing", "estimated", "negative", "spike", "zero_run", "alternating", "conversion", "submeter", "out_of_window"]
-    kind = lambda code: "rejected" if order.index(code) < order.index("missing") else "flagged"
+    kind = lambda code: "rejected" if order.index("unknown_meter") <= order.index(code) < order.index("missing") else "flagged"
     checks = [{"code": c, "kind": kind(c), "n": len(found[c]), "items": found[c][:MAX_ITEMS]} for c in order]
     report = {
         "read": {k: len(tables[k]) for k in ("batiments", "compteurs", "installations", "mesures")},

@@ -357,7 +357,7 @@ fr:{
   h_who:"Pour qui",
   who:[["Élu·e·s et gestion du patrimoine","Suivre le plan directeur de l'énergie.","Prévu : indice de dépense de chaleur (IDC), électricité par m², part de chaleur renouvelable (le CO₂ est déjà dans Gestion)"],["Citoyen·ne·s","Voir les progrès sans exposer la consommation de chaque bâtiment.","Prévu : étiquette A–G comparée aux bâtiments du même type, part du solaire consommée sur place, autonomie électrique"],["Responsable énergie","Repérer les dérives et vérifier les données.","En ligne : rapport de qualité à l'import. Prévu : COP des pompes à chaleur"]],
   h_now:"Déjà en ligne",
-  now:[["#gestion","Gestion","48 sites, 172 compteurs, 2021–2025 : consommation, CO₂, coûts estimés.","fake"],["#qualite","Qualité des données","17 contrôles à l'import : doublons, trous, formats, unités, valeurs anormales.","fake"],["#citoyens","Citoyen·ne·s","Page publique : objectifs et changements, en mots simples.","fake"],["#carte","Carte 3D","Rive-Claire (plan des organisateurs) et Genève centre (10 574 bâtiments réels).",""],["#apropos","Comment ça marche","Pourquoi souverain, format des données, sources.",""]],
+  now:[["#gestion","Gestion","48 sites, 172 compteurs, 2021–2025 : consommation, CO₂, coûts estimés.","fake"],["#qualite","Qualité des données","17 contrôles à l'import : doublons, trous, formats, unités, valeurs anormales.","fake"],["#citoyens","Citoyen·ne·s","Page publique : objectifs et changements, en mots simples.","fake"],["#carte","Carte 3D","Rive-Claire (plan des organisateurs) et Genève centre (10 574 bâtiments réels).",""]],
   h_fake:"Commune fictive", h_real:"Données publiques réelles",
   h_next:"Prochaines étapes",
   next:["Corriger les points à vérifier de façon traçable","Les indicateurs ci-dessus, calculés sur les données importées","Un objectif par bâtiment avec un feu vert / orange / rouge, modifiable seulement par une personne autorisée","Comptes et droits par profil (maquette sur ce site de démonstration)"],
@@ -467,7 +467,7 @@ en:{
   h_who:"Who it's for",
   who:[["Elected officials and portfolio managers","Track the energy master plan.","Planned: heat index (IDC), electricity per m², renewable share of heat (CO₂ is already in Manage)"],["Citizens","See progress without exposing each building's consumption.","Planned: A–G label against similar buildings, share of solar used on site, electricity self-sufficiency"],["Energy manager","Spot drifts and check the data.","Online: quality report on import. Planned: heat-pump COP"]],
   h_now:"Already online",
-  now:[["#gestion","Manage","48 sites, 172 meters, 2021–2025: use, CO₂, estimated costs.","fake"],["#qualite","Data quality","17 checks on import: duplicates, gaps, formats, units, abnormal values.","fake"],["#citoyens","Citizens","Public page: goals and changes, in plain words.","fake"],["#carte","3D map","Rive-Claire (organisers' plan) and central Geneva (10,574 real buildings).",""],["#apropos","How it works","Why sovereign, data format, sources.",""]],
+  now:[["#gestion","Manage","48 sites, 172 meters, 2021–2025: use, CO₂, estimated costs.","fake"],["#qualite","Data quality","17 checks on import: duplicates, gaps, formats, units, abnormal values.","fake"],["#citoyens","Citizens","Public page: goals and changes, in plain words.","fake"],["#carte","3D map","Rive-Claire (organisers' plan) and central Geneva (10,574 real buildings).",""]],
   h_fake:"Fictional municipality", h_real:"Real public data",
   h_next:"Next steps",
   next:["Correct the points to check, with a trace","The indicators above, computed on the imported data","A target per building with a green / amber / red light, editable only by an authorised person","Accounts and rights per profile (mock-up on this demo site)"],
@@ -956,7 +956,7 @@ let RZ, LASTW = innerWidth;
 window.addEventListener("resize", () => { clearTimeout(RZ); RZ = setTimeout(() => { if (Math.abs(innerWidth - LASTW) < 40 || !D) return; LASTW = innerWidth; const open = document.getElementById("drawer").classList.contains("open"); renderAll(); if (open) openSite(location.hash.slice(6)); }, 200); });
 matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", renderAll);
 
-const V = "10";
+const V = "11";
 fetch("data.json?v="+V).then(r=>r.json()).then(d => { D = d; compute(); route(); });
 </script>
 </body>
