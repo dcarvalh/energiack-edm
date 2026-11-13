@@ -63,10 +63,12 @@ GitHub Pages keeps deploying the static demo as before.
 
 ### One-time server setup (about 20 minutes)
 
-1. Create an Ubuntu server with 2 GB of RAM. Open ports 22, 80 and 443 only.
-2. Point a DNS name (for example `edm.example.ch`) at its address.
-3. On the server: install Docker (docs.docker.com/engine/install/ubuntu), create a user `deploy` in the `docker`
-   group, then as `deploy`:
+1. Create an Ubuntu server with 2 GB of RAM (ARM or x86: every image exists for both) and a fixed public address.
+   Open ports 80 and 443; port 22 only from the addresses that deploy (yours, and GitHub's runners once CI deploys).
+2. Point a DNS name (for example `edm.example.ch`) at its address. Without a domain yet, `<a>-<b>-<c>-<d>.sslip.io`
+   (the address with dashes) resolves to the server and gets a certificate too.
+3. On the server: add 2 GB of swap (building the API image next to PostgreSQL can run out of memory on 2 GB), install
+   Docker (docs.docker.com/engine/install/ubuntu), create a user `deploy` in the `docker` group, then as `deploy`:
    ```bash
    git clone https://github.com/dcarvalh/energiack-edm.git openedm && cd openedm
    cp .env.example .env    # POSTGRES_PASSWORD=..., SITE_ADDRESS=edm.example.ch, HTTP_BIND=80, HTTPS_BIND=443
