@@ -20,6 +20,13 @@ Costs in CHF are **assumed prices**, not in the dataset, and labelled "estimated
 | three.js (`three.module.min.js`) | 0.160.0 | MIT, © 2010–2023 three.js authors |
 | three.js `OrbitControls.js` (from `examples/jsm/controls`) | 0.160.0 | MIT, © three.js authors |
 | three-mesh-bvh (`three-mesh-bvh.module.js`) | 0.7.6 | MIT, © Garrett Johnson |
+| Inter variable font, latin subset (`fonts/inter-latin-wght-normal.woff2`, from the `@fontsource-variable/inter` npm package) | 5.3.0 | SIL Open Font License 1.1, © 2016 The Inter Project Authors (licence text in `fonts/Inter-OFL.txt`) |
+
+## Icons (inlined in `prototype/index.html`)
+
+| What | Version | Licence |
+|---|---|---|
+| Lucide icons (path data of 19 icons, `ICONS` in `index.html`, from the `lucide-static` npm package) | 1.72.0 | ISC, © Lucide Icons and Contributors |
 
 Python tools use only the standard library plus `requirements.txt` (Playwright for the headless check; numpy, Pillow,
 rasterio for the Geneva map build).
