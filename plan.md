@@ -83,3 +83,37 @@ hosting, and it **complements** existing tools as an aggregator instead of repla
 4. Videos and QR code for the pitch.
 5. Ideas, not started: consumption breaks after renovations, synergies between buildings, price scenarios; place the
    fictional commune in a recognisable Geneva neighbourhood on the map.
+
+## Buyer review (13 Nov evening, not started)
+A review of the app as a buyer would see it: the commune's energy manager, plus the council, IT and procurement who sign.
+Checked in the code: the degree-day data (`meta.climate`, `meta.climate_normal`) is in `data.json` but no calculation uses it.
+Comparisons with commercial tools are from memory, not researched.
+
+**Deal-breakers before a pilot**
+1. Import of the commune's own data: today only `tools/import_rive_claire.py`, run offline; no upload, no CSV template.
+2. Weather correction: year-on-year heat and the +12 % alert mostly reflect mild or cold winters.
+3. Per-building benchmark: only portfolio targets; no kWh/m² heat per site against a reference.
+4. Login, roles and a record of corrections: median replacements are automatic and unsigned.
+5. Real costs: flat assumed prices, no check against utility invoices.
+
+**Would strongly want:** printable annual report (council, Cité de l'énergie label); alerts with a threshold per site;
+whole-portfolio export; indirect CO₂ (electricity and district heat count 0 today); hourly smart-meter data and the
+official IDC/CECB figures; a register of renovations with savings before/after.
+
+**Trust and procurement:** hosting in Switzerland or by the commune (GitHub Pages is US-hosted, which weakens
+"souverain"); a data-protection (nLPD) statement; who maintains it and how often it is released; pricing shape, support
+and service level; a guaranteed full export (no lock-in); German and Italian; accessibility not checked.
+
+**Already good:** the data quality report (the differentiator); honest labels (estimated, simulated, CO₂ scope);
+open and portable (no build step, no external requests).
+
+**Proposed before 14:00 Sat** (one branch + PR each; if short on time, only 1 and 2):
+| # | Change | Size |
+|---|---|---|
+| 1 | Weather-corrected annual heat (to the 1991–2020 normal), second figure on Manage and the site page; the +12 % alert on it if it compares heat year on year | S–M |
+| 2 | Traffic light per site: heat kWh/m² vs the average of its typology, labelled "approximate" | M |
+| 3 | Whole-portfolio CSV, plus a log of every corrected reading (rule, old, new) | S |
+| 4 | Printable council page (print layout + button) | S |
+| 5 | "Run it in your commune" block on How it works: hosting options, nLPD stance, estimated cost shape, CSV template and import command, full-export promise | S |
+
+Not now: upload in the browser, real login, invoice checks, indirect CO₂, e-mail alerts, DE/IT, hourly data.
