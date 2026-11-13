@@ -43,6 +43,7 @@ Pushing to `main` deploys to GitHub Pages (`.github/workflows/pages.yml` publish
 prototype/index.html    the whole app (one file); every visible string in the T.fr / T.en dictionaries
 prototype/data.json     the dataset, in the open format described on the "How it works" page
 prototype/map3d.js      the 3D map (three.js + three-mesh-bvh, vendored in prototype/vendor/, loaded only when the tab opens)
+prototype/vendor/fonts/  the Inter font (OFL), so the app looks the same on every system without loading anything from outside
 prototype/map-rc/       Rive-Claire map data      prototype/map/   Geneva map data (≈ 13 MB)
 tools/import_rive_claire.py    builds data.json from the organisers' Rive-Claire guide
 tools/make_rive_claire_map.py  builds prototype/map-rc/ from the same guide (--out/--scale/--year)
