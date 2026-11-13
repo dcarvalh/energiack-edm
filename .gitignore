@@ -6,8 +6,8 @@ __pycache__/
 .DS_Store
 
 # Organisers' folder and any data received under confidentiality: never in this repo
-ENERG-IACK26-kDrive-OpenData/
-data/
+/ENERG-IACK26-kDrive-OpenData
+/data
 
 # Local outputs
 shots/
