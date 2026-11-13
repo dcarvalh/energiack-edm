@@ -3,7 +3,7 @@
 Updated 13 Nov 2026, evening. What exists and how to run it: `README.md`.
 
 ## Deadlines
-- All deliverables before **14:00 on Sat 14 Nov** (team meeting; the organisers' sheet said 14:30, pitch 15:00: confirm).
+- All deliverables before **14:00 on Sat 14 Nov**.
   Deliverables: prototype, code with declared third-party parts and licences (`THIRD_PARTY.md`), slides, one-page project sheet.
 - Pitch: about 5 minutes, 2 of them video. **Tell a story**, don't list features.
 
