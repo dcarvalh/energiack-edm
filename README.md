@@ -67,3 +67,13 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt && .venv/bin/
 
 Only public or fictional data goes in this repo and on the site. Data received under confidentiality at the event
 (partner APIs, real municipal cases) stays on your own machine and never in git.
+
+## Working together
+
+- **Ideas and bugs:** open an issue (no GitHub skills needed): https://github.com/dcarvalh/energiack-edm/issues/new/choose
+- **Code:** one branch per change (`feat/<name>` or `fix/<name>`, from an up-to-date `main`), then a pull request into
+  `main`. Squash-merge when the check passes; merging deploys the site in about a minute.
+- **Check before the PR:** serve `prototype/` locally and run `tools/check_page.py http://127.0.0.1:8000/`. To run only
+  the check, `pip install playwright==1.65.1` is enough (the rest of `requirements.txt` is for the map tools).
+- **Avoid conflicts:** the app is one `index.html`. Split work by view, rebase on `main` before the PR, and bump
+  `const V` just before merging.
