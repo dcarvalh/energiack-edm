@@ -15,7 +15,10 @@ What it does and how to run it: `README.md`. Team plan, decisions and next steps
 
 ## How to work
 - Plan first, then small steps; validate each one.
-- Before pushing: serve `prototype/` locally and run `tools/check_page.py http://127.0.0.1:PORT/` (screenshots in `shots/`).
+- Never push to `main` (protected; merging deploys the live site). One branch per change (`feat/<name>` or `fix/<name>`,
+  from an up-to-date `main`), then a PR into `main` that fills in the PR template; squash-merge once the check passes.
+  Link the issue (`Closes #N`) when there is one. Ideas and bugs from the team arrive as GitHub issues.
+- Before the PR: serve `prototype/` locally and run `tools/check_page.py http://127.0.0.1:PORT/` (screenshots in `shots/`).
   Check FR/EN and phone width. Say what was not verified.
 - The site is served under `/energiack-edm/`: keep every URL in the app relative (no leading `/`).
 - After changing data or JS, bump the cache constants: `const V` in `prototype/index.html` and `const V` in `prototype/map3d.js`.
