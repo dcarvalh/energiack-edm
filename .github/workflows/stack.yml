@@ -1,0 +1,45 @@
+# Checks the database stack on every pull request, and deploys it to the team's server after a merge into main.
+# The deploy job is skipped until the repository variable DEPLOY_HOST is set (Settings › Secrets and variables › Actions).
+# Setup: docs/deploy.md
+name: Stack
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Self-test of the quality checks
+        run: python3 tools/rc_quality.py --selftest
+      - name: Start the stack, compare data.json with the static build, re-import, login
+        run: tools/check_stack.sh
+
+  deploy:
+    needs: check
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && vars.DEPLOY_HOST != ''
+    runs-on: ubuntu-latest
+    concurrency: { group: deploy, cancel-in-progress: false }
+    environment: production
+    steps:
+      - name: Deploy over SSH (git pull + docker compose up)
+        env:
+          KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          HOST: ${{ vars.DEPLOY_HOST }}
+          USER: ${{ vars.DEPLOY_USER || 'deploy' }}
+          DIR: ${{ vars.DEPLOY_DIR || 'openedm' }}
+          SHA: ${{ github.sha }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$KEY" > ~/.ssh/id_ed25519 && chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          ssh "$USER@$HOST" "set -e; cd '$DIR'; git fetch -q origin main; git checkout -q --detach '$SHA';
+            docker compose up -d --build --wait --remove-orphans; docker image prune -f >/dev/null; docker compose ps"

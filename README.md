@@ -37,6 +37,10 @@ python3 -m http.server 8000 -d prototype     # then open http://127.0.0.1:8000/
 
 Pushing to `main` deploys to GitHub Pages (`.github/workflows/pages.yml` publishes `prototype/`).
 
+**With a database and accounts** (PostgreSQL + API + web server, any Docker host): `cp .env.example .env`, set
+`POSTGRES_PASSWORD`, then `docker compose up -d --build` and open http://127.0.0.1:8088/. The same app reads its data
+from PostgreSQL. Hosting it for the team, deploys from GitHub, backups: `docs/deploy.md`.
+
 ## Files
 
 ```

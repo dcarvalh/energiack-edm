@@ -1,0 +1,64 @@
+# openEDM with a database: PostgreSQL + API + web server. Runs on any Docker host.
+#   cp .env.example .env    (set POSTGRES_PASSWORD)    then    docker compose up -d --build
+# How to host it, accounts, backups: docs/deploy.md
+name: openedm
+
+x-api: &api
+  build: { context: ., dockerfile: server/Dockerfile }
+  image: openedm-api
+  environment:
+    PGHOST: db
+    PGDATABASE: openedm
+    PGUSER: openedm
+    PGPASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env (copy .env.example)}
+    SEED_DEMO: ${SEED_DEMO:-1}
+
+services:
+  db:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: openedm
+      POSTGRES_USER: openedm
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env (copy .env.example)}
+    volumes:
+      - db:/var/lib/postgresql          # not published: only the api reaches the database
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U openedm -d openedm"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  seed:                                 # at every start: creates the tables, loads the demo dataset (adds 0 rows if already there)
+    <<: *api
+    command: ["python", "-m", "server.cli", "seed"]
+    restart: "no"
+    depends_on:
+      db: { condition: service_healthy }
+
+  api:
+    <<: *api
+    restart: unless-stopped
+    depends_on:
+      seed: { condition: service_completed_successfully }
+
+  web:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-:80}
+    ports:
+      - "${HTTP_BIND:-127.0.0.1:8088}:80"
+      - "${HTTPS_BIND:-127.0.0.1:8443}:443"
+    volumes:
+      - ./server/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./prototype:/srv:ro
+      - caddy_data:/data                # HTTPS certificates
+      - caddy_config:/config
+    depends_on:
+      api: { condition: service_healthy }
+
+volumes:
+  db:
+  caddy_data:
+  caddy_config:

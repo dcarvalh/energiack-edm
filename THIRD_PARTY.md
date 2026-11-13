@@ -28,5 +28,18 @@ Costs in CHF are **assumed prices**, not in the dataset, and labelled "estimated
 |---|---|---|
 | Lucide icons (path data of 19 icons, `ICONS` in `index.html`, from the `lucide-static` npm package) | 1.72.0 | ISC, © Lucide Icons and Contributors |
 
+## Server stack (`compose.yaml`, `server/`; not part of the static site)
+
+Installed or pulled at build time, nothing vendored in the repo.
+
+| What | Version | Licence |
+|---|---|---|
+| PostgreSQL (`postgres:18-alpine` image) | 18 | PostgreSQL Licence |
+| Caddy (`caddy:2-alpine` image) | 2 | Apache-2.0 |
+| Python (`python:3.13-alpine` image) | 3.13 | PSF Licence |
+| FastAPI | 0.162.7 | MIT |
+| Uvicorn | 0.54.0 | BSD-3-Clause |
+| psycopg (with `psycopg-binary`) | 3.3.9 | LGPL-3.0 (used as an unmodified library) |
+
 Python tools use only the standard library plus `requirements.txt` (Playwright for the headless check; numpy, Pillow,
 rasterio for the Geneva map build).
