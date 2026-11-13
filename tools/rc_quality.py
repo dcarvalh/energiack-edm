@@ -4,10 +4,11 @@ run(tables) takes the raw CSV rows (lists of dicts, as csv.DictReader gives them
   report    goes into data.json as "quality": rows read / loaded / rejected, the re-import test, and one entry per check
             {code, kind: "rejected" | "flagged", n, items: [{m: id, s: site, mo: "YYYY-MM", v: value, x: detail}]}
   rejected  set of indexes into tables["mesures"] that must not be loaded (duplicates included: the first copy is kept)
-  report["excluded_keys"]  [[meter, "YYYY-MM"], ...] values to leave out of the totals
+  report["replacements"]   [[meter, "YYYY-MM", estimated value, estimated kWh], ...] used instead of the raw value
 
-Rejected rows never reach the figures. Excluded values (negative, spike) are loaded but left out of the totals; the
-month counts as no data (David, 13 Nov). Flagged rows are loaded as they are and listed to be checked by a person.
+Rejected rows never reach the figures. Negative values and spikes are replaced by an estimate: the median of the same
+month in the meter's other years, converted to kWh with that month's factor (David, 13 Nov). Flagged rows are loaded as
+they are and listed to be checked by a person.
 Wording lives in the app (T.fr / T.en, keys qc_<code>), not here.
 
 Self-test: python tools/rc_quality.py --selftest  (injects one defect of each kind and checks the real data's known ones)
@@ -21,7 +22,7 @@ YM = re.compile(r"^\d{4}-(0[1-9]|1[0-2])$")
 QUALITY = {"mesuré", "estimé", "manquant"}
 DELIVERY = "bon de livraison"            # oil and pellets: deliveries, a month without a row is normal
 MAX_ITEMS = 60
-EXCLUDE = ("negative", "spike")          # left out of the totals, with a note
+EXCLUDE = ("negative", "spike")          # replaced by an estimate, with a note
 
 
 def midx(ym):
@@ -173,6 +174,27 @@ def run(tables):
         if len(alt) >= 2:
             add("alternating", m=mid, s=c["id_site"], mo=ym(alt[0]), v=0, x=f"{ym(alt[0])} – {ym(max(alt) + 3)}")
 
+    bad = {(it["m"], it["mo"]) for code in EXCLUDE for it in found[code]}
+    replacements = []                                    # estimate = median of the same month in the other years
+    for mid, mo in sorted(bad):
+        s, i, c = series[mid], midx(mo), meters[mid]
+        same = [s[j] for j in range(i % 12, MONTHS, 12) if j != i and s[j] is not None and s[j] >= 0 and (mid, ym(j)) not in bad]
+        if not same:
+            continue
+        est = round(statistics.median(same))
+        if c["unite"] == "kWh":
+            kwh = est
+        elif c["fluide"] in vect:
+            f = conv[vect[c["fluide"]]]
+            kwh = round(est * (f[mo] if mo in f else f["toujours"]))
+        else:
+            kwh = None
+        replacements.append([mid, mo, est, kwh])
+        for code in EXCLUDE:
+            for it in found[code]:
+                if (it["m"], it["mo"]) == (mid, mo):
+                    it["e"] = est
+
     kids = defaultdict(list)                             # sub-meters must not exceed their parent
     for c in CPT:
         if c["parent"] in meters:
@@ -201,7 +223,7 @@ def run(tables):
         "loaded": len(MES) - len(rejected), "rejected": len(rejected),
         "flagged": sum(ch["n"] for ch in checks if ch["kind"] == "flagged"),
         "excluded": sum(ch["n"] for ch in checks if ch["kind"] == "excluded"),
-        "excluded_keys": sorted({(it["m"], it["mo"]) for code in EXCLUDE for it in found[code]}),
+        "replacements": replacements,
         "reimport": {"first": first, "second": second},
         "checks": checks,
     }
@@ -231,7 +253,8 @@ def selftest():
         assert has(rep, *k), f"real data: {k} not found"
     assert rep["reimport"]["second"]["added"] == 0 and rep["reimport"]["second"]["conflicts"] == 0
     assert rep["loaded"] + rep["rejected"] == len(T["mesures"])
-    assert ("S38-GZ", "2022-11") in rep["excluded_keys"] and ("S14-GZ", "2022-03") in rep["excluded_keys"]
+    rk = {(m, mo): (v, k) for m, mo, v, k in rep["replacements"]}
+    assert ("S38-GZ", "2022-11") in rk and ("S14-GZ", "2022-03") in rk and all(v >= 0 for v, _ in rk.values())
 
     # inject one defect of each kind into a copy and check each is caught
     X = copy.deepcopy(T)
