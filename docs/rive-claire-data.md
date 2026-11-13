@@ -65,7 +65,9 @@ S01 Mairie gas → district heat (Jul 2024) · S04 École du Centre oil → grou
 - Estimated (by the utility): S40-EL 2023-05 → 2023-08, flat 1623 kWh.
 - Found by the import checks (`tools/rc_quality.py`, 13 Nov), not listed by the organisers:
   - S14-GZ 2022-03: −613 m³ (negative consumption).
-  - S38-GZ 2022-11: 45,361 m³, about 9× the same month in other years (≈ 500 MWh in the totals).
+  - S38-GZ 2022-11: 45,361 m³, about 9× the same month in other years (≈ 450 MWh of heat, 95 t CO₂).
+  - Since 13 Nov both S14-GZ 2022-03 and S38-GZ 2022-11 are excluded from the totals: 2022 heat 10,641 → 10,193 MWh,
+    CO₂ 1,641 → 1,548 t. The month counts as no data (no replacement estimate).
   - S26-PV and S26-EL-INJ 2023-07 and 2023-08: 0 kWh (solar outage).
   - S41-EAU 2021: 0 every other month (two-monthly reading entered as monthly).
 - Not flagged on purpose: seasonal shoulder months, the ice rink's short 2022-23 season (documented), oil and pellet

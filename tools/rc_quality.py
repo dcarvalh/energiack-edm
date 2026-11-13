@@ -4,8 +4,10 @@ run(tables) takes the raw CSV rows (lists of dicts, as csv.DictReader gives them
   report    goes into data.json as "quality": rows read / loaded / rejected, the re-import test, and one entry per check
             {code, kind: "rejected" | "flagged", n, items: [{m: id, s: site, mo: "YYYY-MM", v: value, x: detail}]}
   rejected  set of indexes into tables["mesures"] that must not be loaded (duplicates included: the first copy is kept)
+  report["excluded_keys"]  [[meter, "YYYY-MM"], ...] values to leave out of the totals
 
-Rejected rows never reach the figures. Flagged rows are loaded as they are and listed to be checked by a person.
+Rejected rows never reach the figures. Excluded values (negative, spike) are loaded but left out of the totals; the
+month counts as no data (David, 13 Nov). Flagged rows are loaded as they are and listed to be checked by a person.
 Wording lives in the app (T.fr / T.en, keys qc_<code>), not here.
 
 Self-test: python tools/rc_quality.py --selftest  (injects one defect of each kind and checks the real data's known ones)
@@ -19,6 +21,7 @@ YM = re.compile(r"^\d{4}-(0[1-9]|1[0-2])$")
 QUALITY = {"mesuré", "estimé", "manquant"}
 DELIVERY = "bon de livraison"            # oil and pellets: deliveries, a month without a row is normal
 MAX_ITEMS = 60
+EXCLUDE = ("negative", "spike")          # left out of the totals, with a note
 
 
 def midx(ym):
@@ -190,12 +193,15 @@ def run(tables):
 
     order = ["ref_ids", "ref_links", "unknown_meter", "bad_month", "link_mismatch", "unit_mismatch", "bad_value", "duplicate",
              "missing", "estimated", "negative", "spike", "zero_run", "alternating", "conversion", "submeter", "out_of_window"]
-    kind = lambda code: "rejected" if order.index("unknown_meter") <= order.index(code) < order.index("missing") else "flagged"
+    kind = lambda code: ("rejected" if order.index("unknown_meter") <= order.index(code) < order.index("missing")
+                         else "excluded" if code in EXCLUDE else "flagged")
     checks = [{"code": c, "kind": kind(c), "n": len(found[c]), "items": found[c][:MAX_ITEMS]} for c in order]
     report = {
         "read": {k: len(tables[k]) for k in ("batiments", "compteurs", "installations", "mesures")},
         "loaded": len(MES) - len(rejected), "rejected": len(rejected),
         "flagged": sum(ch["n"] for ch in checks if ch["kind"] == "flagged"),
+        "excluded": sum(ch["n"] for ch in checks if ch["kind"] == "excluded"),
+        "excluded_keys": sorted({(it["m"], it["mo"]) for code in EXCLUDE for it in found[code]}),
         "reimport": {"first": first, "second": second},
         "checks": checks,
     }
@@ -225,6 +231,7 @@ def selftest():
         assert has(rep, *k), f"real data: {k} not found"
     assert rep["reimport"]["second"]["added"] == 0 and rep["reimport"]["second"]["conflicts"] == 0
     assert rep["loaded"] + rep["rejected"] == len(T["mesures"])
+    assert ("S38-GZ", "2022-11") in rep["excluded_keys"] and ("S14-GZ", "2022-03") in rep["excluded_keys"]
 
     # inject one defect of each kind into a copy and check each is caught
     X = copy.deepcopy(T)

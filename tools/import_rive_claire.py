@@ -12,7 +12,7 @@ data.json (open, documented in the app's "How it works" page):
   series            site -> 60 monthly values: elec_grid, pv_prod, pv_inject (kWh), heat (kWh, gas at net value = x0.90),
                     water (m3), co2 (kg, dataset factors: direct on-site emissions), cost (CHF, assumed prices)
   meters            site -> every meter: id, label, fluid, unit, level, measure, parent, reading, supplier, start, end,
-                    v[60] raw values, kwh[60] (as given), q{month: quality} (estimated, missing, duplicate)
+                    v[60] raw values, kwh[60] (as given), q{month: quality} (estimated, missing, duplicate, excluded)
   events[]          installation changes, openings, data-quality findings (site, month, kind, text fr/en)
   quality           import report from tools/rc_quality.py: rows read / loaded / rejected, re-import test, one entry per
                     check (rejected rows never reach the figures; flagged rows are loaded and listed for a person to check)
@@ -109,6 +109,11 @@ for n, r in enumerate(MES):
     m["kwh"][i] = num(r["energie_kwh"])
     if r["qualite"] == "estimé":
         m["q"][i] = "estimated"
+for mid, mo in QUALITY["excluded_keys"]:              # negative values and spikes: out of the totals, month = no data
+    m = meters[mid.split("-", 1)[0]][mid]
+    i = midx(mo)
+    m["v"][i] = m["kwh"][i] = None
+    m["q"][i] = "excluded"
 
 # ---------------------------------------------------------------- sites
 by_site = defaultdict(list)
@@ -195,7 +200,8 @@ for sid, rows in by_site.items():
     if o and 0 <= midx(o) < MONTHS:
         events.append({"site": sid, "month": midx(o), "kind": "opening", "text": {"fr": "Ouverture du bâtiment", "en": "Building opens"}})
 QTXT = {"missing": ("Relevé manquant", "Missing reading"), "duplicate": ("Relevé en double (ignoré)", "Duplicate reading (ignored)"),
-        "estimated": ("Valeur estimée par le distributeur", "Value estimated by the utility")}
+        "estimated": ("Valeur estimée par le distributeur", "Value estimated by the utility"),
+        "excluded": ("Valeur exclue des totaux (négative ou pic anormal)", "Value excluded from the totals (negative or abnormal spike)")}
 for sid, ms in meters.items():
     for m in ms.values():
         runs = defaultdict(list)
@@ -220,7 +226,8 @@ data = {
         "start": "2021-01", "months": MONTHS,
         "units": {"energy": "kWh", "water": "m3", "co2": "kg", "money": "CHF"},
         "rules": ["on-site electricity = EL + PV - EL-INJ", "heat = gas x 0.90 (gross -> net) + district heat + oil + pellets",
-                  "oil and pellets: deliveries, not measured use", "duplicate readings: first kept", "SRE 0: per-m2 ratio not applicable",
+                  "oil and pellets: deliveries, not measured use", "duplicate readings: first kept",
+                  "negative values and abnormal spikes found by the import checks: excluded from the totals (month = no data)", "SRE 0: per-m2 ratio not applicable",
                   "municipal housing: electricity covers common areas only"],
         "co2_kg_per_unit": {"gas_m3": 2.086, "oil_l": 2.65, "pellets_kg": 0, "elec_kwh": 0, "district_kwh": 0},
         "co2_scope": "direct on-site emissions (dataset convention)",

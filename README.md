@@ -22,7 +22,8 @@ Data: the organisers' fictional **Rive-Claire** dataset (CC BY 4.0): 48 sites, 5
 9,437 monthly readings 2021–2025. Rules applied from the dataset's dictionary: on-site electricity = EL + PV − EL-INJ;
 heat = gas × 0.90 (gross → net) + district heat + oil + pellets; oil and pellets are deliveries; duplicate readings: first kept.
 The checks are in `tools/rc_quality.py` (`python tools/rc_quality.py --selftest` injects one defect of each kind).
-Rejected rows never reach the figures; flagged rows are loaded as they are and listed (correcting them is the next step).
+Rejected rows never reach the figures. Negative values and abnormal spikes are excluded from the totals (the month counts
+as no data; the site shows an alert). Other flagged rows are loaded as they are and listed.
 CO₂ = the dataset's factors (direct on-site emissions, so electricity and district heat count 0). Costs use **assumed**
 prices, labelled "estimated". Licences and attributions: `THIRD_PARTY.md`.
 

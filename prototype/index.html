@@ -365,11 +365,11 @@ fr:{
   nav_quality:"Qualité",
   qr_title:"Qualité des données", qr_lede:"Chaque ligne des fichiers Rive-Claire est contrôlée avant d'entrer dans les chiffres. Ce rapport vient du dernier import, fait hors ligne par tools/import_rive_claire.py : ce n'est pas encore un import en direct.",
   qr_k_read:"Relevés lus", qr_k_read_sub:"+ {b} bâtiments, {c} compteurs, {i} installations", qr_k_loaded:"Chargés", qr_k_loaded_sub:"entrent dans les chiffres",
-  qr_k_rejected:"Rejetés", qr_k_rejected_sub:"jamais dans les chiffres", qr_k_flagged:"À vérifier", qr_k_flagged_sub:"chargés, signalés", qr_k_reimport:"Ré-import du même fichier",
+  qr_k_rejected:"Rejetés", qr_k_rejected_sub:"jamais dans les chiffres", qr_k_flagged:"À vérifier", qr_k_flagged_sub:"dont {e} exclus des totaux", qr_k_reimport:"Ré-import du même fichier",
   qr_k_reimport_sub:"{s} identiques, {c} conflit(s)", qr_rows:"lignes", qr_row:"ligne", qr_points:"points",
   qr_checks:"Les contrôles", qr_checks_sub:"Cliquez sur un contrôle pour le détail, puis sur une ligne pour ouvrir le site.", qr_csv:"Télécharger (CSV)",
-  qr_note:"Les points « à vérifier » restent dans les chiffres pour l'instant. Les corriger de façon traçable est l'étape suivante.",
-  qr_ok:"OK", qr_rej:"Rejeté", qr_flag:"À vérifier", qr_h_meter:"Compteur", qr_h_month:"Mois", qr_h_value:"Valeur", qr_h_detail:"Détail", qr_more:"… et {n} de plus",
+  qr_note:"Les valeurs négatives et les pics anormaux sont exclus des totaux : le mois compte comme sans donnée, et le site affiche une alerte. Les autres points à vérifier restent dans les chiffres.",
+  qr_ok:"OK", qr_rej:"Rejeté", qr_flag:"À vérifier", qr_excl:"Exclu des totaux", qr_h_meter:"Compteur", qr_h_month:"Mois", qr_h_value:"Valeur", qr_h_detail:"Détail", qr_more:"… et {n} de plus",
   qr_x_same:"copie identique, ignorée", qr_x_diff:"première valeur {v} gardée", qr_x_marked:"marqué manquant dans le fichier", qr_x_no_row:"aucune ligne pour ce mois",
   qr_x_spike:"même mois, autres années : {x}", qr_x_conv:"attendu {x} kWh", qr_x_sub:"parent sur site : {x} kWh", qr_x_window:"compteur actif {x}",
   qr_x_period:"hors période 2021–2025", qr_x_format:"format : {x}",
@@ -383,8 +383,8 @@ fr:{
   qc_duplicate:"Doublon", qd_duplicate:"Même compteur et même mois deux fois : la première ligne est gardée, la suivante rejetée.",
   qc_missing:"Mois manquant", qd_missing:"Mois sans valeur pendant la période active du compteur. Les livraisons (mazout, granulés) ne comptent pas.",
   qc_estimated:"Valeur estimée", qd_estimated:"Valeur estimée par le distributeur, pas relevée.",
-  qc_negative:"Valeur négative", qd_negative:"Consommation négative : impossible pour un compteur de consommation.",
-  qc_spike:"Pic anormal", qd_spike:"Plus de 5 fois le même mois des autres années et plus de 3 fois les mois voisins.",
+  qc_negative:"Valeur négative", qd_negative:"Consommation négative : impossible pour un compteur de consommation. Exclue des totaux.",
+  qc_spike:"Pic anormal", qd_spike:"Plus de 5 fois le même mois des autres années et plus de 3 fois les mois voisins. Exclu des totaux.",
   qc_zero_run:"Zéros inhabituels", qd_zero_run:"Au moins 2 mois à zéro alors que les autres années ont des valeurs : panne ou relevé bloqué.",
   qc_alternating:"Relevé un mois sur deux", qd_alternating:"Zéro un mois sur deux : relevé bimestriel saisi comme mensuel.",
   qc_conversion:"Conversion en kWh", qd_conversion:"Le kWh du fichier ne correspond pas à la valeur × le facteur de conversion du mois.",
@@ -408,7 +408,7 @@ fr:{
   h_meter:"Compteur", h_unit:"Unité", h_level:"Niveau", h_total:"Total {y}", h_flags:"Qualité",
   d_buildings:"Bâtiments", h_bname:"Bâtiment", h_built:"Construit", h_reno:"Rénové", h_levels:"Niveaux", h_label:"Label", h_homes:"Logements",
   d_inst:"Installations", h_inst:"Installation", h_power:"Puissance", h_from:"Mise en service", h_to:"Retrait", h_note:"Remarque",
-  q_missing:"manquant", q_estimated:"estimé", q_duplicate:"doublon", d_na:"sans objet", d_back_map:"← Carte", m_open_site:"Toutes les données du site →",
+  q_missing:"manquant", q_estimated:"estimé", q_duplicate:"doublon", q_excluded:"exclu des totaux", d_na:"sans objet", d_back_map:"← Carte", m_open_site:"Toutes les données du site →",
   d_deliv:"Mazout et granulés : relevés = livraisons, pas consommation mesurée.",
   d_events:"Journal du site", d_noevents:"Rien à signaler sur la période.",
   d_onsite:"Électricité réellement consommée sur place ({y})", d_onsite_eq:"soutirage réseau + production solaire − injection = consommation sur place",
@@ -434,7 +434,7 @@ fr:{
   model:[["sites[]","Identifiant, nom, typologie, quartier, SRE (m²), bâtiments (toutes les colonnes), installations (dates, puissance), solaire (kWc)"],["meters[site][]","Les 172 compteurs : fluide, unité, niveau, parent, relève, 60 valeurs brutes et en kWh, qualité (estimé, manquant, doublon)"],["series[site][fluide]","60 valeurs mensuelles calculées : électricité soutirée, solaire produit et injecté, chaleur (kWh, gaz en PCI), eau (m³), CO₂ (kg), coût (CHF estimé)"],["heating_history","Agent de chauffage et date de changement, déduits des installations"],["events[]","Mises en service, retraits, ouvertures, défauts de données"],["quality","Rapport d'import : lignes lues, chargées, rejetées, test de ré-import, et chaque contrôle avec ses constats"],["meta","Source et licence, règles de calcul, facteurs CO₂ du jeu, prix supposés, objectifs, climat mensuel"]],
   a_next:"La suite (pistes pour le hackathon)",
   road:[["Objectifs par site","Cibles kWh/m² et feu tricolore par bâtiment"],["Rapports IA mensuels","Un rapport par service, en langage métier"],["Questions en langage naturel","« Quelle école consomme le plus de chaleur ? »"],["Import CSV","Glisser ses fichiers : une autre commune démarre en une heure"],["Anticipation","Prévision des besoins, flexibilités, stockage thermique"],["Mutualisation","Plusieurs communes, un même format, des comparaisons équitables"]],
-  foot:"openEDM · prototype Energ-IACK 2026 · Défi 2 « EDM citoyen et souverain » · Rive-Claire est une commune fictive ; données : Energ-IA Transition, Energ-IACK 2026 (CC BY 4.0). Prix estimés. CO₂ : émissions directes sur site. Carte de Genève : bâtiments et indices réels (SITG, swisstopo), électricité et eau simulées.",
+  foot:"openEDM · prototype Energ-IACK 2026 · Défi 2 « EDM citoyen et souverain » · Rive-Claire est une commune fictive ; données : Energ-IA Transition, Energ-IACK 2026 (CC BY 4.0). Prix estimés. CO₂ : émissions directes sur site. Valeurs négatives et pics anormaux exclus des totaux (voir Qualité). Carte de Genève : bâtiments et indices réels (SITG, swisstopo), électricité et eau simulées.",
   nav_map:"Carte 3D", notice_map:"Prototype · Rive-Claire : données des organisateurs, volumes schématiques · Genève : bâtiments réels (SITG, swisstopo), électricité et eau simulées",
   m_loading:"Chargement des bâtiments…", m_loading_scene:"Construction de la scène 3D…", m_map_title:"Genève · centre-ville", m_search:"Rechercher une adresse…", m_noresult:"Aucune adresse trouvée", m_filter_hint:"Cliquer une classe pour l'isoler", m_filter_clear:"Cliquer à nouveau pour tout afficher", m_north:"Orienter au nord", m_t_pan:"Glisser pour déplacer", m_t_orbit:"Glisser pour pivoter", m_t_in:"Zoom avant", m_t_out:"Zoom arrière", m_t_rl:"Tourner à gauche", m_t_rr:"Tourner à droite", m_t_top:"Vue d'oiseau (2D)", m_t_tilt:"Vue inclinée (3D)", m_t_full:"Plein écran", m_t_fullx:"Quitter le plein écran", m_sub:"{n} bâtiments réels · données publiques SITG et swisstopo",
   m_l_idc:"Chaleur (IDC)", m_l_heat:"Chauffage", m_l_solar:"Solaire", m_l_elec:"Électricité", m_l_water:"Eau",
@@ -475,11 +475,11 @@ en:{
   nav_quality:"Data quality",
   qr_title:"Data quality", qr_lede:"Every row of the Rive-Claire files is checked before it reaches the figures. This report comes from the last import, run offline by tools/import_rive_claire.py: it is not a live upload yet.",
   qr_k_read:"Readings read", qr_k_read_sub:"+ {b} buildings, {c} meters, {i} installations", qr_k_loaded:"Loaded", qr_k_loaded_sub:"used in the figures",
-  qr_k_rejected:"Rejected", qr_k_rejected_sub:"never in the figures", qr_k_flagged:"To check", qr_k_flagged_sub:"loaded, flagged", qr_k_reimport:"Re-import of the same file",
+  qr_k_rejected:"Rejected", qr_k_rejected_sub:"never in the figures", qr_k_flagged:"To check", qr_k_flagged_sub:"of which {e} excluded from the totals", qr_k_reimport:"Re-import of the same file",
   qr_k_reimport_sub:"{s} unchanged, {c} conflict(s)", qr_rows:"rows", qr_row:"row", qr_points:"points",
   qr_checks:"The checks", qr_checks_sub:"Click a check for the details, then a row to open the site.", qr_csv:"Download (CSV)",
-  qr_note:"Points \"to check\" stay in the figures for now. Correcting them, with a trace, is the next step.",
-  qr_ok:"OK", qr_rej:"Rejected", qr_flag:"To check", qr_h_meter:"Meter", qr_h_month:"Month", qr_h_value:"Value", qr_h_detail:"Detail", qr_more:"… and {n} more",
+  qr_note:"Negative values and abnormal spikes are excluded from the totals: the month counts as no data, and the site shows an alert. Other points to check stay in the figures.",
+  qr_ok:"OK", qr_rej:"Rejected", qr_flag:"To check", qr_excl:"Excluded from totals", qr_h_meter:"Meter", qr_h_month:"Month", qr_h_value:"Value", qr_h_detail:"Detail", qr_more:"… and {n} more",
   qr_x_same:"identical copy, ignored", qr_x_diff:"first value {v} kept", qr_x_marked:"marked missing in the file", qr_x_no_row:"no row for this month",
   qr_x_spike:"same month, other years: {x}", qr_x_conv:"expected {x} kWh", qr_x_sub:"parent on site: {x} kWh", qr_x_window:"meter active {x}",
   qr_x_period:"outside 2021–2025", qr_x_format:"format: {x}",
@@ -493,8 +493,8 @@ en:{
   qc_duplicate:"Duplicate", qd_duplicate:"Same meter and month twice: the first row is kept, the next one rejected.",
   qc_missing:"Missing month", qd_missing:"Month with no value while the meter is active. Deliveries (oil, pellets) do not count.",
   qc_estimated:"Estimated value", qd_estimated:"Value estimated by the utility, not read.",
-  qc_negative:"Negative value", qd_negative:"Negative consumption: impossible for a consumption meter.",
-  qc_spike:"Abnormal spike", qd_spike:"More than 5 times the same month in other years and more than 3 times the months around it.",
+  qc_negative:"Negative value", qd_negative:"Negative consumption: impossible for a consumption meter. Excluded from the totals.",
+  qc_spike:"Abnormal spike", qd_spike:"More than 5 times the same month in other years and more than 3 times the months around it. Excluded from the totals.",
   qc_zero_run:"Unusual zeros", qd_zero_run:"At least 2 months at zero while other years have values: an outage or a stuck reading.",
   qc_alternating:"Read every other month", qd_alternating:"Zero every other month: a two-monthly reading entered as monthly.",
   qc_conversion:"Conversion to kWh", qd_conversion:"The file's kWh does not match the value × the month's conversion factor.",
@@ -518,7 +518,7 @@ en:{
   h_meter:"Meter", h_unit:"Unit", h_level:"Level", h_total:"Total {y}", h_flags:"Quality",
   d_buildings:"Buildings", h_bname:"Building", h_built:"Built", h_reno:"Renovated", h_levels:"Floors", h_label:"Label", h_homes:"Homes",
   d_inst:"Installations", h_inst:"Installation", h_power:"Capacity", h_from:"In service", h_to:"Removed", h_note:"Note",
-  q_missing:"missing", q_estimated:"estimated", q_duplicate:"duplicate", d_na:"not applicable", d_back_map:"← Map", m_open_site:"All data for this site →",
+  q_missing:"missing", q_estimated:"estimated", q_duplicate:"duplicate", q_excluded:"excluded from totals", d_na:"not applicable", d_back_map:"← Map", m_open_site:"All data for this site →",
   d_deliv:"Oil and pellets: readings are deliveries, not measured use.",
   d_events:"Site log", d_noevents:"Nothing to report over the period.",
   d_onsite:"Electricity actually used on site ({y})", d_onsite_eq:"grid draw + solar production − feed-in = on-site use",
@@ -544,7 +544,7 @@ en:{
   model:[["sites[]","ID, name, typology, district, energy reference area (m²), buildings (every column), installations (dates, capacity), solar (kWp)"],["meters[site][]","All 172 meters: utility, unit, level, parent, reading method, 60 raw and kWh values, quality (estimated, missing, duplicate)"],["series[site][utility]","60 computed monthly values: grid electricity, solar produced and fed in, heat (kWh, gas at net value), water (m³), CO₂ (kg), cost (estimated CHF)"],["heating_history","Heating carrier and when it changed, derived from the installations"],["events[]","Commissioning, removals, openings, data defects"],["quality","Import report: rows read, loaded, rejected, re-import test, and every check with its findings"],["meta","Source and licence, calculation rules, the dataset's CO₂ factors, assumed prices, targets, monthly climate"]],
   a_next:"Next steps (ideas for the hackathon)",
   road:[["Targets per site","kWh/m² targets and a traffic light per building"],["Monthly AI reports","One report per department, in plain operational language"],["Ask in plain language","\"Which school uses the most heat?\""],["CSV import","Drop your files in: another municipality starts in an hour"],["Anticipation","Demand forecasting, flexibility, thermal storage"],["Pooling","Several municipalities, one format, fair comparisons"]],
-  foot:"openEDM · Energ-IACK 2026 prototype · Challenge 2 \"Citizen-owned, sovereign EDM\" · Rive-Claire is a fictional municipality; data: Energ-IA Transition, Energ-IACK 2026 (CC BY 4.0). Prices estimated. CO₂: direct on-site emissions. Geneva map: real buildings and indices (SITG, swisstopo), electricity and water simulated.",
+  foot:"openEDM · Energ-IACK 2026 prototype · Challenge 2 \"Citizen-owned, sovereign EDM\" · Rive-Claire is a fictional municipality; data: Energ-IA Transition, Energ-IACK 2026 (CC BY 4.0). Prices estimated. CO₂: direct on-site emissions. Negative values and abnormal spikes excluded from the totals (see Data quality). Geneva map: real buildings and indices (SITG, swisstopo), electricity and water simulated.",
   nav_map:"3D map", notice_map:"Prototype · Rive-Claire: organisers' data, schematic volumes · Geneva: real buildings (SITG, swisstopo), electricity and water simulated",
   m_loading:"Loading buildings…", m_loading_scene:"Building the 3D scene…", m_map_title:"Geneva · city centre", m_search:"Search an address…", m_noresult:"No address found", m_filter_hint:"Click a class to isolate it", m_filter_clear:"Click again to show all", m_north:"Face north", m_t_pan:"Drag to move", m_t_orbit:"Drag to rotate", m_t_in:"Zoom in", m_t_out:"Zoom out", m_t_rl:"Turn left", m_t_rr:"Turn right", m_t_top:"Bird's-eye view (2D)", m_t_tilt:"Tilted view (3D)", m_t_full:"Full screen", m_t_fullx:"Exit full screen", m_sub:"{n} real buildings · public SITG and swisstopo data",
   m_l_idc:"Heat (IDC)", m_l_heat:"Heating", m_l_solar:"Solar", m_l_elec:"Electricity", m_l_water:"Water",
@@ -786,12 +786,12 @@ function renderQuality(){
     [t("qr_k_read"), nf(Q.read.mesures), rw(Q.read.mesures), t("qr_k_read_sub",{b:Q.read.batiments,c:Q.read.compteurs,i:Q.read.installations})],
     [t("qr_k_loaded"), nf(Q.loaded), rw(Q.loaded), t("qr_k_loaded_sub")],
     [t("qr_k_rejected"), nf(Q.rejected), rw(Q.rejected), t("qr_k_rejected_sub")],
-    [t("qr_k_flagged"), nf(Q.flagged), t("qr_points"), t("qr_k_flagged_sub")],
+    [t("qr_k_flagged"), nf(Q.flagged + Q.excluded), t("qr_points"), t("qr_k_flagged_sub",{e:Q.excluded})],
     [t("qr_k_reimport"), "+"+nf(R.added), rw(R.added), t("qr_k_reimport_sub",{s:nf(R.same),c:R.conflicts})],
   ];
   document.getElementById("qr-kpis").innerHTML = k.map(([l,v,u,d])=>`<div class="card kpi"><div class="lab">${esc(l)}</div><div class="val">${v}<small>${esc(u)}</small></div><div class="delta mut">${esc(d)}</div></div>`).join("");
   document.getElementById("qr-list").innerHTML = Q.checks.map(c=>{
-    const pill = !c.n ? `<span class="pill p-ren">${esc(t("qr_ok"))}</span>` : c.kind==="rejected" ? `<span class="pill p-fossil">${esc(t("qr_rej"))}</span>` : `<span class="pill p-warn">${esc(t("qr_flag"))}</span>`;
+    const pill = !c.n ? `<span class="pill p-ren">${esc(t("qr_ok"))}</span>` : c.kind==="rejected" ? `<span class="pill p-fossil">${esc(t("qr_rej"))}</span>` : c.kind==="excluded" ? `<span class="pill p-fossil">${esc(t("qr_excl"))}</span>` : `<span class="pill p-warn">${esc(t("qr_flag"))}</span>`;
     const rows = c.items.map(it=>`<tr ${it.s && D.meters[it.s] ? `data-id="${esc(it.s)}"` : ""}><td>${esc(it.m||"")}</td><td>${esc(qrMonth(it.mo))}</td><td class="num">${it.v==null?"–":nf(it.v)+" "+esc(qrUnit(it))}</td><td>${esc(qrDetail(c.code,it))}</td></tr>`).join("");
     const more = c.n > c.items.length ? `<p class="sub">${esc(t("qr_more",{n:c.n-c.items.length}))}</p>` : "";
     const table = c.n ? `<div class="tablewrap"><table><thead><tr><th>${esc(t("qr_h_meter"))}</th><th>${esc(t("qr_h_month"))}</th><th class="num">${esc(t("qr_h_value"))}</th><th>${esc(t("qr_h_detail"))}</th></tr></thead><tbody>${rows}</tbody></table></div>${more}` : "";
@@ -800,7 +800,7 @@ function renderQuality(){
 }
 function qualityCsv(){
   const rows = [["controle","statut","compteur","site","mois","valeur","detail"]];
-  for (const c of D.quality.checks) for (const it of c.items) rows.push([t("qc_"+c.code), c.kind==="rejected"?t("qr_rej"):t("qr_flag"), it.m||"", it.s||"", it.mo||"", it.v??"", qrDetail(c.code,it).replaceAll(";",",")]);
+  for (const c of D.quality.checks) for (const it of c.items) rows.push([t("qc_"+c.code), t(c.kind==="rejected"?"qr_rej":c.kind==="excluded"?"qr_excl":"qr_flag"), it.m||"", it.s||"", it.mo||"", it.v??"", qrDetail(c.code,it).replaceAll(";",",")]);
   const blob = new Blob(["﻿"+rows.map(r=>r.join(";")).join("\n")], {type:"text/csv;charset=utf-8"});
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "rive-claire-qualite.csv"; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
 }
@@ -956,7 +956,7 @@ let RZ, LASTW = innerWidth;
 window.addEventListener("resize", () => { clearTimeout(RZ); RZ = setTimeout(() => { if (Math.abs(innerWidth - LASTW) < 40 || !D) return; LASTW = innerWidth; const open = document.getElementById("drawer").classList.contains("open"); renderAll(); if (open) openSite(location.hash.slice(6)); }, 200); });
 matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", renderAll);
 
-const V = "11";
+const V = "12";
 fetch("data.json?v="+V).then(r=>r.json()).then(d => { D = d; compute(); route(); });
 </script>
 </body>
