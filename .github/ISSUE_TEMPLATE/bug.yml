@@ -1,0 +1,29 @@
+name: "Bug / Problème"
+description: "Quelque chose ne marche pas · Something is not working"
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: "Ce dépôt est public : aucune donnée confidentielle ni cas réel. · This repo is public: no confidential data or real cases."
+  - type: textarea
+    id: what
+    attributes:
+      label: "Que s'est-il passé ? · What happened?"
+      description: "Et qu'attendiez-vous ? · And what did you expect?"
+    validations:
+      required: true
+  - type: input
+    id: where
+    attributes:
+      label: "Où ? (page, langue FR/EN) · Where? (page, language)"
+  - type: dropdown
+    id: device
+    attributes:
+      label: "Appareil · Device"
+      options:
+        - "Ordinateur · Computer"
+        - "Téléphone · Phone"
+  - type: textarea
+    id: shot
+    attributes:
+      label: "Capture d'écran (glisser ici) · Screenshot (drop here)"

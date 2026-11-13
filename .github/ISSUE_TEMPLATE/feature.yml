@@ -1,0 +1,25 @@
+name: "Idée / Feature"
+description: "Demander une fonction ou un changement · Request a feature or change"
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: "Ce dépôt est public : aucune donnée confidentielle ni cas réel. · This repo is public: no confidential data or real cases."
+  - type: textarea
+    id: need
+    attributes:
+      label: "Pour qui, et quel besoin ? · For whom, and what need?"
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: "Ce que vous imaginez · What you have in mind"
+  - type: dropdown
+    id: prio
+    attributes:
+      label: "Pour le pitch de samedi ? · Needed for Saturday's pitch?"
+      options:
+        - "Oui · Yes"
+        - "Bonus · Nice to have"
+        - "Après · Later"
