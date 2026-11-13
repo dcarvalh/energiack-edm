@@ -1,0 +1,14 @@
+# Secrets and local environments
+.env
+*.env
+.venv/
+__pycache__/
+.DS_Store
+
+# Organisers' folder and any data received under confidentiality: never in this repo
+ENERG-IACK26-kDrive-OpenData/
+data/
+
+# Local outputs
+shots/
+.claude/worktrees/

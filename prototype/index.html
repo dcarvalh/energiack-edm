@@ -1,0 +1,849 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EDM Commune</title>
+<meta name="description" content="Prototype d'EDM citoyen et souverain · Energ-IACK 2026">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231f8a5b'/%3E%3Cpath d='M18 5 9 18h6l-2 9 9-13h-6z' fill='white'/%3E%3C/svg%3E">
+<script type="importmap">{"imports":{"three":"./vendor/three.module.min.js"}}</script>
+<style>
+:root{
+  --bg:#f6f7f5; --surface:#ffffff; --surface-2:#f0f2ef; --text:#15201b; --muted:#5d6b64; --line:#e2e6e2;
+  --accent:#1f8a5b; --accent-soft:#e3f2ea; --warn:#b54708; --warn-soft:#fdf0e3; --bad:#c0392b; --bad-soft:#fbe9e7;
+  --elec:#3b6fd8; --heat-fossil:#d9653b; --heat-ren:#2e9e6e; --solar:#e8a917; --water:#1a9bb5;
+  --shadow:0 1px 2px rgba(16,24,20,.05),0 4px 16px rgba(16,24,20,.05); --radius:14px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0e1311; --surface:#161d1a; --surface-2:#1c2521; --text:#e7eeea; --muted:#93a39b; --line:#26302c;
+  --accent:#3fbf84; --accent-soft:#163326; --warn:#f0a35e; --warn-soft:#3a2614; --bad:#f07a6a; --bad-soft:#3a1d19;
+  --elec:#6f9cf0; --heat-fossil:#ef8a5f; --heat-ren:#45c08a; --solar:#f2c14e; --water:#4cc3da; --shadow:none;
+}}
+:root[data-theme="dark"]{
+  --bg:#0e1311; --surface:#161d1a; --surface-2:#1c2521; --text:#e7eeea; --muted:#93a39b; --line:#26302c;
+  --accent:#3fbf84; --accent-soft:#163326; --warn:#f0a35e; --warn-soft:#3a2614; --bad:#f07a6a; --bad-soft:#3a1d19;
+  --elec:#6f9cf0; --heat-fossil:#ef8a5f; --heat-ren:#45c08a; --solar:#f2c14e; --water:#4cc3da; --shadow:none;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text)}
+body{font:15px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit;color:inherit}
+a{color:var(--accent)}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.bar{display:flex;align-items:center;gap:16px;height:60px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:650;letter-spacing:-.01em;white-space:nowrap}
+.brand svg{flex:none}
+.brand small{display:block;font-weight:450;color:var(--muted);font-size:12px;line-height:1.1}
+nav{display:flex;gap:4px;margin-left:auto}
+nav a{white-space:nowrap;padding:7px 12px;border-radius:999px;text-decoration:none;color:var(--muted);font-weight:550;font-size:14px}
+nav a:hover{color:var(--text);background:var(--surface-2)}
+nav a.on{color:var(--text);background:var(--surface);box-shadow:var(--shadow);outline:1px solid var(--line)}
+.seg{display:inline-flex;background:var(--surface-2);border-radius:999px;padding:3px;gap:2px}
+.seg button{border:0;background:transparent;padding:4px 10px;border-radius:999px;cursor:pointer;color:var(--muted);font-weight:600;font-size:13px}
+.seg button.on{background:var(--surface);color:var(--text);box-shadow:var(--shadow)}
+.notice{font-size:12.5px;color:var(--warn);background:var(--warn-soft);padding:6px 0;text-align:center}
+main.wrap{padding-top:28px;padding-bottom:60px}
+footer.wrap{padding-top:24px;padding-bottom:40px}
+h1{font-size:28px;letter-spacing:-.02em;line-height:1.2;margin:0 0 6px}
+h2{font-size:17px;margin:0;letter-spacing:-.01em}
+.lede{color:var(--muted);margin:0 0 22px;max-width:70ch}
+.row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.spacer{flex:1}
+.grid{display:grid;gap:14px}
+.kpis{grid-template-columns:repeat(5,minmax(0,1fr));margin:18px 0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px}
+.kpi .lab{font-size:12.5px;color:var(--muted);font-weight:550}
+.kpi .val{font-size:26px;font-weight:680;letter-spacing:-.02em;margin-top:4px;font-variant-numeric:tabular-nums}
+.kpi .val small{font-size:14px;font-weight:550;color:var(--muted);margin-left:3px}
+.delta{font-size:12.5px;font-weight:600;margin-top:2px}
+.good{color:var(--accent)} .badc{color:var(--bad)} .mut{color:var(--muted)}
+.two{grid-template-columns:1.6fr 1fr}
+.card h2{margin-bottom:2px}
+.card .sub{font-size:13px;color:var(--muted);margin:0 0 12px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-top:8px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+svg.chart{width:100%;height:auto;display:block;overflow:visible}
+svg.chart text{fill:var(--muted);font-size:11px}
+svg.chart .gridl{stroke:var(--line)}
+.tip{position:fixed;pointer-events:none;background:var(--text);color:var(--bg);font-size:12.5px;padding:8px 10px;border-radius:9px;z-index:50;opacity:0;transition:opacity .1s;white-space:nowrap;line-height:1.45}
+.tip b{font-weight:650}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600;text-align:left;padding:10px 10px;border-bottom:1px solid var(--line);cursor:pointer;user-select:none;white-space:nowrap}
+th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
+td{padding:11px 10px;border-bottom:1px solid var(--line)}
+tbody tr{cursor:pointer}
+tbody tr:hover td{background:var(--surface-2)}
+th .ar{opacity:.5;margin-left:3px}
+.tname{font-weight:580}
+.tsub{font-size:12px;color:var(--muted)}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.p-fossil{background:var(--bad-soft);color:var(--bad)}
+.p-ren{background:var(--accent-soft);color:var(--accent)}
+.p-warn{background:var(--warn-soft);color:var(--warn)}
+.search{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 12px;min-width:220px}
+.tablewrap{overflow-x:auto;margin:0 -18px;padding:0 18px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;cursor:pointer;font-size:13px;font-weight:550;color:var(--muted)}
+.chip.on{background:var(--text);color:var(--bg);border-color:var(--text)}
+.ai{border-left:3px solid var(--accent)}
+.ai .meta{font-size:12px;color:var(--muted);margin-top:10px}
+.ai p{margin:8px 0}
+.badge-ai{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:650;color:var(--accent);background:var(--accent-soft);padding:3px 9px;border-radius:999px}
+/* drawer */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:30;opacity:0;pointer-events:none;transition:opacity .2s}
+.scrim.open{opacity:1;pointer-events:auto}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(720px,100%);background:var(--bg);z-index:31;transform:translateX(100%);transition:transform .25s ease;overflow-y:auto;border-left:1px solid var(--line)}
+.drawer.open{transform:none}
+.drawer .in{padding:22px}
+.x{border:0;background:var(--surface-2);width:34px;height:34px;border-radius:50%;cursor:pointer;font-size:18px;line-height:1}
+.facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:16px 0}
+.fact{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.fact .lab{font-size:12px;color:var(--muted)}
+.fact .v{font-weight:650;font-variant-numeric:tabular-nums}
+.timeline{list-style:none;padding:0;margin:0}
+.timeline li{display:flex;gap:12px;padding:8px 0;border-bottom:1px dashed var(--line);font-size:14px}
+.timeline li:last-child{border:0}
+.timeline .d{color:var(--muted);min-width:78px;font-variant-numeric:tabular-nums}
+.eq{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;background:var(--surface-2);padding:10px 12px;border-radius:10px;overflow-x:auto}
+/* citizen */
+.hero{font-size:clamp(22px,3.2vw,34px);line-height:1.25;letter-spacing:-.02em;font-weight:650;max-width:24ch;margin:6px 0 24px}
+.hero em{font-style:normal;color:var(--accent)}
+.goals{grid-template-columns:repeat(3,minmax(0,1fr))}
+.goal .big{font-size:34px;font-weight:700;letter-spacing:-.03em}
+.track{height:10px;background:var(--surface-2);border-radius:99px;position:relative;margin:14px 0 8px;overflow:hidden}
+.track span{position:absolute;inset:0 auto 0 0;background:var(--accent);border-radius:99px}
+.goal .foot{font-size:13px;color:var(--muted)}
+.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+.stat .n{font-size:24px;font-weight:680;letter-spacing:-.02em}
+.stat .t{color:var(--muted);font-size:14px}
+/* welcome */
+.kicker{color:var(--accent);font-weight:650;font-size:13px;letter-spacing:.04em;text-transform:uppercase}
+.wl{grid-template-columns:repeat(4,minmax(0,1fr))}
+.half{grid-template-columns:1fr 1fr}
+a.go{text-decoration:none;color:inherit;display:flex;flex-direction:column;gap:6px}
+a.go:hover{outline:2px solid var(--accent)}
+a.go span{font-size:14px;color:var(--muted)}
+a.go .pill{align-self:flex-start;margin-top:auto}
+.defi b{display:block;margin-bottom:4px} .defi span{font-size:14px;color:var(--muted)}
+/* about */
+.flow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;align-items:stretch}
+.step{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;position:relative}
+.step b{display:block;margin-bottom:4px}
+.step span{font-size:13px;color:var(--muted)}
+.step:not(:last-child)::after{content:"→";position:absolute;right:-12px;top:50%;transform:translateY(-50%);color:var(--muted);font-weight:700}
+.list{margin:0;padding-left:18px}
+.list li{margin:6px 0}
+.roadmap{grid-template-columns:repeat(3,minmax(0,1fr))}
+.roadmap .card{padding:14px}
+.roadmap b{display:block}
+.roadmap span{font-size:13px;color:var(--muted)}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;background:var(--surface-2);padding:1px 5px;border-radius:5px}
+/* 3D map */
+.m3{position:relative;height:calc(100vh - 150px);min-height:500px;border-radius:var(--radius);overflow:hidden;border:1px solid var(--line);background:var(--surface-2)}
+.m3-stage{position:absolute;inset:0} .m3-stage canvas{display:block;width:100%;height:100%;touch-action:none}
+.m3-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--muted)}
+.m3-spin{width:28px;height:28px;border:3px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:m3spin .9s linear infinite;margin-bottom:12px}
+@keyframes m3spin{to{transform:rotate(360deg)}}
+.m3-labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.m3-place{position:absolute;left:0;top:0;font-size:12px;font-weight:650;color:#fff;background:rgba(18,26,22,.72);padding:3px 9px;border-radius:999px;white-space:nowrap;transition:opacity .2s;letter-spacing:.01em}
+.m3-search{position:relative;margin-bottom:10px}
+.m3-search input{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:9px;padding:7px 10px;font-size:13.5px}
+.m3-results{position:absolute;left:0;right:0;top:calc(100% + 4px);background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:5;max-height:260px;overflow:auto;padding:4px}
+.m3-results button{display:block;width:100%;text-align:left;border:0;background:transparent;padding:6px 8px;border-radius:7px;cursor:pointer;font-size:13.5px}
+.m3-results button:hover{background:var(--surface-2)} .m3-results span{display:block;font-size:12px;color:var(--muted)} .m3-results .mut{padding:6px 8px;font-size:13px}
+.m3-keys{display:grid;grid-template-columns:1fr 1fr;gap:2px 8px}
+.m3-key{display:flex;align-items:center;gap:6px;border:0;background:transparent;padding:3px 5px;border-radius:6px;cursor:pointer;font-size:12px;color:var(--text);text-align:left}
+.m3-key:hover{background:var(--surface-2)} .m3-key.on{background:var(--surface-2);outline:1px solid var(--line)} .m3-key.off{opacity:.4}
+.m3-key i{width:10px;height:10px;border-radius:3px;flex:none} .m3-key span{flex:1} .m3-key em{font-style:normal;color:var(--muted);font-variant-numeric:tabular-nums;font-size:11.5px}
+.m3-fhint{font-size:11.5px;color:var(--muted);margin-top:6px}
+.m3-tools{position:absolute;right:12px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:8px;z-index:3;transition:right .2s}
+.m3-panel:not(.hide)~.m3-tools{right:364px}
+.m3-grp{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);overflow:hidden}
+.m3-btn{width:38px;height:36px;border:0;background:transparent;display:grid;place-items:center;cursor:pointer;color:var(--text);padding:0}
+.m3-btn+.m3-btn{border-top:1px solid var(--line)} .m3-btn:hover{background:var(--surface-2)} .m3-btn.on{background:var(--text);color:var(--bg)}
+.m3-btn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.m3-north svg{stroke:none} .m3-btn b{font-size:12px;font-weight:700;letter-spacing:.02em}
+.m3 .fs-out,.m3.is-full .fs-in{display:none} .m3.is-full .fs-out{display:inline}
+.m3:fullscreen{height:100vh;border-radius:0;border:0}
+.m3.m3-full{position:fixed;inset:0;z-index:100;height:auto;border-radius:0;margin:0;border:0}
+.m3-stage canvas:focus{outline:none}
+.m3-ui{position:absolute;top:12px;left:12px;max-width:360px}
+.m3-card,.m3-hint,.m3-attr{background:color-mix(in srgb,var(--surface) 90%,transparent);backdrop-filter:blur(8px);border:1px solid var(--line);box-shadow:var(--shadow)}
+.m3-card{border-radius:12px;padding:12px 14px;max-height:calc(100vh - 190px);overflow:auto}
+.m3-maps{margin-bottom:8px} .m3-title{font-weight:680;letter-spacing:-.01em;font-size:16px} .m3-sub{font-size:12.5px;color:var(--muted);margin-bottom:10px}
+.m3-legend{margin-top:10px;font-size:12px;color:var(--muted)} .m3-unit{font-weight:600;color:var(--text);margin-bottom:6px}
+.m3-key{display:inline-flex;align-items:center;gap:5px;margin:0 10px 4px 0} .m3-key i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.m3-panel{position:absolute;top:12px;right:12px;bottom:40px;width:340px;overflow-y:auto;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;box-shadow:var(--shadow)}
+.m3-sec{border-top:1px solid var(--line);margin-top:12px;padding-top:10px}
+.m3-h{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600;margin-bottom:6px}
+.m3-row{display:flex;justify-content:space-between;gap:10px;font-size:13.5px;padding:3px 0} .m3-row span{color:var(--muted)} .m3-row b{font-weight:600;text-align:right}
+.m3-src{font-size:11.5px;color:var(--muted);margin-top:12px}
+.m3-foot{position:absolute;left:12px;bottom:12px;display:flex;gap:8px;align-items:center}
+.m3-hint{font-size:12px;color:var(--muted);padding:5px 10px;border-radius:999px}
+.m3-attr{position:absolute;right:12px;bottom:10px;font-size:11px;color:var(--muted);padding:2px 8px;border-radius:6px}
+@media (max-width:720px){
+  .m3{height:calc(100vh - 175px);margin:0 -16px;border-radius:0;border-left:0;border-right:0}
+  .m3-ui{left:8px;right:8px;top:8px;max-width:none} .m3-card{padding:10px 12px;max-height:46vh} .m3-keys{display:flex;flex-wrap:wrap;gap:0 2px} .m3-key{padding:2px 4px} .m3-key em{display:none} .m3-fhint{display:none}
+  .m3-layers{flex-wrap:nowrap;overflow-x:auto} .m3-layers .chip{white-space:nowrap} .m3-sub{margin-bottom:6px} .m3-legend{margin-top:6px}
+  .m3-panel{left:8px;right:8px;top:auto;bottom:8px;width:auto;max-height:55%}
+  .m3-hint,.m3-attr{display:none} .m3-tools{top:auto;bottom:10px;right:8px;transform:none;gap:6px} .m3-g-mode,.m3-g-rot{display:none} .m3-panel:not(.hide)~.m3-tools{display:none}
+}
+footer{color:var(--muted);font-size:12.5px;border-top:1px solid var(--line)}
+.hide{display:none!important}
+.m3-open{display:inline-block;margin:10px 0 2px;text-decoration:none} .dtab tbody tr[data-mt]{cursor:pointer} .dtab tr.sel td{background:var(--surface-2)} .dtab td{vertical-align:top}
+@media (max-width:980px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.two{grid-template-columns:1fr}.wl{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:720px){
+  .wrap{padding:0 16px}
+  .bar{height:auto;flex-wrap:wrap;padding:10px 0;gap:10px}
+  nav{order:3;width:100%;margin:0;overflow-x:auto}
+  .brand small{display:none}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .kpis .kpi:last-child{grid-column:span 2}
+  .goals,.three,.roadmap,.flow,.wl,.half{grid-template-columns:1fr}
+  .step:not(:last-child)::after{content:"↓";right:auto;left:50%;top:auto;bottom:-15px;transform:none}
+  .facts{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .search{min-width:0;width:100%}
+  .hide-m{display:none}
+  h1{font-size:23px}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="notice" data-t="notice"></div>
+  <div class="wrap bar">
+    <div class="brand">
+      <svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M18 5 9 18h6l-2 9 9-13h-6z" fill="#fff"/></svg>
+      <div>EDM Commune<small data-t="tagline"></small></div>
+    </div>
+    <nav>
+      <a href="#accueil" data-view="accueil" data-t="nav_home"></a>
+      <a href="#gestion" data-view="gestion" data-t="nav_manage"></a>
+      <a href="#citoyens" data-view="citoyens" data-t="nav_citizen"></a>
+      <a href="#carte" data-view="carte" data-t="nav_map"></a>
+      <a href="#apropos" data-view="apropos" data-t="nav_about"></a>
+    </nav>
+    <div class="seg" role="group" aria-label="Language">
+      <button data-lang="fr">FR</button><button data-lang="en">EN</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <!-- ================= WELCOME ================= -->
+  <section id="v-accueil" class="hide">
+    <div class="kicker" data-t="h_kicker"></div>
+    <h1 data-t="h_title" style="margin-top:4px"></h1>
+    <p class="lede" data-t="h_lede"></p>
+    <h2 style="margin:0 0 12px" data-t="h_defi"></h2>
+    <div class="grid three" id="h-defi"></div>
+    <h2 style="margin:28px 0 12px" data-t="h_now"></h2>
+    <div class="grid wl" id="h-now"></div>
+    <div class="grid half" style="margin-top:28px">
+      <div class="card"><h2 data-t="h_next"></h2><ul class="list" id="h-next"></ul></div>
+      <div class="card"><h2 data-t="h_later"></h2><ul class="list" id="h-later"></ul></div>
+    </div>
+  </section>
+
+  <!-- ================= MANAGER ================= -->
+  <section id="v-gestion" class="hide">
+    <div class="row">
+      <div>
+        <h1 data-t="m_title"></h1>
+        <p class="lede" style="margin-bottom:0" data-t="m_lede"></p>
+      </div>
+      <div class="spacer"></div>
+      <div class="seg" id="years" aria-label="Year"></div>
+    </div>
+    <div class="grid kpis" id="kpis"></div>
+    <div class="grid two">
+      <div class="card">
+        <h2 data-t="c_monthly"></h2>
+        <p class="sub" data-t="c_monthly_sub"></p>
+        <div id="ch-monthly"></div>
+        <div class="legend" id="lg-monthly"></div>
+      </div>
+      <div class="card">
+        <h2 data-t="c_traj"></h2>
+        <p class="sub" data-t="c_traj_sub"></p>
+        <div id="ch-traj"></div>
+        <div class="legend" id="lg-traj"></div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:14px">
+      <div class="row" style="margin-bottom:12px">
+        <div><h2 data-t="t_sites"></h2><p class="sub" style="margin:0" data-t="t_sites_sub"></p></div>
+        <div class="spacer"></div>
+        <div class="chips" id="fchips"></div>
+        <input class="search" id="q" type="search">
+      </div>
+      <div class="tablewrap"><table id="sites"></table></div>
+      <div style="text-align:center;margin-top:12px"><button class="chip" id="more"></button></div>
+    </div>
+  </section>
+
+  <!-- ================= CITIZEN ================= -->
+  <section id="v-citoyens" class="hide">
+    <p class="lede" style="margin:0" data-t="c_kicker"></p>
+    <p class="hero" id="c-hero"></p>
+    <div class="grid goals" id="goals"></div>
+    <h2 style="margin:28px 0 12px" data-t="c_numbers"></h2>
+    <div class="grid three" id="cstats"></div>
+    <div style="margin-top:14px">
+      <div class="card"><h2 data-t="c_changes"></h2><p class="sub" data-t="c_changes_sub"></p><ul class="timeline" id="c-changes"></ul></div>
+    </div>
+  </section>
+
+  <!-- ================= 3D MAP ================= -->
+  <section id="v-carte" class="hide"><div class="m3" id="m3"></div></section>
+
+  <!-- ================= ABOUT ================= -->
+  <section id="v-apropos" class="hide">
+    <h1 data-t="a_title"></h1>
+    <p class="lede" data-t="a_lede"></p>
+    <div class="flow" id="flow"></div>
+    <div class="grid two" style="margin-top:14px">
+      <div class="card"><h2 data-t="a_why"></h2><ul class="list" id="a-why"></ul></div>
+      <div class="card"><h2 data-t="a_ge"></h2><p class="sub" data-t="a_ge_sub"></p><ul class="list" id="a-ge"></ul></div>
+    </div>
+    <div class="card" style="margin-top:14px">
+      <h2 data-t="a_model"></h2>
+      <p class="sub" data-t="a_model_sub"></p>
+      <div class="tablewrap"><table id="a-model"></table></div>
+    </div>
+    <h2 style="margin:28px 0 12px" data-t="a_next"></h2>
+    <div class="grid roadmap" id="roadmap"></div>
+  </section>
+</main>
+
+<footer class="wrap" id="foot"></footer>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" aria-modal="true" role="dialog"><div class="in" id="drawer-in"></div></aside>
+<div class="tip" id="tip"></div>
+
+<script>
+"use strict";
+/* ---------------------------------------------------------------- i18n */
+const T = {
+fr:{
+  notice:"Prototype · Rive-Claire, commune fictive : données des organisateurs (Energ-IA Transition, CC BY 4.0)",
+  tagline:"EDM citoyen et souverain",
+  nav_home:"Accueil",
+  h_kicker:"Hackathon Energ-IACK · Défi 2", h_title:"EDM citoyen et souverain",
+  h_lede:"Un EDM (gestion des données énergétiques) suit l'électricité, la chaleur et l'eau de tous les bâtiments d'une commune. Le nôtre appartient à la commune, et plusieurs communes peuvent le partager.",
+  h_defi:"Le défi",
+  defi:[["Le problème","Les communes paient cher des logiciels fermés pour suivre l'énergie de leurs bâtiments."],["La question","Peut-on construire en 2 jours un EDM que la commune possède, maîtrise et partage avec d'autres ?"],["Les pistes","Données par bâtiment et par fluide, objectifs, rapports écrits par l'IA, format ouvert et réutilisable."]],
+  h_now:"Déjà en ligne",
+  now:[["#gestion","Gestion","48 sites, 172 compteurs, 2021–2025 : consommation, CO₂, coûts estimés, qualité des données.","fake"],["#citoyens","Citoyen·ne·s","Page publique : objectifs et changements, en mots simples.","fake"],["#carte","Carte 3D","Rive-Claire (plan des organisateurs) et Genève centre (10 574 bâtiments réels).",""],["#apropos","Comment ça marche","Pourquoi souverain, format des données, sources.",""]],
+  h_fake:"Commune fictive", h_real:"Données publiques réelles",
+  h_next:"Prochaines étapes",
+  next:["Bâtiments de la Ville marqués sur la carte","Un objectif par bâtiment, avec un feu vert / orange / rouge","Chaque chiffre : mesuré, estimé ou calculé","Import CSV : une autre commune charge ses fichiers","Poser une question en langage courant","Prévoir les besoins et les flexibilités","Avis des citoyens par bâtiment"],
+  h_later:"Pour un vrai outil",
+  later:["Vraies données : compteurs et factures","Correction météo (hiver doux ou froid)","Comptes et droits d'accès","Rapport annuel en PDF","Sauvegardes et protection des données"],
+  nav_manage:"Gestion", nav_citizen:"Citoyen·ne·s", nav_about:"Comment ça marche",
+  m_title:"Patrimoine communal", m_lede:"48 sites, 172 compteurs, tous les fluides au même endroit. Cliquez sur un site pour toutes ses données.",
+  k_energy:"Énergie achetée", k_cost:"Coût estimé", k_co2:"CO₂ direct sur site", k_fossil:"Sites chauffés au fossile", k_solar:"Solaire produit",
+  vs_prev:"vs {y}", vs_base:"vs {y} (objectif 2030 : −60 %)", selfuse:"{p} consommé sur place", of_sites:"sur {n}",
+  c_monthly:"Consommation mensuelle", c_monthly_sub:"Énergie achetée par mois, en MWh",
+  c_traj:"Trajectoire CO₂", c_traj_sub:"Tonnes par an, émissions directes sur site (électricité et chauffage à distance comptés 0, convention du jeu), et chemin vers l'objectif 2030",
+  s_elec:"Électricité (réseau)", s_hfossil:"Chaleur fossile", s_hren:"Chauffage à distance et bois", s_target:"Objectif 2030", s_actual:"Réel",
+  t_sites:"Sites", t_sites_sub:"Classés par émissions. Les alertes signalent ce qui mérite une visite.",
+  q_ph:"Rechercher un site…", q_ok:"mesuré", f_all:"Tous", f_fossil:"Fossile", f_alert:"Alertes",
+  h_site:"Site", h_heat:"Chauffage", h_area:"Surface", h_int:"kWh/m²", h_co2:"CO₂ t", h_delta:"vs N−1", h_flag:"",
+  alert:"Alerte", up:"hausse",
+  type_administration:"Administration", type_ecole:"École primaire", type_ecole_piscine:"École avec piscine", type_creche:"Crèche", type_maison_quartier:"Maison de quartier", type_salle_communale:"Salle communale", type_bibliotheque:"Bibliothèque", type_salle_spectacle:"Salle de spectacle", type_installation_sportive:"Installation sportive", type_piscine:"Piscine couverte", type_patinoire:"Patinoire", type_voirie:"Voirie et ateliers", type_caserne:"Caserne de pompiers", type_logements:"Logements communaux", type_abri_pc:"Abri PC", type_cimetiere:"Cimetière", type_parking:"Parking souterrain", type_eclairage_public:"Éclairage public",
+  car_oil:"Mazout", car_gas:"Gaz", car_district:"Chauffage à distance", car_heat_pump:"Pompe à chaleur", car_wood:"Bois (granulés)", car_electric:"Électrique direct", car_none:"Non chauffé",
+  d_area:"Surface (SRE)", d_built:"Construction", d_pv:"Solaire", d_quarter:"Quartier", d_int:"Intensité {y}",
+  d_series:"Historique mensuel 2021–2025", fl_elec_grid:"Électricité réseau", fl_heat:"Chaleur", fl_pv_prod:"Solaire produit", fl_water:"Eau", fl_co2:"CO₂ (kg)",
+  d_meters:"Compteurs ({n})", d_meters_sub:"Cliquez un compteur pour voir ses relevés bruts. Totaux de l'année {y}.", d_csv:"Télécharger les relevés (CSV)",
+  h_meter:"Compteur", h_unit:"Unité", h_level:"Niveau", h_total:"Total {y}", h_flags:"Qualité",
+  d_buildings:"Bâtiments", h_bname:"Bâtiment", h_built:"Construit", h_reno:"Rénové", h_levels:"Niveaux", h_label:"Label", h_homes:"Logements",
+  d_inst:"Installations", h_inst:"Installation", h_power:"Puissance", h_from:"Mise en service", h_to:"Retrait", h_note:"Remarque",
+  q_missing:"manquant", q_estimated:"estimé", q_duplicate:"doublon", d_na:"sans objet", d_back_map:"← Carte", m_open_site:"Toutes les données du site →",
+  d_deliv:"Mazout et granulés : relevés = livraisons, pas consommation mesurée.",
+  d_events:"Journal du site", d_noevents:"Rien à signaler sur la période.",
+  d_onsite:"Électricité réellement consommée sur place ({y})", d_onsite_eq:"soutirage réseau + production solaire − injection = consommation sur place",
+  d_history:"Chauffage", unit_kwh:"kWh", unit_mwh:"MWh", unit_m3:"m³",
+    c_kicker:"Rive-Claire · 25 000 habitant·e·s · bâtiments communaux",
+  c_hero:"En {y}, nos bâtiments publics ont émis <em>{co2} t de CO₂</em> sur place, soit {pc} de moins qu'en {b}.",
+  g_co2:"CO₂ : objectif −60 % d'ici 2030", g_energy:"Énergie : objectif −30 % d'ici 2030", g_fossil:"Sortir du chauffage fossile",
+  g_done:"{p} du chemin parcouru", g_left:"{n} sites encore au mazout ou au gaz",
+  c_numbers:"Les chiffres de l'année, en clair",
+  cs_inhab:"kWh par habitant·e pour les bâtiments communaux", cs_solar:"MWh d'électricité solaire produits sur les toits communaux", cs_cost:"CHF par habitant·e de facture énergétique (prix estimés)",
+  c_changes:"Ce qui a changé", c_changes_sub:"Les chantiers qui font baisser les émissions",
+  a_title:"Un EDM que la commune possède", a_lede:"Pas de licence, pas de boîte noire : des fichiers ouverts, un code lisible, et une IA seulement si la commune le veut.",
+  fl1:"Compteurs et factures", fl1s:"Électricité, chaleur, solaire, eau : télérelève, portail du distributeur, CSV, Excel",
+  fl2:"Format ouvert", fl2s:"Un seul fichier documenté (data.json) que toute commune peut produire",
+  fl3:"EDM de la commune", fl3s:"Cette application, hébergée sur un serveur de la commune ou mutualisé",
+  fl4:"IA en option", fl4s:"Module remplaçable qui ne recevrait que des totaux : fournisseur au choix, suisse ou local",
+  a_why:"Pourquoi « souverain »",
+  why:["Les données restent chez la commune : fichiers ouverts, aucune dépendance à un éditeur.","L'IA serait un module optionnel derrière une API standard : fournisseur au choix ou modèle local, sans toucher au reste.","Si une IA est branchée, seuls des totaux agrégés partent, jamais les relevés bruts.","Le même format sert à toutes les communes : comparer et partager devient possible.","Mesuré, estimé ou calculé : chaque chiffre garde sa provenance (prochaine étape).","Carte de Genève : uniquement des données publiques suisses (SITG, swisstopo), copiées une fois et servies par la commune elle-même.","Prix supposés (absents des données) : électricité 0,27, gaz 0,14, mazout 0,13, chauffage à distance 0,12, granulés 0,09 CHF/kWh ; eau 2,60 CHF/m³."],
+  a_ge:"Le contexte genevois", a_ge_sub:"Sources publiques (Ville de Genève), consultées le 13.11.2026",
+  ge:["Le Service de l'énergie gère environ 800 bâtiments et immeubles.","Objectifs 2030 de la Stratégie climat : −30 % d'énergie et −60 % de CO₂ sur les bâtiments de la Ville.","En 2023, 9 % de la chaleur du patrimoine municipal était renouvelable.","Le rapport d'activité public du service paraît une fois par an, en PDF.","Ailleurs en Suisse, plus de 500 communes utilisent EnerCoach (SuisseEnergie) pour leur comptabilité énergétique."],
+  a_model:"Le modèle de données", a_model_sub:"Ce que contient data.json. N'importe quelle commune peut le remplir depuis ses factures et compteurs.",
+  mh_field:"Champ", mh_what:"Contenu",
+  model:[["sites[]","Identifiant, nom, typologie, quartier, SRE (m²), bâtiments (toutes les colonnes), installations (dates, puissance), solaire (kWc)"],["meters[site][]","Les 172 compteurs : fluide, unité, niveau, parent, relève, 60 valeurs brutes et en kWh, qualité (estimé, manquant, doublon)"],["series[site][fluide]","60 valeurs mensuelles calculées : électricité soutirée, solaire produit et injecté, chaleur (kWh, gaz en PCI), eau (m³), CO₂ (kg), coût (CHF estimé)"],["heating_history","Agent de chauffage et date de changement, déduits des installations"],["events[]","Mises en service, retraits, ouvertures, défauts de données"],["meta","Source et licence, règles de calcul, facteurs CO₂ du jeu, prix supposés, objectifs, climat mensuel"]],
+  a_next:"La suite (pistes pour le hackathon)",
+  road:[["Objectifs par site","Cibles kWh/m² et feu tricolore par bâtiment"],["Rapports IA mensuels","Un rapport par service, en langage métier"],["Questions en langage naturel","« Quelle école consomme le plus de chaleur ? »"],["Import CSV","Glisser ses fichiers : une autre commune démarre en une heure"],["Anticipation","Prévision des besoins, flexibilités, stockage thermique"],["Mutualisation","Plusieurs communes, un même format, des comparaisons équitables"]],
+  foot:"Prototype Energ-IACK 2026 · Défi 2 « EDM citoyen et souverain » · Rive-Claire est une commune fictive ; données : Energ-IA Transition, Energ-IACK 2026 (CC BY 4.0). Prix estimés. CO₂ : émissions directes sur site. Carte de Genève : bâtiments et indices réels (SITG, swisstopo), électricité et eau simulées.",
+  nav_map:"Carte 3D", notice_map:"Prototype · Rive-Claire : données des organisateurs, volumes schématiques · Genève : bâtiments réels (SITG, swisstopo), électricité et eau simulées",
+  m_loading:"Chargement des bâtiments…", m_loading_scene:"Construction de la scène 3D…", m_map_title:"Genève · centre-ville", m_search:"Rechercher une adresse…", m_noresult:"Aucune adresse trouvée", m_filter_hint:"Cliquer une classe pour l'isoler", m_filter_clear:"Cliquer à nouveau pour tout afficher", m_north:"Orienter au nord", m_t_pan:"Glisser pour déplacer", m_t_orbit:"Glisser pour pivoter", m_t_in:"Zoom avant", m_t_out:"Zoom arrière", m_t_rl:"Tourner à gauche", m_t_rr:"Tourner à droite", m_t_top:"Vue d'oiseau (2D)", m_t_tilt:"Vue inclinée (3D)", m_t_full:"Plein écran", m_t_fullx:"Quitter le plein écran", m_sub:"{n} bâtiments réels · données publiques SITG et swisstopo",
+  m_l_idc:"Chaleur (IDC)", m_l_heat:"Chauffage", m_l_solar:"Solaire", m_l_elec:"Électricité", m_l_water:"Eau",
+  m_lg_idc:"Indice de dépense de chaleur", m_lg_heat:"Énergie de chauffage", m_lg_solar:"Potentiel solaire du toit", m_lg_elec:"Consommation d'électricité", m_lg_water:"Consommation d'eau",
+  m_heat_fossil:"Gaz ou mazout", m_heat_district:"Chauffage à distance", m_heat_heatpump:"Pompe à chaleur", m_heat_wood:"Bois", m_heat_electric:"Électrique", m_heat_other:"Autre",
+  m_nodata:"Pas de donnée", m_yr:"an", m_sim:"simulé",
+  m_hint:"Glisser : déplacer · Clic droit : pivoter · Molette : zoom · Flèches : déplacer · Clic : détails", m_hint_touch:"1 doigt : déplacer · 2 doigts : zoom et rotation · Toucher : détails",
+  m_reset:"Recentrer", m_attr:"© swisstopo · © SITG / OCEN · électricité et eau simulées",
+  m_map_rc:"Rive-Claire", m_map_ge:"Genève", m_map_title_rc:"Rive-Claire · patrimoine communal",
+  m_sub_rc:"{n} bâtiments · {s} sites · relevés {y} · plan fictif, volumes schématiques", m_search_rc:"Rechercher un site…",
+  m_attr_rc:"Données : Energ-IA Transition, Energ-IACK 2026 (CC BY 4.0) · volumes déduits de la SRE et des niveaux, agrandis ×{k} · lac, routes et arbres inventés",
+  m_src_rc:"Source : Energ-IA Transition, Energ-IACK 2026 (CC BY 4.0)", m_l_int:"Énergie / m²",
+  m_lg_rc_idc:"Énergie achetée par m² (gaz en PCI)", m_lg_rc_heat:"Chauffage en service", m_lg_rc_solar:"Production solaire mesurée",
+  m_lg_rc_elec:"Électricité consommée sur site", m_lg_rc_water:"Consommation d'eau",
+  m_p_reno:"Rénovation", m_p_label:"Label", m_p_homes:"Logements", m_p_open:"Ouverture", m_p_under:"souterrain", m_na:"sans objet",
+  m_p_since:"depuis {d}", m_p_measured:"Mesuré en {y}", m_p_site:"valeurs du site ({n} bâtiments)", m_p_pvprod:"Solaire produit",
+  m_n_deliv:"Mazout ou granulés : livraisons de l'année, pas une consommation mesurée.", m_n_common:"Logements : électricité des parties communes seulement.",
+  m_p_year:"Construction", m_p_levels:"Niveaux", m_p_height:"Hauteur", m_p_sre:"Surface chauffée (SRE)", m_p_idc:"IDC {y}", m_p_carriers:"Énergies déclarées", m_p_heatkwh:"Chaleur consommée",
+  m_p_boiler:"Chaudière active", m_p_pv:"Production possible", m_p_kwp:"Puissance · surface", m_src:"Sources : SITG (OCEN), swisstopo",
+  months:"mois", colon:" : ", show_all:"Afficher les {n} sites", show_less:"Réduire"
+},
+en:{
+  notice:"Prototype · Rive-Claire, a fictional municipality: organisers' data (Energ-IA Transition, CC BY 4.0)",
+  tagline:"Citizen-owned, sovereign EDM",
+  nav_home:"Welcome",
+  h_kicker:"Energ-IACK hackathon · Challenge 2", h_title:"Citizen and sovereign EDM",
+  h_lede:"An EDM (energy data management) tracks electricity, heat and water for every building a municipality owns. Ours belongs to the municipality, and several municipalities can share it.",
+  h_defi:"The challenge",
+  defi:[["The problem","Municipalities pay a lot for closed software to track their buildings' energy."],["The question","Can we build, in 2 days, an EDM a municipality owns, controls and shares with others?"],["The ideas","Data per building and per utility, targets, AI-written reports, an open format anyone can reuse."]],
+  h_now:"Already online",
+  now:[["#gestion","Manage","48 sites, 172 meters, 2021–2025: use, CO₂, estimated costs, data quality.","fake"],["#citoyens","Citizens","Public page: goals and changes, in plain words.","fake"],["#carte","3D map","Rive-Claire (organisers' plan) and central Geneva (10,574 real buildings).",""],["#apropos","How it works","Why sovereign, data format, sources.",""]],
+  h_fake:"Fictional municipality", h_real:"Real public data",
+  h_next:"Next steps",
+  next:["City-owned buildings marked on the map","A target per building, with a green / amber / red light","Every figure: measured, estimated or computed","CSV import: another municipality loads its files","Ask a question in plain language","Forecast needs and flexibility","Citizen feedback per building"],
+  h_later:"For a real tool",
+  later:["Real data: meters and invoices","Weather correction (mild or cold winter)","Accounts and access rights","Annual report as PDF","Backups and data protection"],
+  nav_manage:"Manage", nav_citizen:"Citizens", nav_about:"How it works",
+  m_title:"Municipal buildings", m_lede:"48 sites, 172 meters, every utility in one place. Click a site for all its data.",
+  k_energy:"Energy purchased", k_cost:"Estimated cost", k_co2:"Direct on-site CO₂", k_fossil:"Sites heated by fossil fuel", k_solar:"Solar produced",
+  vs_prev:"vs {y}", vs_base:"vs {y} (2030 target: −60%)", selfuse:"{p} used on site", of_sites:"of {n}",
+  c_monthly:"Monthly consumption", c_monthly_sub:"Energy purchased per month, in MWh",
+  c_traj:"CO₂ trajectory", c_traj_sub:"Tonnes per year, direct on-site emissions (electricity and district heat count 0, dataset convention), and the path to the 2030 target",
+  s_elec:"Electricity (grid)", s_hfossil:"Fossil heat", s_hren:"District heat and wood", s_target:"2030 target", s_actual:"Actual",
+  t_sites:"Sites", t_sites_sub:"Ranked by emissions. Alerts flag what is worth a visit.",
+  q_ph:"Search a site…", q_ok:"measured", f_all:"All", f_fossil:"Fossil", f_alert:"Alerts",
+  h_site:"Site", h_heat:"Heating", h_area:"Area", h_int:"kWh/m²", h_co2:"CO₂ t", h_delta:"vs Y−1", h_flag:"",
+  alert:"Alert", up:"up",
+  type_administration:"Administration", type_ecole:"Primary school", type_ecole_piscine:"School with pool", type_creche:"Nursery", type_maison_quartier:"Community centre", type_salle_communale:"Community hall", type_bibliotheque:"Library", type_salle_spectacle:"Theatre", type_installation_sportive:"Sports facility", type_piscine:"Indoor pool", type_patinoire:"Ice rink", type_voirie:"Works depot", type_caserne:"Fire station", type_logements:"Municipal housing", type_abri_pc:"Civil-defence shelter", type_cimetiere:"Cemetery", type_parking:"Underground car park", type_eclairage_public:"Street lighting",
+  car_oil:"Heating oil", car_gas:"Gas", car_district:"District heating", car_heat_pump:"Heat pump", car_wood:"Wood pellets", car_electric:"Direct electric", car_none:"Unheated",
+  d_area:"Floor area (ERA)", d_built:"Built", d_pv:"Solar", d_quarter:"District", d_int:"Intensity {y}",
+  d_series:"Monthly history 2021–2025", fl_elec_grid:"Grid electricity", fl_heat:"Heat", fl_pv_prod:"Solar produced", fl_water:"Water", fl_co2:"CO₂ (kg)",
+  d_meters:"Meters ({n})", d_meters_sub:"Click a meter to see its raw readings. Totals for {y}.", d_csv:"Download readings (CSV)",
+  h_meter:"Meter", h_unit:"Unit", h_level:"Level", h_total:"Total {y}", h_flags:"Quality",
+  d_buildings:"Buildings", h_bname:"Building", h_built:"Built", h_reno:"Renovated", h_levels:"Floors", h_label:"Label", h_homes:"Homes",
+  d_inst:"Installations", h_inst:"Installation", h_power:"Capacity", h_from:"In service", h_to:"Removed", h_note:"Note",
+  q_missing:"missing", q_estimated:"estimated", q_duplicate:"duplicate", d_na:"not applicable", d_back_map:"← Map", m_open_site:"All data for this site →",
+  d_deliv:"Oil and pellets: readings are deliveries, not measured use.",
+  d_events:"Site log", d_noevents:"Nothing to report over the period.",
+  d_onsite:"Electricity actually used on site ({y})", d_onsite_eq:"grid draw + solar production − feed-in = on-site use",
+  d_history:"Heating", unit_kwh:"kWh", unit_mwh:"MWh", unit_m3:"m³",
+    c_kicker:"Rive-Claire · 25,000 residents · municipal buildings",
+  c_hero:"In {y}, our public buildings emitted <em>{co2} t of CO₂</em> on site, {pc} less than in {b}.",
+  g_co2:"CO₂: −60% target by 2030", g_energy:"Energy: −30% target by 2030", g_fossil:"Phase out fossil heating",
+  g_done:"{p} of the way there", g_left:"{n} sites still on oil or gas",
+  c_numbers:"This year's numbers, in plain words",
+  cs_inhab:"kWh per resident for municipal buildings", cs_solar:"MWh of solar electricity from municipal roofs", cs_cost:"CHF per resident in energy bills (estimated prices)",
+  c_changes:"What changed", c_changes_sub:"The projects bringing emissions down",
+  a_title:"An EDM the municipality owns", a_lede:"No licence, no black box: open files, readable code, and AI only if the municipality wants it.",
+  fl1:"Meters and bills", fl1s:"Electricity, heat, solar, water: smart meters, utility portal, CSV, Excel",
+  fl2:"Open format", fl2s:"One documented file (data.json) any municipality can produce",
+  fl3:"The municipality's EDM", fl3s:"This app, hosted on a municipal or shared server",
+  fl4:"Optional AI", fl4s:"A swappable module that would receive totals only: any provider, Swiss-hosted or local",
+  a_why:"Why \"sovereign\"",
+  why:["Data stays with the municipality: open files, no vendor lock-in.","AI would be an optional plug-in behind a standard API: any provider or a local model, without touching the rest.","If an AI is plugged in, only aggregated totals go to it, never raw readings.","The same format works for every municipality, so comparing and sharing become possible.","Measured, estimated or computed: every figure keeps its origin (next step).","Geneva map: Swiss public data only (SITG, swisstopo), copied once and served by the municipality itself.","Assumed prices (not in the data): electricity 0.27, gas 0.14, oil 0.13, district heat 0.12, pellets 0.09 CHF/kWh; water 2.60 CHF/m³."],
+  a_ge:"The Geneva context", a_ge_sub:"Public sources (City of Geneva), checked 13.11.2026",
+  ge:["The City's energy service manages about 800 buildings.","Climate Strategy 2030 targets: −30% energy and −60% CO₂ on City-owned buildings.","In 2023, 9% of the heat for municipal buildings was renewable.","The service's public activity report comes out once a year, as a PDF.","Elsewhere in Switzerland, 500+ municipalities use EnerCoach (SwissEnergy) for energy accounting."],
+  a_model:"The data model", a_model_sub:"What data.json holds. Any municipality can fill it from its bills and meters.",
+  mh_field:"Field", mh_what:"Content",
+  model:[["sites[]","ID, name, typology, district, energy reference area (m²), buildings (every column), installations (dates, capacity), solar (kWp)"],["meters[site][]","All 172 meters: utility, unit, level, parent, reading method, 60 raw and kWh values, quality (estimated, missing, duplicate)"],["series[site][utility]","60 computed monthly values: grid electricity, solar produced and fed in, heat (kWh, gas at net value), water (m³), CO₂ (kg), cost (estimated CHF)"],["heating_history","Heating carrier and when it changed, derived from the installations"],["events[]","Commissioning, removals, openings, data defects"],["meta","Source and licence, calculation rules, the dataset's CO₂ factors, assumed prices, targets, monthly climate"]],
+  a_next:"Next steps (ideas for the hackathon)",
+  road:[["Targets per site","kWh/m² targets and a traffic light per building"],["Monthly AI reports","One report per department, in plain operational language"],["Ask in plain language","\"Which school uses the most heat?\""],["CSV import","Drop your files in: another municipality starts in an hour"],["Anticipation","Demand forecasting, flexibility, thermal storage"],["Pooling","Several municipalities, one format, fair comparisons"]],
+  foot:"Energ-IACK 2026 prototype · Challenge 2 \"Citizen-owned, sovereign EDM\" · Rive-Claire is a fictional municipality; data: Energ-IA Transition, Energ-IACK 2026 (CC BY 4.0). Prices estimated. CO₂: direct on-site emissions. Geneva map: real buildings and indices (SITG, swisstopo), electricity and water simulated.",
+  nav_map:"3D map", notice_map:"Prototype · Rive-Claire: organisers' data, schematic volumes · Geneva: real buildings (SITG, swisstopo), electricity and water simulated",
+  m_loading:"Loading buildings…", m_loading_scene:"Building the 3D scene…", m_map_title:"Geneva · city centre", m_search:"Search an address…", m_noresult:"No address found", m_filter_hint:"Click a class to isolate it", m_filter_clear:"Click again to show all", m_north:"Face north", m_t_pan:"Drag to move", m_t_orbit:"Drag to rotate", m_t_in:"Zoom in", m_t_out:"Zoom out", m_t_rl:"Turn left", m_t_rr:"Turn right", m_t_top:"Bird's-eye view (2D)", m_t_tilt:"Tilted view (3D)", m_t_full:"Full screen", m_t_fullx:"Exit full screen", m_sub:"{n} real buildings · public SITG and swisstopo data",
+  m_l_idc:"Heat (IDC)", m_l_heat:"Heating", m_l_solar:"Solar", m_l_elec:"Electricity", m_l_water:"Water",
+  m_lg_idc:"Heat index (IDC)", m_lg_heat:"Heating energy", m_lg_solar:"Rooftop solar potential", m_lg_elec:"Electricity use", m_lg_water:"Water use",
+  m_heat_fossil:"Gas or oil", m_heat_district:"District heating", m_heat_heatpump:"Heat pump", m_heat_wood:"Wood", m_heat_electric:"Electric", m_heat_other:"Other",
+  m_nodata:"No data", m_yr:"yr", m_sim:"simulated",
+  m_hint:"Drag: move · Right-drag: rotate · Wheel: zoom · Arrow keys: move · Click: details", m_hint_touch:"1 finger: move · 2 fingers: zoom and rotate · Tap: details",
+  m_reset:"Reset view", m_attr:"© swisstopo · © SITG / OCEN · electricity and water simulated",
+  m_map_rc:"Rive-Claire", m_map_ge:"Geneva", m_map_title_rc:"Rive-Claire · municipal buildings",
+  m_sub_rc:"{n} buildings · {s} sites · {y} readings · fictional plan, schematic volumes", m_search_rc:"Search a site…",
+  m_attr_rc:"Data: Energ-IA Transition, Energ-IACK 2026 (CC BY 4.0) · volumes from floor area and levels, enlarged ×{k} · lake, roads and trees invented",
+  m_src_rc:"Source: Energ-IA Transition, Energ-IACK 2026 (CC BY 4.0)", m_l_int:"Energy / m²",
+  m_lg_rc_idc:"Energy purchased per m² (gas at net value)", m_lg_rc_heat:"Heating in service", m_lg_rc_solar:"Measured solar output",
+  m_lg_rc_elec:"Electricity used on site", m_lg_rc_water:"Water use",
+  m_p_reno:"Renovated", m_p_label:"Label", m_p_homes:"Homes", m_p_open:"Opened", m_p_under:"underground", m_na:"not applicable",
+  m_p_since:"since {d}", m_p_measured:"Measured in {y}", m_p_site:"site values ({n} buildings)", m_p_pvprod:"Solar produced",
+  m_n_deliv:"Oil or pellets: the year's deliveries, not measured use.", m_n_common:"Housing: electricity of common areas only.",
+  m_p_year:"Built", m_p_levels:"Floors", m_p_height:"Height", m_p_sre:"Heated area (ERA)", m_p_idc:"IDC {y}", m_p_carriers:"Declared energy", m_p_heatkwh:"Heat consumed",
+  m_p_boiler:"Active boiler", m_p_pv:"Possible output", m_p_kwp:"Capacity · area", m_src:"Sources: SITG (OCEN), swisstopo",
+  months:"months", colon:": ", show_all:"Show all {n} sites", show_less:"Show less"
+}};
+let LANG = "fr";
+try { LANG = new URLSearchParams(location.search).get("lang") || localStorage.getItem("edm-lang") || (navigator.language||"fr").slice(0,2); } catch(e) {}
+if (!T[LANG]) LANG = "fr";
+const t = (k, v={}) => { let s = T[LANG][k] ?? T.fr[k] ?? k; if (typeof s === "string") for (const [a,b] of Object.entries(v)) s = s.replaceAll("{"+a+"}", b); return s; };
+const LOC = () => LANG === "fr" ? "fr-CH" : "en-GB";
+const nf = (x, d=0) => new Intl.NumberFormat(LOC(), {maximumFractionDigits:d, minimumFractionDigits:d}).format(x);
+const pct = (x, d=0) => new Intl.NumberFormat(LOC(), {style:"percent", maximumFractionDigits:d, signDisplay:"exceptZero"}).format(x);
+const pct0 = (x) => new Intl.NumberFormat(LOC(), {style:"percent", maximumFractionDigits:0}).format(x);
+const monthName = (m) => new Intl.DateTimeFormat(LOC(), {month:"short"}).format(new Date(2021, m, 1));
+const monthYear = (i) => new Intl.DateTimeFormat(LOC(), {month:"short", year:"numeric"}).format(new Date(2021, i, 1));
+const esc = (s) => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+/* ---------------------------------------------------------------- data */
+let D, R = null, M = {};      // data, AI report, computed metrics
+const YEARS = [2021,2022,2023,2024,2025];
+let SHOWALL = false, YEAR = 2025, FILTER = "all", SORT = {k:"co2", dir:-1}, QUERY = "";
+
+function carrierAt(sid, m){ let c = D.heating_history[sid][0].carrier; for (const h of D.heating_history[sid]) if (m >= h.from_month) c = h.carrier; return c; }
+const isFossil = (c) => D.meta.fossil_carriers.includes(c);
+
+function compute(){
+  // per site, per month: grid, heat (+carrier), co2, cost
+  const sites = {}, years = {};
+  for (const y of YEARS) years[y] = {energy:0, cost:0, co2:0, elec:0, hf:0, hr:0, pv:0, pvself:0, water:0, fossilSites:0, monthly:Array.from({length:12},()=>({elec:0,hf:0,hr:0}))};
+  for (const s of D.sites){
+    const S = D.series[s.id]; const per = {};
+    for (const y of YEARS) per[y] = {energy:0, co2:0, cost:0, heat:0, elec:0, pv:0, pvself:0, water:0};
+    for (let m=0; m<D.meta.months; m++){
+      const y = YEARS[Math.floor(m/12)], mo = m%12, c = carrierAt(s.id, m);
+      const g = S.elec_grid[m], h = S.heat[m], pv = S.pv_prod ? S.pv_prod[m] : 0, inj = S.pv_inject ? S.pv_inject[m] : 0;
+      const co2 = S.co2[m], cost = S.cost[m];
+      const P = per[y]; P.energy += g+h; P.co2 += co2; P.cost += cost; P.heat += h; P.elec += g; P.pv += pv; P.pvself += pv-inj; P.water += S.water[m];
+      const Y = years[y]; Y.energy += g+h; Y.co2 += co2; Y.cost += cost; Y.elec += g; Y.pv += pv; Y.pvself += pv-inj; Y.water += S.water[m];
+      Y.monthly[mo].elec += g;
+      if (isFossil(c)) { Y.hf += h; Y.monthly[mo].hf += h; } else { Y.hr += h; Y.monthly[mo].hr += h; }
+    }
+    for (const y of YEARS){
+      if (isFossil(carrierAt(s.id, (y-2021)*12+11))) years[y].fossilSites++;
+      per[y].int = s.area_m2 ? per[y].energy / s.area_m2 : null;
+    }
+    sites[s.id] = per;
+  }
+  M = {sites, years};
+}
+function alertsFor(sid, y){
+  const out = [];
+  for (const e of D.events) if (e.site === sid && (e.kind === "anomaly" || e.kind === "quality") && (e.months || [e.month]).some(m => Math.floor(m/12) === y-2021)) out.push(e);
+  return out;
+}
+
+/* ---------------------------------------------------------------- charts (plain SVG) */
+const tip = document.getElementById("tip");
+function showTip(ev, html){ tip.innerHTML = html; tip.style.opacity = 1; const w = tip.offsetWidth, h = tip.offsetHeight; let x = ev.clientX + 14, yy = ev.clientY - h - 10; if (x + w > innerWidth - 8) x = ev.clientX - w - 14; if (yy < 8) yy = ev.clientY + 16; tip.style.left = x+"px"; tip.style.top = yy+"px"; }
+function hideTip(){ tip.style.opacity = 0; }
+function niceMax(v){ const p = Math.pow(10, Math.floor(Math.log10(v||1))); for (const k of [1,1.5,2,2.5,3,4,5,6,8,10]) if (k*p >= v) return k*p; return 10*p; }
+const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+const widthOf = (el) => Math.max(300, Math.round(el.clientWidth || el.parentElement.clientWidth || 640));
+function barStack(el, labels, series, fmt){
+  const W = widthOf(el), H = 240, L = 40, B = 24, Tp = 8, n = labels.length, bw = (W-L)/n;
+  const tot = labels.map((_,i)=>series.reduce((a,s)=>a+s.values[i],0)); const max = niceMax(Math.max(...tot));
+  let g = "";
+  for (let k=0;k<=4;k++){ const yv = max*k/4, y = H-B-(H-B-Tp)*k/4; g += `<line class="gridl" x1="${L}" x2="${W}" y1="${y}" y2="${y}"/><text x="${L-6}" y="${y+4}" text-anchor="end">${nf(yv/1000)}</text>`; }
+  labels.forEach((lab,i)=>{
+    let y0 = H-B; const x = L + i*bw + bw*0.18, w = bw*0.64;
+    series.forEach((s,j)=>{ const h = (H-B-Tp)*s.values[i]/max; if (h<=0) return; y0 -= h; g += `<rect x="${x}" y="${y0}" width="${w}" height="${h}" fill="${css(s.color)}" ${j===series.length-1?'rx="3"':''}/>`; });
+    g += `<rect class="hit" data-i="${i}" x="${L+i*bw}" y="${Tp}" width="${bw}" height="${H-B-Tp}" fill="transparent"/>`;
+    if (bw >= 34 || i % 2 === 0) g += `<text x="${L+i*bw+bw/2}" y="${H-6}" text-anchor="middle">${esc(lab)}</text>`;
+  });
+  el.innerHTML = `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img">${g}</svg>`;
+  el.querySelectorAll(".hit").forEach(r => { const i = +r.dataset.i;
+    r.addEventListener("mousemove", ev => showTip(ev, `<b>${esc(labels[i])}</b><br>` + series.map(s=>`${esc(s.name)}${t("colon")}${fmt(s.values[i])}`).join("<br>") + `<br><b>Total${t("colon")}${fmt(tot[i])}</b>`));
+    r.addEventListener("mouseleave", hideTip); });
+}
+function lineChart(el, labels, series, fmt, opts={}){
+  const W = widthOf(el), H = opts.h || 240, L = 44, B = 24, Tp = 10, n = labels.length;
+  const all = series.flatMap(s=>s.values.filter(v=>v!=null)); const max = niceMax(Math.max(...all)*1.05);
+  const X = (i) => L + (W-L-10) * (n===1?0.5:i/(n-1)), Y = (v) => H-B-(H-B-Tp)*v/max;
+  let g = "";
+  for (let k=0;k<=4;k++){ const yv = max*k/4; g += `<line class="gridl" x1="${L}" x2="${W}" y1="${Y(yv)}" y2="${Y(yv)}"/><text x="${L-6}" y="${Y(yv)+4}" text-anchor="end">${opts.ytick?opts.ytick(yv):nf(yv)}</text>`; }
+  const step = opts.labelStep || 1;
+  labels.forEach((lab,i)=>{ if (i%step===0) g += `<text x="${X(i)}" y="${H-6}" text-anchor="middle">${esc(lab)}</text>`; });
+  for (const s of series){
+    const pts = s.values.map((v,i)=>v==null?null:[X(i),Y(v)]).filter(Boolean);
+    const d = pts.map((p,i)=>(i?"L":"M")+p[0].toFixed(1)+" "+p[1].toFixed(1)).join("");
+    g += `<path d="${d}" fill="none" stroke="${css(s.color)}" stroke-width="${s.width||2.2}" ${s.dash?'stroke-dasharray="5 5"':''} stroke-linejoin="round" stroke-linecap="round"/>`;
+    if (s.dots) pts.forEach(p=> g += `<circle cx="${p[0]}" cy="${p[1]}" r="3.5" fill="${css(s.color)}"/>`);
+  }
+  if (opts.markers) for (const mk of opts.markers) g += `<line x1="${X(mk.i)}" x2="${X(mk.i)}" y1="${Tp}" y2="${H-B}" stroke="${css(mk.color||"--muted")}" stroke-dasharray="2 4" opacity=".7"/>`;
+  const bw = (W-L-10)/Math.max(n-1,1);
+  labels.forEach((lab,i)=> g += `<rect class="hit" data-i="${i}" x="${X(i)-bw/2}" y="${Tp}" width="${bw}" height="${H-B-Tp}" fill="transparent"/>`);
+  el.innerHTML = `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img">${g}</svg>`;
+  el.querySelectorAll(".hit").forEach(r => { const i = +r.dataset.i;
+    r.addEventListener("mousemove", ev => showTip(ev, `<b>${esc(opts.tipLabel?opts.tipLabel(i):labels[i])}</b><br>` + series.filter(s=>s.values[i]!=null).map(s=>`${esc(s.name)}${t("colon")}${fmt(s.values[i])}`).join("<br>")));
+    r.addEventListener("mouseleave", hideTip); });
+}
+const legend = (el, items) => el.innerHTML = items.map(([n,c,dash])=>`<span><i style="background:${dash?'transparent':css(c)};${dash?`border:2px dashed ${css(c)};width:12px;height:2px;border-radius:0;vertical-align:3px;border-width:2px 0 0 0`:''}"></i>${esc(n)}</span>`).join("");
+
+/* ---------------------------------------------------------------- views */
+function applyStatic(){
+  document.documentElement.lang = LANG;
+  document.querySelectorAll("[data-t]").forEach(el => el.textContent = t(el.dataset.t));
+  document.querySelectorAll("[data-lang]").forEach(b => b.classList.toggle("on", b.dataset.lang === LANG));
+  document.getElementById("q").placeholder = t("q_ph");
+  document.getElementById("foot").textContent = t("foot");
+}
+function deltaHtml(cur, ref, label, goodIfDown=true){
+  if (!ref) return "";
+  const d = cur/ref - 1, good = goodIfDown ? d < 0 : d > 0;
+  return `<div class="delta ${Math.abs(d)<0.005?'mut':good?'good':'badc'}">${pct(d,1)} <span class="mut" style="font-weight:500">${esc(label)}</span></div>`;
+}
+function renderManager(){
+  const Y = M.years[YEAR], P = M.years[YEAR-1], B0 = M.years[D.meta.baseline_year];
+  document.getElementById("years").innerHTML = YEARS.map(y=>`<button data-y="${y}" class="${y===YEAR?'on':''}">${y}</button>`).join("");
+  const k = [
+    [t("k_energy"), nf(Y.energy/1e6,2), "GWh", P?deltaHtml(Y.energy,P.energy,t("vs_prev",{y:YEAR-1})):""],
+    [t("k_cost"), nf(Y.cost/1e6,2), "M CHF", P?deltaHtml(Y.cost,P.cost,t("vs_prev",{y:YEAR-1})):""],
+    [t("k_co2"), nf(Y.co2/1000), "t", YEAR!==D.meta.baseline_year?deltaHtml(Y.co2,B0.co2,t("vs_base",{y:D.meta.baseline_year})):""],
+    [t("k_fossil"), nf(Y.fossilSites), t("of_sites",{n:D.sites.length}), P&&P.fossilSites!==Y.fossilSites?`<div class="delta good">${Y.fossilSites-P.fossilSites} <span class="mut" style="font-weight:500">${esc(t("vs_prev",{y:YEAR-1}))}</span></div>`:""],
+    [t("k_solar"), nf(Y.pv/1000), "MWh", `<div class="delta mut">${esc(t("selfuse",{p:pct0(Y.pvself/Y.pv)}))}</div>`],
+  ];
+  document.getElementById("kpis").innerHTML = k.map(([l,v,u,d])=>`<div class="card kpi"><div class="lab">${esc(l)}</div><div class="val">${v}<small>${esc(u)}</small></div>${d}</div>`).join("");
+  // monthly
+  const labels = Array.from({length:12},(_,m)=>monthName(m));
+  barStack(document.getElementById("ch-monthly"), labels, [
+    {name:t("s_elec"), color:"--elec", values:Y.monthly.map(x=>x.elec)},
+    {name:t("s_hfossil"), color:"--heat-fossil", values:Y.monthly.map(x=>x.hf)},
+    {name:t("s_hren"), color:"--heat-ren", values:Y.monthly.map(x=>x.hr)},
+  ], v=>nf(v/1000)+" MWh");
+  legend(document.getElementById("lg-monthly"), [[t("s_elec"),"--elec"],[t("s_hfossil"),"--heat-fossil"],[t("s_hren"),"--heat-ren"]]);
+  // trajectory 2021..2030
+  const tl = []; for (let y=2021;y<=2030;y++) tl.push(String(y));
+  const base = B0.co2/1000, goal = base*(1+D.meta.targets["2030"].co2);
+  const actual = tl.map(y=>M.years[+y]?M.years[+y].co2/1000:null);
+  const target = tl.map((y,i)=>base + (goal-base)*i/9);
+  lineChart(document.getElementById("ch-traj"), tl, [
+    {name:t("s_target"), color:"--muted", values:target, dash:true, width:1.6},
+    {name:t("s_actual"), color:"--accent", values:actual, dots:true, width:2.6},
+  ], v=>nf(v)+" t", {h:250, labelStep:3, markers:[{i:YEAR-2021,color:"--accent"}]});
+  legend(document.getElementById("lg-traj"), [[t("s_actual"),"--accent"],[t("s_target"),"--muted",true]]);
+  renderTable();
+}
+function siteRows(){
+  const q = QUERY.trim().toLowerCase();
+  return D.sites.map(s=>{
+    const cur = M.sites[s.id][YEAR], prev = M.sites[s.id][YEAR-1], c = carrierAt(s.id, (YEAR-2021)*12+11);
+    return {s, c, co2:cur.co2/1000, int:cur.int, area:s.area_m2, delta: prev ? cur.energy/prev.energy-1 : null, alerts: alertsFor(s.id, YEAR), name:s.name[LANG]};
+  }).filter(r => (!q || r.name.toLowerCase().includes(q) || t("type_"+r.s.type).toLowerCase().includes(q))
+              && (FILTER==="all" || (FILTER==="fossil" && isFossil(r.c)) || (FILTER==="alert" && (r.alerts.length || (r.delta!=null && r.delta>0.12)))))
+    .sort((a,b)=>{ const k = SORT.k; const va = k==="name"?a.name:a[k], vb = k==="name"?b.name:b[k]; return (va>vb?1:va<vb?-1:0)*SORT.dir; });
+}
+function renderTable(){
+  document.getElementById("fchips").innerHTML = ["all","fossil","alert"].map(f=>`<button class="chip ${FILTER===f?'on':''}" data-f="${f}">${esc(t("f_"+f))}</button>`).join("");
+  const cols = [["name","h_site",""],["c","h_heat","hide-m"],["area","h_area","num hide-m"],["int","h_int","num"],["co2","h_co2","num"],["delta","h_delta","num"]];
+  const ar = (k) => SORT.k===k ? `<span class="ar">${SORT.dir>0?"↑":"↓"}</span>` : "";
+  let h = `<thead><tr>${cols.map(([k,l,c])=>`<th class="${c}" data-k="${k}">${esc(t(l))}${ar(k)}</th>`).join("")}</tr></thead><tbody>`;
+  const rows = siteRows(), lim = SHOWALL || QUERY || FILTER!=="all" ? rows.length : 12;
+  for (const r of rows.slice(0, lim)){
+    const fos = isFossil(r.c), flag = r.alerts.length ? `<span class="pill p-warn">⚠ ${esc(t("alert"))}</span>` : (r.delta!=null && r.delta>0.12 ? `<span class="pill p-warn">↑ ${esc(t("up"))}</span>` : "");
+    h += `<tr data-id="${r.s.id}"><td><div class="tname">${esc(r.name)} ${flag}</div><div class="tsub">${esc(t("type_"+r.s.type))} · ${esc(r.s.quarter)}</div></td>
+      <td class="hide-m"><span class="pill ${fos?'p-fossil':'p-ren'}">${esc(t("car_"+r.c))}</span></td>
+      <td class="num hide-m">${r.area ? nf(r.area) + " m²" : "–"}</td><td class="num ${r.int==null?'mut':''}">${r.int==null?"–":nf(r.int)}</td><td class="num">${nf(r.co2,1)}</td>
+      <td class="num ${r.delta==null?'mut':r.delta<0?'good':'badc'}">${r.delta==null?"–":pct(r.delta)}</td></tr>`;
+  }
+  document.getElementById("sites").innerHTML = h + "</tbody>";
+  const more = document.getElementById("more");
+  more.classList.toggle("hide", rows.length <= 12 || !!QUERY || FILTER!=="all");
+  more.textContent = SHOWALL ? t("show_less") : t("show_all",{n:rows.length});
+}
+function renderAI(elId, part){
+  const el = document.getElementById(elId);
+  if (!R || !R[LANG]) { el.innerHTML = `<div class="mut">${esc(t("ai_missing"))}</div>`; return; }
+  const txt = R[LANG][part];
+  el.innerHTML = `<div class="row"><h2>${esc(t("ai_title",{y:R.year}))}</h2><span class="badge-ai">✦ ${esc(t("ai_badge"))}</span></div>`
+    + txt.split(/\n\s*\n/).map(p=>`<p>${esc(p)}</p>`).join("")
+    + `<div class="meta">${esc(t("ai_meta",{d:new Intl.DateTimeFormat(LOC(),{dateStyle:"long"}).format(new Date(R.generated)), m:R.model}))}</div>`;
+}
+function renderCitizen(){
+  const CY = YEARS[YEARS.length-1], Y = M.years[CY], B0 = M.years[D.meta.baseline_year], inhab = 25000;
+  const dco2 = 1 - Y.co2/B0.co2, den = 1 - Y.energy/B0.energy;
+  document.getElementById("c-hero").innerHTML = t("c_hero",{y:CY, co2:nf(Y.co2/1000), pc:pct0(dco2), b:D.meta.baseline_year});
+  const fos0 = M.years[D.meta.baseline_year].fossilSites;
+  const goals = [
+    [t("g_co2"), dco2/0.60, pct(-dco2), t("g_done",{p:pct0(Math.min(dco2/0.60,1))})],
+    [t("g_energy"), den/0.30, pct(-den), t("g_done",{p:pct0(Math.min(den/0.30,1))})],
+    [t("g_fossil"), (fos0-Y.fossilSites)/fos0, `${Y.fossilSites}/${D.sites.length}`, t("g_left",{n:Y.fossilSites})],
+  ];
+  document.getElementById("goals").innerHTML = goals.map(([l,p,big,foot])=>`<div class="card goal"><div class="lab mut" style="font-size:13px;font-weight:550">${esc(l)}</div><div class="big">${esc(big)}</div><div class="track"><span style="width:${Math.max(2,Math.min(100,p*100))}%"></span></div><div class="foot">${esc(foot)}</div></div>`).join("");
+  const st = [[nf(Y.energy/inhab), t("cs_inhab")],[nf(Y.pv/1000), t("cs_solar")],[nf(Y.cost/inhab), t("cs_cost")]];
+  document.getElementById("cstats").innerHTML = st.map(([n,l])=>`<div class="card stat"><div class="n">${n}</div><div class="t">${esc(l)}</div></div>`).join("");
+  const ch = D.events.filter(e=>e.kind==="heating_change"||e.kind==="installation"||e.kind==="opening").sort((a,b)=>b.month-a.month);
+  const byId = Object.fromEntries(D.sites.map(s=>[s.id,s]));
+  document.getElementById("c-changes").innerHTML = ch.map(e=>`<li><span class="d">${esc(monthYear(e.month))}</span><span><b>${esc(byId[e.site].name[LANG])}</b><br><span class="mut">${esc(e.text[LANG])}</span></span></li>`).join("");
+}
+function renderWelcome(){
+  document.getElementById("h-defi").innerHTML = t("defi").map(([a,b])=>`<div class="card defi"><b>${esc(a)}</b><span>${esc(b)}</span></div>`).join("");
+  document.getElementById("h-now").innerHTML = t("now").map(([h,a,b,k])=>`<a class="card go" href="${h}"><b>${esc(a)} →</b><span>${esc(b)}</span>${k?`<i class="pill ${k==="real"?"p-ren":"p-warn"}" style="font-style:normal">${esc(t("h_"+k))}</i>`:""}</a>`).join("");
+  document.getElementById("h-next").innerHTML = t("next").map(x=>`<li>${esc(x)}</li>`).join("");
+  document.getElementById("h-later").innerHTML = t("later").map(x=>`<li>${esc(x)}</li>`).join("");
+}
+function renderAbout(){
+  document.getElementById("flow").innerHTML = [1,2,3,4].map(i=>`<div class="step"><b>${esc(t("fl"+i))}</b><span>${esc(t("fl"+i+"s"))}</span></div>`).join("");
+  document.getElementById("a-why").innerHTML = t("why").map(x=>`<li>${esc(x)}</li>`).join("");
+  document.getElementById("a-ge").innerHTML = t("ge").map(x=>`<li>${esc(x)}</li>`).join("");
+  document.getElementById("a-model").innerHTML = `<thead><tr><th>${esc(t("mh_field"))}</th><th>${esc(t("mh_what"))}</th></tr></thead><tbody>` + t("model").map(([f,w])=>`<tr style="cursor:default"><td><code>${esc(f)}</code></td><td>${esc(w)}</td></tr>`).join("") + `</tbody>`;
+  document.getElementById("roadmap").innerHTML = t("road").map(([a,b])=>`<div class="card"><b>${esc(a)}</b><span>${esc(b)}</span></div>`).join("");
+}
+
+/* ---------------------------------------------------------------- 3D map (loaded on first visit) */
+let MAP = null, MAP_LOADING = false;
+const isDark = () => { const a = document.documentElement.dataset.theme; return a ? a === "dark" : matchMedia("(prefers-color-scheme: dark)").matches; };
+const MAPS = {rc:{key:"rc", dir:"map-rc/"}, ge:{key:"ge", dir:"map/"}};
+let MAPKEY = "rc";
+try { if (MAPS[localStorage.getItem("energiack-map")]) MAPKEY = localStorage.getItem("energiack-map"); } catch(e) {}
+function switchMap(k){
+  if (MAP_LOADING || !MAPS[k] || k===MAPKEY) return;
+  MAPKEY = k; try { localStorage.setItem("energiack-map", k); } catch(e) {}
+  if (MAP) { MAP.destroy(); MAP = null; }
+  renderMap();
+}
+function renderMap(){
+  if (MAP || MAP_LOADING) return;
+  MAP_LOADING = true;
+  import("./map3d.js?v="+V).then(m => m.initMap(document.getElementById("m3"), {t, nf, esc, showTip, hideTip, dark:isDark, lang:()=>LANG, switchMap}, MAPS[MAPKEY]))
+    .then(x => { MAP = x; MAP_LOADING = false; }).catch(e => { MAP_LOADING = false; document.getElementById("m3").innerHTML = `<div class="m3-loading">${esc(String(e))}</div>`; });
+}
+
+/* ---------------------------------------------------------------- site drawer */
+let FLUID = "heat";
+const MC = {EL:["Électricité, soutirage","Electricity, grid draw"], "EL-INJ":["Électricité, injection","Electricity, feed-in"], PV:["Production solaire","Solar production"],
+  GZ:["Gaz naturel","Natural gas"], CAD:["Chaleur à distance","District heat"], MZ:["Mazout (livraisons)","Heating oil (deliveries)"], GR:["Granulés (livraisons)","Wood pellets (deliveries)"],
+  PAC:["Électricité pompe à chaleur","Heat-pump electricity"], "CH-PAC":["Chaleur produite par la PAC","Heat-pump heat output"], "EL-VENT":["Électricité ventilation","Ventilation electricity"],
+  "EL-FROID":["Électricité froid (glace)","Cooling electricity (ice)"], "EL-BORNES":["Bornes de recharge","EV chargers"], "EL-EAUBASSIN":["Électricité eau du bassin","Pool water electricity"], EAU:["Eau","Water"]};
+const mcode = (id) => id.split("-").slice(1).join("-");
+const mlabel = (m) => LANG==="fr" ? m.label : (MC[mcode(m.id)]||[m.label,m.label])[1];
+const unitOf = (u) => u==="m3" ? "m³" : u;
+const LV = {"général":"main", "sous-compteur":"sub-meter", "livraison":"deliveries", "production":"production", "mesure de chaleur":"heat metering"};
+const lvl = (l) => LANG==="en" && LV[l] || l;
+const loc = (x) => x == null ? "" : typeof x === "object" ? x[LANG] : x;
+function siteCsv(id){
+  const rows = [["mois","id_compteur","valeur","unite","energie_kwh","qualite"]];
+  for (const m of D.meters[id]||[]) for (let i=0;i<D.meta.months;i++){
+    const q = m.q[i], v = m.v[i];
+    if (v==null && !q) continue;
+    const ym = `${2021+Math.floor(i/12)}-${String(i%12+1).padStart(2,"0")}`;
+    rows.push([ym, m.id, v??"", m.unit, m.kwh[i]??"", q ? t("q_"+q) : t("q_ok")]);
+  }
+  const blob = new Blob(["﻿"+rows.map(r=>r.join(";")).join("\n")], {type:"text/csv;charset=utf-8"});
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `rive-claire-${id}.csv`; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+}
+function openSite(id){
+  const s = D.sites.find(x=>x.id===id); if (!s) return;
+  const S = D.series[s.id], cur = M.sites[s.id][YEAR], MS = D.meters[s.id] || [], a0 = (YEAR-2021)*12;
+  const fluids = ["heat","elec_grid"].concat(S.pv_prod?["pv_prod"]:[]).concat(["water","co2"]);
+  if (!fluids.includes(FLUID) && !(FLUID.startsWith("m:") && MS.some(m=>"m:"+m.id===FLUID))) FLUID = "heat";
+  const hist = D.heating_history[s.id].map(h=>`${h.from_month?monthYear(h.from_month)+" → ":""}${t("car_"+h.carrier)}`).join(" · ");
+  const ev = D.events.filter(e=>e.site===s.id);
+  const homes = s.buildings.reduce((x,b)=>x+(b.homes||0),0), reno = Math.max(0,...s.buildings.map(b=>b.renovated||0));
+  let onsite = "";
+  if (S.pv_prod){
+    const sum = (k)=>S[k].slice(a0,a0+12).reduce((x,y)=>x+y,0);
+    const g = sum("elec_grid"), p = sum("pv_prod"), i = sum("pv_inject");
+    onsite = `<div class="card" style="margin-top:14px"><h2>${esc(t("d_onsite",{y:YEAR}))}</h2><p class="sub">${esc(t("d_onsite_eq"))}</p>
+      <div class="eq">${nf(g)} + ${nf(p)} − ${nf(i)} = <b>${nf(g+p-i)} kWh</b></div></div>`;
+  }
+  const flags = (m) => { const c = {}; for (const [i,q] of Object.entries(m.q)) if (Math.floor(i/12)===YEAR-2021) c[q]=(c[q]||0)+1;
+    return Object.entries(c).map(([q,n])=>`<span class="pill p-warn">${esc(t("q_"+q))}${n>1?" ×"+n:""}</span>`).join(" "); };
+  const total = (m) => { const v = m.v.slice(a0,a0+12).filter(x=>x!=null); return v.length ? nf(v.reduce((x,y)=>x+y,0)) : "–"; };
+  const deliv = MS.some(m=>["MZ","GR"].includes(mcode(m.id)));
+  const tbl = (head, rows) => `<div class="tablewrap"><table class="dtab"><thead><tr>${head.map(([h,c])=>`<th class="${c||""}">${esc(h)}</th>`).join("")}</tr></thead><tbody>${rows.join("")}</tbody></table></div>`;
+  document.getElementById("drawer-in").innerHTML = `
+    <div class="row"><div><div class="tsub">${esc(t("type_"+s.type))} · ${esc(s.id)} · ${esc(s.quarter)}</div><h1 style="margin:2px 0 0">${esc(s.name[LANG])}</h1></div><div class="spacer"></div>${VIEW==="carte"?`<button class="chip" id="dback">${esc(t("d_back_map"))}</button>`:""}<button class="x" id="dx" aria-label="close">×</button></div>
+    <div class="facts">
+      <div class="fact"><div class="lab">${esc(t("d_area"))}</div><div class="v">${s.area_m2?nf(s.area_m2)+" m²":esc(t("d_na"))}</div></div>
+      <div class="fact"><div class="lab">${esc(t("d_built"))}</div><div class="v">${s.year_built??"–"}${reno?` <small class="mut">· ${reno}</small>`:""}</div></div>
+      <div class="fact"><div class="lab">${esc(t("d_int",{y:YEAR}))}</div><div class="v">${cur.int==null?esc(t("d_na")):nf(cur.int)+" kWh/m²"}</div></div>
+      <div class="fact"><div class="lab">${esc(t("d_pv"))}</div><div class="v">${s.pv_kwp?nf(s.pv_kwp)+(LANG==="fr"?" kWc":" kWp"):"–"}</div></div>
+    </div>
+    <div class="card"><div class="row" style="margin-bottom:8px"><h2>${esc(FLUID.startsWith("m:")?FLUID.slice(2)+" · "+mlabel(MS.find(m=>"m:"+m.id===FLUID)):t("d_series"))}</h2><div class="spacer"></div>
+      <div class="chips">${fluids.map(f=>`<button class="chip ${f===FLUID?'on':''}" data-fl="${f}">${esc(t("fl_"+f))}</button>`).join("")}</div></div>
+      <div id="ch-site"></div>
+      <p class="sub" style="margin:8px 0 0">${esc(t("d_history"))}${esc(t("colon"))}${esc(hist)}</p>
+      ${deliv?`<p class="sub" style="margin:4px 0 0">${esc(t("d_deliv"))}</p>`:""}
+    </div>
+    ${onsite}
+    <div class="card" style="margin-top:14px"><div class="row" style="margin-bottom:6px"><div><h2>${esc(t("d_meters",{n:MS.length}))}</h2><p class="sub" style="margin:0">${esc(t("d_meters_sub",{y:YEAR}))}</p></div><div class="spacer"></div><button class="chip" id="dcsv">${esc(t("d_csv"))}</button></div>
+      ${tbl([[t("h_meter")],[t("h_unit"),"hide-m"],[t("h_level"),"hide-m"],[t("h_total",{y:YEAR}),"num"],[t("h_flags")]],
+        MS.map(m=>`<tr data-mt="${esc(m.id)}" class="${"m:"+m.id===FLUID?"sel":""}"><td><div class="tname">${esc(m.id)}</div><div class="tsub">${esc(mlabel(m))}</div></td><td class="hide-m">${esc(unitOf(m.unit))}</td><td class="hide-m">${esc(lvl(m.level))}${m.parent?` <span class="mut">⊂ ${esc(m.parent)}</span>`:""}</td><td class="num">${total(m)}</td><td>${flags(m)}</td></tr>`))}
+    </div>
+    <div class="card" style="margin-top:14px"><h2 style="margin-bottom:8px">${esc(t("d_buildings"))}</h2>
+      ${tbl([[t("h_bname")],[t("h_built"),"num"],[t("h_reno"),"num hide-m"],["SRE m²","num"],[t("h_levels"),"num hide-m"],[t("h_label"),"hide-m"]],
+        s.buildings.map(b=>`<tr><td><div class="tname">${esc(b.name)}</div>${b.homes?`<div class="tsub">${nf(b.homes)} ${esc(t("h_homes").toLowerCase())}</div>`:""}${b.note?`<div class="tsub">${esc(loc(b.note))}</div>`:""}</td><td class="num">${b.built??"–"}</td><td class="num hide-m">${b.renovated??"–"}</td><td class="num">${b.sre_m2?nf(b.sre_m2):"–"}</td><td class="num hide-m">${b.levels??"–"}</td><td class="hide-m">${esc(b.label||"–")}</td></tr>`))}
+    </div>
+    ${s.installations.length?`<div class="card" style="margin-top:14px"><h2 style="margin-bottom:8px">${esc(t("d_inst"))}</h2>
+      ${tbl([[t("h_inst")],[t("h_power"),"num"],[t("h_from"),"num"],[t("h_to"),"num"]],
+        s.installations.map(x=>`<tr class="${x.to?"mut":""}"><td><div class="tname">${esc(loc(x.label))}</div>${x.note?`<div class="tsub">${esc(loc(x.note))}</div>`:""}</td><td class="num">${x.kw?nf(x.kw)+(x.type==="pv"?(LANG==="fr"?" kWc":" kWp"):" kW"):"–"}</td><td class="num">${esc(x.from||"–")}</td><td class="num">${esc(x.to||"–")}</td></tr>`))}
+    </div>`:""}
+    <div class="card" style="margin-top:14px"><h2 style="margin-bottom:8px">${esc(t("d_events"))}</h2>
+      ${ev.length?`<ul class="timeline">${ev.map(e=>`<li><span class="d">${esc(monthYear(e.month))}</span><span>${e.kind==="anomaly"||e.kind==="quality"?'<span class="pill p-warn">⚠</span> ':''}${esc(e.text[LANG])}</span></li>`).join("")}</ul>`:`<div class="mut">${esc(t("d_noevents"))}</div>`}
+    </div>
+    <p class="sub" style="margin-top:14px">${esc(D.meta.source)}</p>`;
+  const labels = Array.from({length:60},(_,i)=>i%12===0?String(2021+i/12):"");
+  let values, unit, color, name;
+  if (FLUID.startsWith("m:")) { const m = MS.find(x=>"m:"+x.id===FLUID); values = m.v; unit = " "+unitOf(m.unit); color = {"eau":"--water","électricité solaire":"--solar"}[m.fluid] || (m.fluid.startsWith("électricité")?"--elec":"--heat-fossil"); name = m.id; }
+  else { values = S[FLUID]; unit = FLUID==="water" ? " m³" : FLUID==="co2" ? " kg" : " kWh"; color = {heat:"--heat-fossil", elec_grid:"--elec", pv_prod:"--solar", water:"--water", co2:"--muted"}[FLUID]; name = t("fl_"+FLUID); }
+  lineChart(document.getElementById("ch-site"), labels, [{name, color, values}], v=>nf(v)+unit,
+    {labelStep:1, h:220, tipLabel:i=>monthYear(i), ytick:v=>v>=10000?nf(v/1000)+"k":nf(v), markers:ev.map(e=>({i:e.month, color:e.kind==="anomaly"||e.kind==="quality"?"--warn":"--accent"}))});
+  document.getElementById("dx").onclick = closeSite;
+  const back = document.getElementById("dback"); if (back) back.onclick = closeSite;
+  document.getElementById("dcsv").onclick = () => siteCsv(id);
+  document.querySelectorAll("[data-fl]").forEach(b=>b.onclick=()=>{FLUID=b.dataset.fl; openSite(id);});
+  document.querySelectorAll("[data-mt]").forEach(r=>r.onclick=()=>{FLUID="m:"+r.dataset.mt; openSite(id); document.getElementById("drawer").scrollTo({top:0, behavior:"smooth"});});
+  document.getElementById("drawer").classList.add("open"); document.getElementById("scrim").classList.add("open");
+  if (location.hash !== "#site/"+id) history.replaceState(null,"","#site/"+id);
+}
+function closeSite(){ document.getElementById("drawer").classList.remove("open"); document.getElementById("scrim").classList.remove("open"); if (location.hash.startsWith("#site/")) history.replaceState(null,"","#"+VIEW); }
+
+/* ---------------------------------------------------------------- routing & events */
+let VIEW = "accueil";
+function route(){
+  const h = location.hash.slice(1) || "accueil";
+  if (h.startsWith("site/")) { if (VIEW !== "carte") VIEW = "gestion"; renderAll(); openSite(h.slice(5)); return; }
+  VIEW = ["accueil","gestion","citoyens","carte","apropos"].includes(h) ? h : "accueil";
+  closeSiteSilently(); renderAll();
+}
+function closeSiteSilently(){ document.getElementById("drawer").classList.remove("open"); document.getElementById("scrim").classList.remove("open"); }
+function renderAll(){
+  applyStatic();
+  for (const v of ["accueil","gestion","citoyens","carte","apropos"]) document.getElementById("v-"+v).classList.toggle("hide", v!==VIEW);
+  document.querySelector(".notice").textContent = t(VIEW==="carte" ? "notice_map" : "notice");
+  document.querySelectorAll("nav a").forEach(a=>a.classList.toggle("on", a.dataset.view===VIEW));
+  if (VIEW==="accueil") renderWelcome(); else if (VIEW==="gestion") renderManager(); else if (VIEW==="citoyens") renderCitizen(); else if (VIEW==="carte") renderMap(); else renderAbout();
+  if (MAP) { MAP.relabel(); MAP.theme(); }
+}
+document.addEventListener("click", ev => {
+  const el = ev.target.closest("[data-lang],[data-y],[data-f],th[data-k],tbody tr[data-id]"); if (!el) return;
+  if (el.dataset.lang){ LANG = el.dataset.lang; try{localStorage.setItem("edm-lang",LANG);}catch(e){} const open = document.getElementById("drawer").classList.contains("open"); renderAll(); if (open) openSite(location.hash.slice(6)); }
+  else if (el.dataset.y){ YEAR = +el.dataset.y; renderManager(); }
+  else if (el.dataset.f){ FILTER = el.dataset.f; renderTable(); }
+  else if (el.dataset.k){ SORT = {k:el.dataset.k, dir: SORT.k===el.dataset.k ? -SORT.dir : (el.dataset.k==="name"||el.dataset.k==="c"?1:-1)}; renderTable(); }
+  else if (el.dataset.id){ openSite(el.dataset.id); }
+});
+document.getElementById("more").onclick = () => { SHOWALL = !SHOWALL; renderTable(); };
+document.getElementById("q").addEventListener("input", e => { QUERY = e.target.value; renderTable(); });
+document.getElementById("scrim").onclick = closeSite;
+document.addEventListener("keydown", e => { if (e.key==="Escape") closeSite(); });
+window.addEventListener("hashchange", route);
+let RZ, LASTW = innerWidth;
+window.addEventListener("resize", () => { clearTimeout(RZ); RZ = setTimeout(() => { if (Math.abs(innerWidth - LASTW) < 40 || !D) return; LASTW = innerWidth; const open = document.getElementById("drawer").classList.contains("open"); renderAll(); if (open) openSite(location.hash.slice(6)); }, 200); });
+matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", renderAll);
+
+const V = "7";
+fetch("data.json?v="+V).then(r=>r.json()).then(d => { D = d; compute(); route(); });
+</script>
+</body>
+</html>
