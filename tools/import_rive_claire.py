@@ -14,6 +14,8 @@ data.json (open, documented in the app's "How it works" page):
   meters            site -> every meter: id, label, fluid, unit, level, measure, parent, reading, supplier, start, end,
                     v[60] raw values, kwh[60] (as given), q{month: quality} (estimated, missing, duplicate)
   events[]          installation changes, openings, data-quality findings (site, month, kind, text fr/en)
+  quality           import report from tools/rc_quality.py: rows read / loaded / rejected, re-import test, one entry per
+                    check (rejected rows never reach the figures; flagged rows are loaded and listed for a person to check)
 
 Run: .venv/bin/python tools/import_rive_claire.py [--out prototype/data.json]
 """
@@ -24,6 +26,8 @@ import io
 import json
 import re
 import zipfile
+
+import rc_quality
 from collections import defaultdict
 from pathlib import Path
 
@@ -48,6 +52,8 @@ def table(name):
 
 BAT, INST, CPT, MES = table("batiments"), table("installations"), table("compteurs"), table("mesures")
 CLIM, NORM, TYPO = table("ref-climat"), table("ref-climat-normale"), table("ref-typologies")
+QUALITY, REJ = rc_quality.run({"batiments": BAT, "installations": INST, "compteurs": CPT, "mesures": MES,
+                               "ref-conversion": table("ref-conversion"), "ref-vecteurs": table("ref-vecteurs")})
 START, MONTHS = (2021, 1), 60
 num = lambda s: float(s) if s not in (None, "") else None
 
@@ -83,7 +89,9 @@ for c in CPT:
         "measure": c["mesure"], "parent": c["parent"] or None, "supplier": c["fournisseur_donnee"], "reading": c["releve"],
         "start": c["debut"] or None, "end": c["fin"] or None, "v": [None] * MONTHS, "kwh": [None] * MONTHS, "q": {}}
 dupes = []
-for r in MES:
+for n, r in enumerate(MES):
+    if n in REJ and (r["id_compteur"], r["mois"]) not in seen:   # rejected by the checks (duplicates are marked below)
+        continue
     i = midx(r["mois"])
     if not 0 <= i < MONTHS:
         continue
@@ -222,7 +230,7 @@ data = {
         "climate": clim, "climate_normal": norm,
     },
     "sites": sites, "heating_history": history, "series": series,
-    "meters": {sid: list(ms.values()) for sid, ms in sorted(meters.items())}, "events": events,
+    "meters": {sid: list(ms.values()) for sid, ms in sorted(meters.items())}, "events": events, "quality": QUALITY,
 }
 out = Path(A.out)
 out.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")))
@@ -232,4 +240,5 @@ co2 = {y: sum(sum(s["co2"][(y - 2021) * 12:(y - 2020) * 12]) for s in series.val
 print(f"wrote {out} ({out.stat().st_size // 1024} KB): {len(sites)} sites, {sum(len(m) for m in meters.values())} meters, "
       f"{len(events)} events, duplicates {dupes}")
 print("energy purchased GWh:", {y: round(v / 1e6, 2) for y, v in tot.items()})
+print("quality:", QUALITY["loaded"], "loaded,", QUALITY["rejected"], "rejected,", QUALITY["flagged"], "flagged")
 print("CO2 t:", {y: round(v / 1000) for y, v in co2.items()})

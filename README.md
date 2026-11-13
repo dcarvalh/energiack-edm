@@ -15,11 +15,14 @@ and the same format lets communes compare and share. Built at the Energ-IACK hac
 | **Gestion / Manage** | the commune's energy service | KPIs (energy, estimated cost, CO₂ vs 2030 target, fossil-heated sites, solar), monthly chart by fluid, CO₂ trajectory to 2030, site table with alerts incl. data defects. A site page has its monthly history per fluid, every meter with raw readings and quality flags, buildings, installations, heating history and a CSV download |
 | **Citoyen·ne·s / Citizens** | residents | the year in one sentence, progress to the 2030 targets, numbers per resident, what changed |
 | **Carte 3D / 3D map** | everyone | **Rive-Claire** (default): the challenge's fictional commune as schematic 3D blocks coloured by measured 2025 readings; scenery (lake, roads, trees) is generated. **Geneva**: 10,574 real buildings in central Geneva (SITG footprints and heights) on swisstopo terrain and aerial photo, coloured by heat index, heating energy, solar potential (real) or electricity and water (simulated, flagged) |
+| **Qualité / Data quality** | energy service, other communes | the import report: rows read, loaded, rejected; re-import of the same file adds 0 rows; 17 checks (reference IDs and links, unknown meter, month, unit, value, duplicates, gaps, estimated, negative, spikes, unusual zeros, two-monthly readings, kWh conversion, sub-meter vs parent, meter dates) with every finding, a link to the site and a CSV |
 | **Comment ça marche / How it works** | jury, other communes | why sovereign, the Geneva context with sources, the open data model |
 
 Data: the organisers' fictional **Rive-Claire** dataset (CC BY 4.0): 48 sites, 50 buildings, 64 installations, 172 meters,
 9,437 monthly readings 2021–2025. Rules applied from the dataset's dictionary: on-site electricity = EL + PV − EL-INJ;
 heat = gas × 0.90 (gross → net) + district heat + oil + pellets; oil and pellets are deliveries; duplicate readings: first kept.
+The checks are in `tools/rc_quality.py` (`python tools/rc_quality.py --selftest` injects one defect of each kind).
+Rejected rows never reach the figures; flagged rows are loaded as they are and listed (correcting them is the next step).
 CO₂ = the dataset's factors (direct on-site emissions, so electricity and district heat count 0). Costs use **assumed**
 prices, labelled "estimated". Licences and attributions: `THIRD_PARTY.md`.
 

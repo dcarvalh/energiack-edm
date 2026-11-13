@@ -20,6 +20,13 @@ hosting, and it **complements** existing tools as an aggregator instead of repla
 - The import must be repeatable (re-running it never duplicates records) and list every rejected row with its reason.
   Reference data (buildings, meters, installations) is kept apart from monthly readings.
 - Equipment comes from the installations table, never inferred from consumption.
+- Indicator choices (David, 13 Nov):
+  1. Heat-pump heat at the 5 sites without a heat meter: pump electricity × COP measured at S09/S12, labelled "estimated".
+  2. District heat is not counted as renewable: shown as "no fossil fuel burned on site", with the CO₂ caveat.
+  3. 450 MJ/m²·yr is Geneva's regulatory IDC threshold (REn, amended 13 Apr 2022; > 800 = significant exceedance;
+     ge.ch). Consolidated current text not checked. Our heat index is an approximation: never call it the legal IDC.
+  4. Per-building target = average of the same typology in the dataset, said on screen.
+  5. Policy targets on the site only from public Ville / canton documents, cited.
 
 ## Framing
 - Goal: a multi-fluid EDM replicable across all communes, to avoid costly per-commune licences.
@@ -66,10 +73,10 @@ hosting, and it **complements** existing tools as an aggregator instead of repla
 | Manage, Citizens, How it works (FR/EN) | done, on the real Rive-Claire import |
 | Site page with every meter, quality flags, CSV | done |
 | 3D map · Rive-Claire (default) and Geneva (real SITG/swisstopo) | done; checked headless, not on a real phone GPU |
-| Data quality report on import | **next** (first user story) |
+| Data quality report on import (17 checks, re-import test, CSV) | done (13 Nov); flagged values still in the figures |
 
 ## Next steps (keep the UI minimal; FR and EN for every string)
-1. Quality report page: run every check on import (duplicates, unknown IDs, formats, gaps, estimated readings), list the findings.
+1. Corrections: exclude or replace flagged values with a trace (who, when, why), then recompute.
 2. Indicators: energy per m², CO₂, dynamic COP for heat-pump sites (check the dataset has what COP needs).
 3. Targets per site with a traffic light (kWh/m² vs target).
 4. Videos and QR code for the pitch.

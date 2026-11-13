@@ -29,5 +29,6 @@ What it does and how to run it: `README.md`. Team plan, decisions and next steps
 - SITG values are French only: English labels live in the `EN` table in `map3d.js`.
 - SITG `CAD_BATIMENT_HORSOL.hauteur` = height above ground (m). IDC `indice` is MJ/m²·yr (÷3.6 = kWh/m²); keep the latest
   year per building. Boiler fuel "HEL" = heating oil. Classify heat pump/wood before district heating ("PAC - Comptage de
-  chaleur" contains "chaleur"). Heat-index colour classes (450 / 800 MJ/m²) are display classes, not legal thresholds.
+  chaleur" contains "chaleur"). 450 MJ/m²·yr is Geneva's IDC threshold in the energy regulation (REn, amended 13 Apr 2022; > 800 = significant
+  exceedance). Our heat index only approximates the official IDC (different method): say "approximate" next to it.
 - swisstopo: STAC `data.geo.admin.ch/api/stac/v0.9` (swissALTI3D), WMS `wms.geo.admin.ch` (SWISSIMAGE). All LV95 / EPSG:2056.

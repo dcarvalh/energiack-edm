@@ -63,8 +63,15 @@ S01 Mairie gas → district heat (Jul 2024) · S04 École du Centre oil → grou
 - Duplicate: S03-EL 2024-06 (two identical rows, 2011 kWh).
 - Missing: S25-GZ 2021-05 and 2021-06; S44-EL 2023-11.
 - Estimated (by the utility): S40-EL 2023-05 → 2023-08, flat 1623 kWh.
-- Likely more (drifts, leaks, unit or level traps, e.g. gas and water both in m³): not analysed yet.
+- Found by the import checks (`tools/rc_quality.py`, 13 Nov), not listed by the organisers:
+  - S14-GZ 2022-03: −613 m³ (negative consumption).
+  - S38-GZ 2022-11: 45,361 m³, about 9× the same month in other years (≈ 500 MWh in the totals).
+  - S26-PV and S26-EL-INJ 2023-07 and 2023-08: 0 kWh (solar outage).
+  - S41-EAU 2021: 0 every other month (two-monthly reading entered as monthly).
+- Not flagged on purpose: seasonal shoulder months, the ice rink's short 2022-23 season (documented), oil and pellet
+  months without a delivery.
 
 ## In the app
 Imported on 13 Nov by `tools/import_rive_claire.py` into `prototype/data.json` (replaced our earlier simulation).
-All four defects above are flagged on the site page; S04's August 2022 (no heating system) too.
+The four organiser defects are flagged on the site page; S04's August 2022 (no heating system) too.
+Every check and its findings: the Data quality view (`#qualite`), from `data.json` › `quality`.

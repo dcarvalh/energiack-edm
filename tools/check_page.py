@@ -22,8 +22,8 @@ with sync_playwright() as p:
             page.on("pageerror", lambda e: errs.append(str(e)))
             page.on("console", lambda m: m.type == "error" and errs.append(m.text))
             for lang in ("fr", "en"):
-                for view in ("accueil", "gestion", "citoyens", "carte", "apropos", "site/S01"):
-                    if scheme == "dark" and (dev == "phone" or view not in ("gestion", "accueil")):
+                for view in ("accueil", "gestion", "qualite", "citoyens", "carte", "apropos", "site/S01"):
+                    if scheme == "dark" and (dev == "phone" or view not in ("gestion", "accueil", "qualite")):
                         continue
                     page.goto(f"{URL}?lang={lang}#{view}")
                     page.wait_for_timeout(700)

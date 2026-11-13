@@ -81,6 +81,9 @@ th .ar{opacity:.5;margin-left:3px}
 .p-fossil{background:var(--bad-soft);color:var(--bad)}
 .p-ren{background:var(--accent-soft);color:var(--accent)}
 .p-warn{background:var(--warn-soft);color:var(--warn)}
+.qc{border-top:1px solid var(--line)} .qc summary{display:flex;align-items:center;gap:10px;padding:12px 2px;cursor:pointer;list-style:none}
+.qc summary::-webkit-details-marker{display:none} .qc summary b{flex:1;font-weight:600} .qc summary .n{font-variant-numeric:tabular-nums;color:var(--muted);font-size:14px;min-width:2ch;text-align:right}
+.qc .d{font-size:13px;color:var(--muted);margin:0 0 10px} .qc .tablewrap{margin-bottom:12px} .qc td{padding:8px 10px} .qc tbody tr{cursor:pointer}
 .search{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 12px;min-width:220px}
 .tablewrap{overflow-x:auto;margin:0 -18px;padding:0 18px}
 .chips{display:flex;gap:6px;flex-wrap:wrap}
@@ -220,6 +223,7 @@ footer{color:var(--muted);font-size:12.5px;border-top:1px solid var(--line)}
     <nav>
       <a href="#accueil" data-view="accueil" data-t="nav_home"></a>
       <a href="#gestion" data-view="gestion" data-t="nav_manage"></a>
+      <a href="#qualite" data-view="qualite" data-t="nav_quality"></a>
       <a href="#citoyens" data-view="citoyens" data-t="nav_citizen"></a>
       <a href="#carte" data-view="carte" data-t="nav_map"></a>
       <a href="#apropos" data-view="apropos" data-t="nav_about"></a>
@@ -282,6 +286,22 @@ footer{color:var(--muted);font-size:12.5px;border-top:1px solid var(--line)}
     </div>
   </section>
 
+  <!-- ================= DATA QUALITY ================= -->
+  <section id="v-qualite" class="hide">
+    <h1 data-t="qr_title"></h1>
+    <p class="lede" style="margin-bottom:0" data-t="qr_lede"></p>
+    <div class="grid kpis" id="qr-kpis"></div>
+    <div class="card">
+      <div class="row" style="margin-bottom:8px">
+        <div><h2 data-t="qr_checks"></h2><p class="sub" style="margin:0" data-t="qr_checks_sub"></p></div>
+        <div class="spacer"></div>
+        <button class="chip" id="qr-csv" data-t="qr_csv"></button>
+      </div>
+      <div id="qr-list"></div>
+      <p class="sub" style="margin:12px 0 0" data-t="qr_note"></p>
+    </div>
+  </section>
+
   <!-- ================= CITIZEN ================= -->
   <section id="v-citoyens" class="hide">
     <p class="lede" style="margin:0" data-t="c_kicker"></p>
@@ -335,13 +355,41 @@ fr:{
   h_defi:"L'idée",
   defi:[["Le problème","Les données d'énergie sont dispersées entre plusieurs systèmes, et chaque commune paie ses propres licences."],["Notre réponse","Un seul code ouvert pour toutes les communes, qui rassemble les données par bâtiment, par énergie et par mois."],["Souverain","À terme : hébergement mutualisé et chiffré, ou installation sur le serveur de la commune. Les données restent à elle."]],
   h_who:"Pour qui",
-  who:[["Élu·e·s et gestion du patrimoine","Suivre le plan directeur de l'énergie.","Prévu : indice de dépense de chaleur (IDC), électricité par m², part de chaleur renouvelable (le CO₂ est déjà dans Gestion)"],["Citoyen·ne·s","Voir les progrès sans exposer la consommation de chaque bâtiment.","Prévu : étiquette A–G comparée aux bâtiments du même type, part du solaire consommée sur place, autonomie électrique"],["Responsable énergie","Repérer les dérives et vérifier les données.","Prévu : rapport de qualité complet à l'import, COP des pompes à chaleur, cohérence des sous-compteurs"]],
+  who:[["Élu·e·s et gestion du patrimoine","Suivre le plan directeur de l'énergie.","Prévu : indice de dépense de chaleur (IDC), électricité par m², part de chaleur renouvelable (le CO₂ est déjà dans Gestion)"],["Citoyen·ne·s","Voir les progrès sans exposer la consommation de chaque bâtiment.","Prévu : étiquette A–G comparée aux bâtiments du même type, part du solaire consommée sur place, autonomie électrique"],["Responsable énergie","Repérer les dérives et vérifier les données.","En ligne : rapport de qualité à l'import. Prévu : COP des pompes à chaleur"]],
   h_now:"Déjà en ligne",
-  now:[["#gestion","Gestion","48 sites, 172 compteurs, 2021–2025 : consommation, CO₂, coûts estimés, qualité des données.","fake"],["#citoyens","Citoyen·ne·s","Page publique : objectifs et changements, en mots simples.","fake"],["#carte","Carte 3D","Rive-Claire (plan des organisateurs) et Genève centre (10 574 bâtiments réels).",""],["#apropos","Comment ça marche","Pourquoi souverain, format des données, sources.",""]],
+  now:[["#gestion","Gestion","48 sites, 172 compteurs, 2021–2025 : consommation, CO₂, coûts estimés.","fake"],["#qualite","Qualité des données","17 contrôles à l'import : doublons, trous, formats, unités, valeurs anormales.","fake"],["#citoyens","Citoyen·ne·s","Page publique : objectifs et changements, en mots simples.","fake"],["#carte","Carte 3D","Rive-Claire (plan des organisateurs) et Genève centre (10 574 bâtiments réels).",""],["#apropos","Comment ça marche","Pourquoi souverain, format des données, sources.",""]],
   h_fake:"Commune fictive", h_real:"Données publiques réelles",
   h_next:"Prochaines étapes",
-  next:["Import des données avec un rapport de qualité : doublons, identifiants inconnus, formats, mois manquants, relevés estimés","Ré-importer sans créer de doublons, avec la raison de chaque ligne rejetée","Les indicateurs ci-dessus, calculés sur les données importées","Un objectif par bâtiment avec un feu vert / orange / rouge, modifiable seulement par une personne autorisée","Comptes et droits par profil (maquette sur ce site de démonstration)"],
+  next:["Corriger les points à vérifier de façon traçable","Les indicateurs ci-dessus, calculés sur les données importées","Un objectif par bâtiment avec un feu vert / orange / rouge, modifiable seulement par une personne autorisée","Comptes et droits par profil (maquette sur ce site de démonstration)"],
   nav_manage:"Gestion", nav_citizen:"Citoyen·ne·s", nav_about:"Comment ça marche",
+  nav_quality:"Qualité",
+  qr_title:"Qualité des données", qr_lede:"Chaque ligne des fichiers Rive-Claire est contrôlée avant d'entrer dans les chiffres. Ce rapport vient du dernier import, fait hors ligne par tools/import_rive_claire.py : ce n'est pas encore un import en direct.",
+  qr_k_read:"Relevés lus", qr_k_read_sub:"+ {b} bâtiments, {c} compteurs, {i} installations", qr_k_loaded:"Chargés", qr_k_loaded_sub:"entrent dans les chiffres",
+  qr_k_rejected:"Rejetés", qr_k_rejected_sub:"jamais dans les chiffres", qr_k_flagged:"À vérifier", qr_k_flagged_sub:"chargés, signalés", qr_k_reimport:"Ré-import du même fichier",
+  qr_k_reimport_sub:"{s} identiques, {c} conflit(s)", qr_rows:"lignes", qr_row:"ligne", qr_points:"points",
+  qr_checks:"Les contrôles", qr_checks_sub:"Cliquez sur un contrôle pour le détail, puis sur une ligne pour ouvrir le site.", qr_csv:"Télécharger (CSV)",
+  qr_note:"Les points « à vérifier » restent dans les chiffres pour l'instant. Les corriger de façon traçable est l'étape suivante.",
+  qr_ok:"OK", qr_rej:"Rejeté", qr_flag:"À vérifier", qr_h_meter:"Compteur", qr_h_month:"Mois", qr_h_value:"Valeur", qr_h_detail:"Détail", qr_more:"… et {n} de plus",
+  qr_x_same:"copie identique, ignorée", qr_x_diff:"première valeur {v} gardée", qr_x_marked:"marqué manquant dans le fichier", qr_x_no_row:"aucune ligne pour ce mois",
+  qr_x_spike:"même mois, autres années : {x}", qr_x_conv:"attendu {x} kWh", qr_x_sub:"parent sur site : {x} kWh", qr_x_window:"compteur actif {x}",
+  qr_x_period:"hors période 2021–2025", qr_x_format:"format : {x}",
+  qc_ref_ids:"Identifiants de référence", qd_ref_ids:"Bâtiments, compteurs, installations : identifiant vide ou en double.",
+  qc_ref_links:"Liens de référence", qd_ref_links:"Compteur ou installation lié à un site inconnu, ou compteur parent inconnu.",
+  qc_unknown_meter:"Compteur inconnu", qd_unknown_meter:"Relevé d'un compteur absent de la liste des compteurs. Ligne rejetée.",
+  qc_bad_month:"Mois invalide", qd_bad_month:"Mois mal écrit (AAAA-MM) ou hors de la période 2021–2025. Ligne rejetée.",
+  qc_link_mismatch:"Relevé incohérent avec son compteur", qd_link_mismatch:"Le site, le fluide ou le type de mesure diffère de celui du compteur. Ligne rejetée.",
+  qc_unit_mismatch:"Unité différente", qd_unit_mismatch:"L'unité du relevé n'est pas celle du compteur (par ex. kWh au lieu de m³). Ligne rejetée.",
+  qc_bad_value:"Valeur illisible", qd_bad_value:"Valeur vide ou non numérique sur un relevé dit mesuré, ou qualité inconnue. Ligne rejetée.",
+  qc_duplicate:"Doublon", qd_duplicate:"Même compteur et même mois deux fois : la première ligne est gardée, la suivante rejetée.",
+  qc_missing:"Mois manquant", qd_missing:"Mois sans valeur pendant la période active du compteur. Les livraisons (mazout, granulés) ne comptent pas.",
+  qc_estimated:"Valeur estimée", qd_estimated:"Valeur estimée par le distributeur, pas relevée.",
+  qc_negative:"Valeur négative", qd_negative:"Consommation négative : impossible pour un compteur de consommation.",
+  qc_spike:"Pic anormal", qd_spike:"Plus de 5 fois le même mois des autres années et plus de 3 fois les mois voisins.",
+  qc_zero_run:"Zéros inhabituels", qd_zero_run:"Au moins 2 mois à zéro alors que les autres années ont des valeurs : panne ou relevé bloqué.",
+  qc_alternating:"Relevé un mois sur deux", qd_alternating:"Zéro un mois sur deux : relevé bimestriel saisi comme mensuel.",
+  qc_conversion:"Conversion en kWh", qd_conversion:"Le kWh du fichier ne correspond pas à la valeur × le facteur de conversion du mois.",
+  qc_submeter:"Sous-compteurs plus grands que le parent", qd_submeter:"La somme des sous-compteurs dépasse la consommation sur site du parent (soutirage + solaire − injection).",
+  qc_out_of_window:"Hors des dates du compteur", qd_out_of_window:"Relevé avant la mise en service ou après le retrait du compteur.",
   m_title:"Patrimoine communal", m_lede:"48 sites, 172 compteurs, tous les fluides au même endroit. Cliquez sur un site pour toutes ses données.",
   k_energy:"Énergie achetée", k_cost:"Coût estimé", k_co2:"CO₂ direct sur site", k_fossil:"Sites chauffés au fossile", k_solar:"Solaire produit",
   vs_prev:"vs {y}", vs_base:"vs {y} (objectif 2030 : −60 %)", selfuse:"{p} consommé sur place", of_sites:"sur {n}",
@@ -383,7 +431,7 @@ fr:{
   ge:["Le Service de l'énergie gère environ 800 bâtiments et immeubles.","Objectifs 2030 de la Stratégie climat : −30 % d'énergie et −60 % de CO₂ sur les bâtiments de la Ville.","En 2023, 9 % de la chaleur du patrimoine municipal était renouvelable.","Le rapport d'activité public du service paraît une fois par an, en PDF.","Ailleurs en Suisse, plus de 500 communes utilisent EnerCoach (SuisseEnergie) pour leur comptabilité énergétique."],
   a_model:"Le modèle de données", a_model_sub:"Ce que contient data.json. N'importe quelle commune peut le remplir depuis ses factures et compteurs.",
   mh_field:"Champ", mh_what:"Contenu",
-  model:[["sites[]","Identifiant, nom, typologie, quartier, SRE (m²), bâtiments (toutes les colonnes), installations (dates, puissance), solaire (kWc)"],["meters[site][]","Les 172 compteurs : fluide, unité, niveau, parent, relève, 60 valeurs brutes et en kWh, qualité (estimé, manquant, doublon)"],["series[site][fluide]","60 valeurs mensuelles calculées : électricité soutirée, solaire produit et injecté, chaleur (kWh, gaz en PCI), eau (m³), CO₂ (kg), coût (CHF estimé)"],["heating_history","Agent de chauffage et date de changement, déduits des installations"],["events[]","Mises en service, retraits, ouvertures, défauts de données"],["meta","Source et licence, règles de calcul, facteurs CO₂ du jeu, prix supposés, objectifs, climat mensuel"]],
+  model:[["sites[]","Identifiant, nom, typologie, quartier, SRE (m²), bâtiments (toutes les colonnes), installations (dates, puissance), solaire (kWc)"],["meters[site][]","Les 172 compteurs : fluide, unité, niveau, parent, relève, 60 valeurs brutes et en kWh, qualité (estimé, manquant, doublon)"],["series[site][fluide]","60 valeurs mensuelles calculées : électricité soutirée, solaire produit et injecté, chaleur (kWh, gaz en PCI), eau (m³), CO₂ (kg), coût (CHF estimé)"],["heating_history","Agent de chauffage et date de changement, déduits des installations"],["events[]","Mises en service, retraits, ouvertures, défauts de données"],["quality","Rapport d'import : lignes lues, chargées, rejetées, test de ré-import, et chaque contrôle avec ses constats"],["meta","Source et licence, règles de calcul, facteurs CO₂ du jeu, prix supposés, objectifs, climat mensuel"]],
   a_next:"La suite (pistes pour le hackathon)",
   road:[["Objectifs par site","Cibles kWh/m² et feu tricolore par bâtiment"],["Rapports IA mensuels","Un rapport par service, en langage métier"],["Questions en langage naturel","« Quelle école consomme le plus de chaleur ? »"],["Import CSV","Glisser ses fichiers : une autre commune démarre en une heure"],["Anticipation","Prévision des besoins, flexibilités, stockage thermique"],["Mutualisation","Plusieurs communes, un même format, des comparaisons équitables"]],
   foot:"openEDM · prototype Energ-IACK 2026 · Défi 2 « EDM citoyen et souverain » · Rive-Claire est une commune fictive ; données : Energ-IA Transition, Energ-IACK 2026 (CC BY 4.0). Prix estimés. CO₂ : émissions directes sur site. Carte de Genève : bâtiments et indices réels (SITG, swisstopo), électricité et eau simulées.",
@@ -417,13 +465,41 @@ en:{
   h_defi:"The idea",
   defi:[["The problem","Energy data is scattered across several systems, and every municipality pays for its own licences."],["Our answer","One open codebase for every municipality, bringing data together by building, energy source and month."],["Sovereign","The goal: shared, encrypted hosting or an install on the municipality's own server. The data stays theirs."]],
   h_who:"Who it's for",
-  who:[["Elected officials and portfolio managers","Track the energy master plan.","Planned: heat index (IDC), electricity per m², renewable share of heat (CO₂ is already in Manage)"],["Citizens","See progress without exposing each building's consumption.","Planned: A–G label against similar buildings, share of solar used on site, electricity self-sufficiency"],["Energy manager","Spot drifts and check the data.","Planned: full quality report on import, heat-pump COP, sub-meter consistency"]],
+  who:[["Elected officials and portfolio managers","Track the energy master plan.","Planned: heat index (IDC), electricity per m², renewable share of heat (CO₂ is already in Manage)"],["Citizens","See progress without exposing each building's consumption.","Planned: A–G label against similar buildings, share of solar used on site, electricity self-sufficiency"],["Energy manager","Spot drifts and check the data.","Online: quality report on import. Planned: heat-pump COP"]],
   h_now:"Already online",
-  now:[["#gestion","Manage","48 sites, 172 meters, 2021–2025: use, CO₂, estimated costs, data quality.","fake"],["#citoyens","Citizens","Public page: goals and changes, in plain words.","fake"],["#carte","3D map","Rive-Claire (organisers' plan) and central Geneva (10,574 real buildings).",""],["#apropos","How it works","Why sovereign, data format, sources.",""]],
+  now:[["#gestion","Manage","48 sites, 172 meters, 2021–2025: use, CO₂, estimated costs.","fake"],["#qualite","Data quality","17 checks on import: duplicates, gaps, formats, units, abnormal values.","fake"],["#citoyens","Citizens","Public page: goals and changes, in plain words.","fake"],["#carte","3D map","Rive-Claire (organisers' plan) and central Geneva (10,574 real buildings).",""],["#apropos","How it works","Why sovereign, data format, sources.",""]],
   h_fake:"Fictional municipality", h_real:"Real public data",
   h_next:"Next steps",
-  next:["Data import with a quality report: duplicates, unknown IDs, formats, missing months, estimated readings","Re-import without creating duplicates, with the reason for every rejected row","The indicators above, computed on the imported data","A target per building with a green / amber / red light, editable only by an authorised person","Accounts and rights per profile (mock-up on this demo site)"],
+  next:["Correct the points to check, with a trace","The indicators above, computed on the imported data","A target per building with a green / amber / red light, editable only by an authorised person","Accounts and rights per profile (mock-up on this demo site)"],
   nav_manage:"Manage", nav_citizen:"Citizens", nav_about:"How it works",
+  nav_quality:"Data quality",
+  qr_title:"Data quality", qr_lede:"Every row of the Rive-Claire files is checked before it reaches the figures. This report comes from the last import, run offline by tools/import_rive_claire.py: it is not a live upload yet.",
+  qr_k_read:"Readings read", qr_k_read_sub:"+ {b} buildings, {c} meters, {i} installations", qr_k_loaded:"Loaded", qr_k_loaded_sub:"used in the figures",
+  qr_k_rejected:"Rejected", qr_k_rejected_sub:"never in the figures", qr_k_flagged:"To check", qr_k_flagged_sub:"loaded, flagged", qr_k_reimport:"Re-import of the same file",
+  qr_k_reimport_sub:"{s} unchanged, {c} conflict(s)", qr_rows:"rows", qr_row:"row", qr_points:"points",
+  qr_checks:"The checks", qr_checks_sub:"Click a check for the details, then a row to open the site.", qr_csv:"Download (CSV)",
+  qr_note:"Points \"to check\" stay in the figures for now. Correcting them, with a trace, is the next step.",
+  qr_ok:"OK", qr_rej:"Rejected", qr_flag:"To check", qr_h_meter:"Meter", qr_h_month:"Month", qr_h_value:"Value", qr_h_detail:"Detail", qr_more:"… and {n} more",
+  qr_x_same:"identical copy, ignored", qr_x_diff:"first value {v} kept", qr_x_marked:"marked missing in the file", qr_x_no_row:"no row for this month",
+  qr_x_spike:"same month, other years: {x}", qr_x_conv:"expected {x} kWh", qr_x_sub:"parent on site: {x} kWh", qr_x_window:"meter active {x}",
+  qr_x_period:"outside 2021–2025", qr_x_format:"format: {x}",
+  qc_ref_ids:"Reference IDs", qd_ref_ids:"Buildings, meters, installations: empty or duplicate ID.",
+  qc_ref_links:"Reference links", qd_ref_links:"Meter or installation linked to an unknown site, or unknown parent meter.",
+  qc_unknown_meter:"Unknown meter", qd_unknown_meter:"Reading for a meter that is not in the meter list. Row rejected.",
+  qc_bad_month:"Invalid month", qd_bad_month:"Month not written YYYY-MM, or outside 2021–2025. Row rejected.",
+  qc_link_mismatch:"Reading does not match its meter", qd_link_mismatch:"Site, energy type or measure differs from the meter's. Row rejected.",
+  qc_unit_mismatch:"Different unit", qd_unit_mismatch:"The reading's unit is not the meter's (e.g. kWh instead of m³). Row rejected.",
+  qc_bad_value:"Unreadable value", qd_bad_value:"Empty or non-numeric value on a reading marked measured, or unknown quality. Row rejected.",
+  qc_duplicate:"Duplicate", qd_duplicate:"Same meter and month twice: the first row is kept, the next one rejected.",
+  qc_missing:"Missing month", qd_missing:"Month with no value while the meter is active. Deliveries (oil, pellets) do not count.",
+  qc_estimated:"Estimated value", qd_estimated:"Value estimated by the utility, not read.",
+  qc_negative:"Negative value", qd_negative:"Negative consumption: impossible for a consumption meter.",
+  qc_spike:"Abnormal spike", qd_spike:"More than 5 times the same month in other years and more than 3 times the months around it.",
+  qc_zero_run:"Unusual zeros", qd_zero_run:"At least 2 months at zero while other years have values: an outage or a stuck reading.",
+  qc_alternating:"Read every other month", qd_alternating:"Zero every other month: a two-monthly reading entered as monthly.",
+  qc_conversion:"Conversion to kWh", qd_conversion:"The file's kWh does not match the value × the month's conversion factor.",
+  qc_submeter:"Sub-meters larger than their parent", qd_submeter:"Sub-meters add up to more than the parent's on-site use (grid + solar − export).",
+  qc_out_of_window:"Outside the meter's dates", qd_out_of_window:"Reading before the meter was installed or after it was removed.",
   m_title:"Municipal buildings", m_lede:"48 sites, 172 meters, every utility in one place. Click a site for all its data.",
   k_energy:"Energy purchased", k_cost:"Estimated cost", k_co2:"Direct on-site CO₂", k_fossil:"Sites heated by fossil fuel", k_solar:"Solar produced",
   vs_prev:"vs {y}", vs_base:"vs {y} (2030 target: −60%)", selfuse:"{p} used on site", of_sites:"of {n}",
@@ -465,7 +541,7 @@ en:{
   ge:["The City's energy service manages about 800 buildings.","Climate Strategy 2030 targets: −30% energy and −60% CO₂ on City-owned buildings.","In 2023, 9% of the heat for municipal buildings was renewable.","The service's public activity report comes out once a year, as a PDF.","Elsewhere in Switzerland, 500+ municipalities use EnerCoach (SwissEnergy) for energy accounting."],
   a_model:"The data model", a_model_sub:"What data.json holds. Any municipality can fill it from its bills and meters.",
   mh_field:"Field", mh_what:"Content",
-  model:[["sites[]","ID, name, typology, district, energy reference area (m²), buildings (every column), installations (dates, capacity), solar (kWp)"],["meters[site][]","All 172 meters: utility, unit, level, parent, reading method, 60 raw and kWh values, quality (estimated, missing, duplicate)"],["series[site][utility]","60 computed monthly values: grid electricity, solar produced and fed in, heat (kWh, gas at net value), water (m³), CO₂ (kg), cost (estimated CHF)"],["heating_history","Heating carrier and when it changed, derived from the installations"],["events[]","Commissioning, removals, openings, data defects"],["meta","Source and licence, calculation rules, the dataset's CO₂ factors, assumed prices, targets, monthly climate"]],
+  model:[["sites[]","ID, name, typology, district, energy reference area (m²), buildings (every column), installations (dates, capacity), solar (kWp)"],["meters[site][]","All 172 meters: utility, unit, level, parent, reading method, 60 raw and kWh values, quality (estimated, missing, duplicate)"],["series[site][utility]","60 computed monthly values: grid electricity, solar produced and fed in, heat (kWh, gas at net value), water (m³), CO₂ (kg), cost (estimated CHF)"],["heating_history","Heating carrier and when it changed, derived from the installations"],["events[]","Commissioning, removals, openings, data defects"],["quality","Import report: rows read, loaded, rejected, re-import test, and every check with its findings"],["meta","Source and licence, calculation rules, the dataset's CO₂ factors, assumed prices, targets, monthly climate"]],
   a_next:"Next steps (ideas for the hackathon)",
   road:[["Targets per site","kWh/m² targets and a traffic light per building"],["Monthly AI reports","One report per department, in plain operational language"],["Ask in plain language","\"Which school uses the most heat?\""],["CSV import","Drop your files in: another municipality starts in an hour"],["Anticipation","Demand forecasting, flexibility, thermal storage"],["Pooling","Several municipalities, one format, fair comparisons"]],
   foot:"openEDM · Energ-IACK 2026 prototype · Challenge 2 \"Citizen-owned, sovereign EDM\" · Rive-Claire is a fictional municipality; data: Energ-IA Transition, Energ-IACK 2026 (CC BY 4.0). Prices estimated. CO₂: direct on-site emissions. Geneva map: real buildings and indices (SITG, swisstopo), electricity and water simulated.",
@@ -690,6 +766,44 @@ function renderWelcome(){
   document.getElementById("h-next").innerHTML = t("next").map(x=>`<li>${esc(x)}</li>`).join("");
   document.getElementById("h-who").innerHTML = t("who").map(([a,b,c])=>`<div class="card defi"><b>${esc(a)}</b><span>${esc(b)}</span><span class="sub" style="display:block;margin:8px 0 0">${esc(c)}</span></div>`).join("");
 }
+function qrMonth(mo){ if (!/^\d{4}-\d{2}$/.test(mo||"")) return mo||"–"; const [y,m] = mo.split("-").map(Number); const i = (y-2021)*12+m-1; return i>=0 && i<D.meta.months ? monthYear(i) : mo; }
+function qrUnit(it){ const m = (D.meters[it.s]||[]).find(x=>x.id===it.m); return m ? m.unit : ""; }
+function qrDetail(code, it){
+  const x = it.x;
+  if (code==="duplicate") return x==="same" ? t("qr_x_same") : t("qr_x_diff",{v:x});
+  if (code==="missing") return t(x==="marked" ? "qr_x_marked" : "qr_x_no_row");
+  if (code==="spike") return t("qr_x_spike",{x:nf(x)});
+  if (code==="conversion") return t("qr_x_conv",{x:nf(x)});
+  if (code==="submeter") return t("qr_x_sub",{x:nf(x)});
+  if (code==="out_of_window") return t("qr_x_window",{x});
+  if (code==="bad_month") return x==="period" ? t("qr_x_period") : t("qr_x_format",{x});
+  return x==null ? "" : String(x);
+}
+function renderQuality(){
+  const Q = D.quality, R = Q.reimport.second;
+  const rw = (n) => t(n===1 ? "qr_row" : "qr_rows");
+  const k = [
+    [t("qr_k_read"), nf(Q.read.mesures), rw(Q.read.mesures), t("qr_k_read_sub",{b:Q.read.batiments,c:Q.read.compteurs,i:Q.read.installations})],
+    [t("qr_k_loaded"), nf(Q.loaded), rw(Q.loaded), t("qr_k_loaded_sub")],
+    [t("qr_k_rejected"), nf(Q.rejected), rw(Q.rejected), t("qr_k_rejected_sub")],
+    [t("qr_k_flagged"), nf(Q.flagged), t("qr_points"), t("qr_k_flagged_sub")],
+    [t("qr_k_reimport"), "+"+nf(R.added), rw(R.added), t("qr_k_reimport_sub",{s:nf(R.same),c:R.conflicts})],
+  ];
+  document.getElementById("qr-kpis").innerHTML = k.map(([l,v,u,d])=>`<div class="card kpi"><div class="lab">${esc(l)}</div><div class="val">${v}<small>${esc(u)}</small></div><div class="delta mut">${esc(d)}</div></div>`).join("");
+  document.getElementById("qr-list").innerHTML = Q.checks.map(c=>{
+    const pill = !c.n ? `<span class="pill p-ren">${esc(t("qr_ok"))}</span>` : c.kind==="rejected" ? `<span class="pill p-fossil">${esc(t("qr_rej"))}</span>` : `<span class="pill p-warn">${esc(t("qr_flag"))}</span>`;
+    const rows = c.items.map(it=>`<tr ${it.s && D.meters[it.s] ? `data-id="${esc(it.s)}"` : ""}><td>${esc(it.m||"")}</td><td>${esc(qrMonth(it.mo))}</td><td class="num">${it.v==null?"–":nf(it.v)+" "+esc(qrUnit(it))}</td><td>${esc(qrDetail(c.code,it))}</td></tr>`).join("");
+    const more = c.n > c.items.length ? `<p class="sub">${esc(t("qr_more",{n:c.n-c.items.length}))}</p>` : "";
+    const table = c.n ? `<div class="tablewrap"><table><thead><tr><th>${esc(t("qr_h_meter"))}</th><th>${esc(t("qr_h_month"))}</th><th class="num">${esc(t("qr_h_value"))}</th><th>${esc(t("qr_h_detail"))}</th></tr></thead><tbody>${rows}</tbody></table></div>${more}` : "";
+    return `<details class="qc"><summary>${pill}<b>${esc(t("qc_"+c.code))}</b><span class="n">${c.n}</span></summary><p class="d">${esc(t("qd_"+c.code))}</p>${table}</details>`;
+  }).join("");
+}
+function qualityCsv(){
+  const rows = [["controle","statut","compteur","site","mois","valeur","detail"]];
+  for (const c of D.quality.checks) for (const it of c.items) rows.push([t("qc_"+c.code), c.kind==="rejected"?t("qr_rej"):t("qr_flag"), it.m||"", it.s||"", it.mo||"", it.v??"", qrDetail(c.code,it).replaceAll(";",",")]);
+  const blob = new Blob(["﻿"+rows.map(r=>r.join(";")).join("\n")], {type:"text/csv;charset=utf-8"});
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "rive-claire-qualite.csv"; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+}
 function renderAbout(){
   document.getElementById("flow").innerHTML = [1,2,3,4].map(i=>`<div class="step"><b>${esc(t("fl"+i))}</b><span>${esc(t("fl"+i+"s"))}</span></div>`).join("");
   document.getElementById("a-why").innerHTML = t("why").map(x=>`<li>${esc(x)}</li>`).join("");
@@ -811,17 +925,17 @@ function closeSite(){ document.getElementById("drawer").classList.remove("open")
 let VIEW = "accueil";
 function route(){
   const h = location.hash.slice(1) || "accueil";
-  if (h.startsWith("site/")) { if (VIEW !== "carte") VIEW = "gestion"; renderAll(); openSite(h.slice(5)); return; }
-  VIEW = ["accueil","gestion","citoyens","carte","apropos"].includes(h) ? h : "accueil";
+  if (h.startsWith("site/")) { if (VIEW !== "carte" && VIEW !== "qualite") VIEW = "gestion"; renderAll(); openSite(h.slice(5)); return; }
+  VIEW = ["accueil","gestion","qualite","citoyens","carte","apropos"].includes(h) ? h : "accueil";
   closeSiteSilently(); renderAll();
 }
 function closeSiteSilently(){ document.getElementById("drawer").classList.remove("open"); document.getElementById("scrim").classList.remove("open"); }
 function renderAll(){
   applyStatic();
-  for (const v of ["accueil","gestion","citoyens","carte","apropos"]) document.getElementById("v-"+v).classList.toggle("hide", v!==VIEW);
+  for (const v of ["accueil","gestion","qualite","citoyens","carte","apropos"]) document.getElementById("v-"+v).classList.toggle("hide", v!==VIEW);
   document.querySelector(".notice").textContent = t(VIEW==="carte" ? "notice_map" : "notice");
   document.querySelectorAll("nav a").forEach(a=>a.classList.toggle("on", a.dataset.view===VIEW));
-  if (VIEW==="accueil") renderWelcome(); else if (VIEW==="gestion") renderManager(); else if (VIEW==="citoyens") renderCitizen(); else if (VIEW==="carte") renderMap(); else renderAbout();
+  if (VIEW==="accueil") renderWelcome(); else if (VIEW==="gestion") renderManager(); else if (VIEW==="qualite") renderQuality(); else if (VIEW==="citoyens") renderCitizen(); else if (VIEW==="carte") renderMap(); else renderAbout();
   if (MAP) { MAP.relabel(); MAP.theme(); }
 }
 document.addEventListener("click", ev => {
@@ -832,6 +946,7 @@ document.addEventListener("click", ev => {
   else if (el.dataset.k){ SORT = {k:el.dataset.k, dir: SORT.k===el.dataset.k ? -SORT.dir : (el.dataset.k==="name"||el.dataset.k==="c"?1:-1)}; renderTable(); }
   else if (el.dataset.id){ openSite(el.dataset.id); }
 });
+document.getElementById("qr-csv").onclick = qualityCsv;
 document.getElementById("more").onclick = () => { SHOWALL = !SHOWALL; renderTable(); };
 document.getElementById("q").addEventListener("input", e => { QUERY = e.target.value; renderTable(); });
 document.getElementById("scrim").onclick = closeSite;
@@ -841,7 +956,7 @@ let RZ, LASTW = innerWidth;
 window.addEventListener("resize", () => { clearTimeout(RZ); RZ = setTimeout(() => { if (Math.abs(innerWidth - LASTW) < 40 || !D) return; LASTW = innerWidth; const open = document.getElementById("drawer").classList.contains("open"); renderAll(); if (open) openSite(location.hash.slice(6)); }, 200); });
 matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", renderAll);
 
-const V = "9";
+const V = "10";
 fetch("data.json?v="+V).then(r=>r.json()).then(d => { D = d; compute(); route(); });
 </script>
 </body>
