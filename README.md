@@ -1,6 +1,8 @@
-# Energ-IACK 2026 · Défi 2 « EDM citoyen et souverain »
+# openEDM
 
-An Energy Data Management tool (EDM) that a commune **owns**: open data format, readable code, runs on any static host,
+Energ-IACK 2026 · Défi 2 « EDM citoyen et souverain ».
+
+An open-source Energy Data Management tool (EDM) that a commune **owns**: open data format, readable code, runs on any static host,
 and the same format lets communes compare and share. Built at the Energ-IACK hackathon, Geneva, 13–14 Nov 2026.
 
 **Live demo: https://dcarvalh.github.io/energiack-edm/** (FR/EN toggle top right, also `?lang=en`)
@@ -9,7 +11,7 @@ and the same format lets communes compare and share. Built at the Energ-IACK hac
 
 | View | For whom | What |
 |---|---|---|
-| **Accueil / Welcome** | everyone | the challenge in short, what is online, next steps |
+| **Accueil / Welcome** | everyone | the idea, who it is for (planned indicators per audience), what is online, next steps |
 | **Gestion / Manage** | the commune's energy service | KPIs (energy, estimated cost, CO₂ vs 2030 target, fossil-heated sites, solar), monthly chart by fluid, CO₂ trajectory to 2030, site table with alerts incl. data defects. A site page has its monthly history per fluid, every meter with raw readings and quality flags, buildings, installations, heating history and a CSV download |
 | **Citoyen·ne·s / Citizens** | residents | the year in one sentence, progress to the 2030 targets, numbers per resident, what changed |
 | **Carte 3D / 3D map** | everyone | **Rive-Claire** (default): the challenge's fictional commune as schematic 3D blocks coloured by measured 2025 readings; scenery (lake, roads, trees) is generated. **Geneva**: 10,574 real buildings in central Geneva (SITG footprints and heights) on swisstopo terrain and aerial photo, coloured by heat index, heating energy, solar potential (real) or electricity and water (simulated, flagged) |

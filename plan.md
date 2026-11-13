@@ -1,4 +1,4 @@
-# Team plan · Défi 2 « EDM citoyen et souverain »
+# Team plan · openEDM (Défi 2 « EDM citoyen et souverain »)
 
 Updated 13 Nov 2026, evening. What exists and how to run it: `README.md`.
 
@@ -16,6 +16,10 @@ hosting, and it **complements** existing tools as an aggregator instead of repla
 - First user story: **load the Rive-Claire data with a quality and consistency report** (duplicates, wrong IDs, formats, gaps).
 - Targets can only be changed by an identified, authorised person.
 - Repo public under MIT (code) with a data notice; hosted on GitHub Pages.
+- Name: **openEDM** (13 Nov). The repo name and Pages URL stay as they are.
+- The import must be repeatable (re-running it never duplicates records) and list every rejected row with its reason.
+  Reference data (buildings, meters, installations) is kept apart from monthly readings.
+- Equipment comes from the installations table, never inferred from consumption.
 
 ## Framing
 - Goal: a multi-fluid EDM replicable across all communes, to avoid costly per-commune licences.
@@ -35,6 +39,19 @@ hosting, and it **complements** existing tools as an aggregator instead of repla
 - District-heated buildings count 0 local CO₂, which can skew comparisons: say so wherever CO₂ is shown.
 - Master plan targets: −60 % CO₂ for the building stock by 2030, zero oil boilers, gas declining, 350 MWp of PV,
   sufficiency −15 % heat, falling average heat index (IDC), fossil phase-out by 2050.
+
+## Indicators per audience (planned, checked against Rive-Claire)
+| Audience | Indicator | Rive-Claire | Note |
+|---|---|---|---|
+| Officials, portfolio | Heat index IDC (corrected heat / SRE) | yes | SRE + degree-days in the data. 450 MJ/m² is a display class until a legal source is checked. Heat-pump heat measured at S09, S12 only |
+| | Electricity per m² (IEE) | yes | say whether solar used on site is included |
+| | CO₂ | yes | dataset factors: gas 0.188, oil 0.265 kg/kWh; electricity, district heat, wood = 0 direct |
+| | Renewable share of heat | partly | heat-pump heat estimated elsewhere (flag it); counting district heat as renewable is an assumption |
+| Citizens | A–G label vs same typology | yes | our own scale, not CECB |
+| | Solar self-consumption, self-sufficiency | yes | 12 PV sites with production and injection |
+| Energy manager | Heat-pump COP (monthly, vs outdoor temperature) | 2 sites | S09, S12 |
+| | Sub-meter ≤ parent, unit checks | yes | part of the quality report |
+| | Night base load | no | needs hourly data, not in the public demo |
 
 ## Data
 - Rive-Claire (fictional): 48 sites, 172 meters, monthly values 2021–2025, **deliberate anomalies** (see `docs/rive-claire-data.md`).

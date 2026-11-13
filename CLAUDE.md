@@ -1,4 +1,4 @@
-# energiack-edm: Energ-IACK hackathon, Défi 2 « EDM citoyen et souverain »
+# energiack-edm: **openEDM**, Energ-IACK hackathon, Défi 2 « EDM citoyen et souverain »
 
 Public repo. Live at https://dcarvalh.github.io/energiack-edm/ (GitHub Pages, deployed from `prototype/` on every push to `main`).
 What it does and how to run it: `README.md`. Team plan, decisions and next steps: `plan.md`. Dataset notes: `docs/rive-claire-data.md`.

@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>EDM Commune</title>
-<meta name="description" content="Prototype d'EDM citoyen et souverain · Energ-IACK 2026">
+<title>openEDM</title>
+<meta name="description" content="openEDM : outil open source de gestion des données énergétiques pour les communes · Energ-IACK 2026">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231f8a5b'/%3E%3Cpath d='M18 5 9 18h6l-2 9 9-13h-6z' fill='white'/%3E%3C/svg%3E">
 <script type="importmap">{"imports":{"three":"./vendor/three.module.min.js"}}</script>
 <style>
@@ -215,7 +215,7 @@ footer{color:var(--muted);font-size:12.5px;border-top:1px solid var(--line)}
   <div class="wrap bar">
     <div class="brand">
       <svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M18 5 9 18h6l-2 9 9-13h-6z" fill="#fff"/></svg>
-      <div>EDM Commune<small data-t="tagline"></small></div>
+      <div>openEDM<small data-t="tagline"></small></div>
     </div>
     <nav>
       <a href="#accueil" data-view="accueil" data-t="nav_home"></a>
@@ -238,12 +238,11 @@ footer{color:var(--muted);font-size:12.5px;border-top:1px solid var(--line)}
     <p class="lede" data-t="h_lede"></p>
     <h2 style="margin:0 0 12px" data-t="h_defi"></h2>
     <div class="grid three" id="h-defi"></div>
+    <h2 style="margin:28px 0 12px" data-t="h_who"></h2>
+    <div class="grid three" id="h-who"></div>
     <h2 style="margin:28px 0 12px" data-t="h_now"></h2>
     <div class="grid wl" id="h-now"></div>
-    <div class="grid half" style="margin-top:28px">
-      <div class="card"><h2 data-t="h_next"></h2><ul class="list" id="h-next"></ul></div>
-      <div class="card"><h2 data-t="h_later"></h2><ul class="list" id="h-later"></ul></div>
-    </div>
+    <div class="card" style="margin-top:28px"><h2 data-t="h_next"></h2><ul class="list" id="h-next"></ul></div>
   </section>
 
   <!-- ================= MANAGER ================= -->
@@ -331,17 +330,17 @@ fr:{
   notice:"Prototype · Rive-Claire, commune fictive : données des organisateurs (Energ-IA Transition, CC BY 4.0)",
   tagline:"EDM citoyen et souverain",
   nav_home:"Accueil",
-  h_kicker:"Hackathon Energ-IACK · Défi 2", h_title:"EDM citoyen et souverain",
-  h_lede:"Un EDM (gestion des données énergétiques) suit l'électricité, la chaleur et l'eau de tous les bâtiments d'une commune. Le nôtre appartient à la commune, et plusieurs communes peuvent le partager.",
-  h_defi:"Le défi",
-  defi:[["Le problème","Les communes paient cher des logiciels fermés pour suivre l'énergie de leurs bâtiments."],["La question","Peut-on construire en 2 jours un EDM que la commune possède, maîtrise et partage avec d'autres ?"],["Les pistes","Données par bâtiment et par fluide, objectifs, rapports écrits par l'IA, format ouvert et réutilisable."]],
+  h_kicker:"Energ-IACK 2026 · Défi 2 « EDM citoyen et souverain »", h_title:"openEDM",
+  h_lede:"Un outil open source pour suivre l'énergie de tous les bâtiments d'une commune : électricité, chaleur, solaire et eau au même endroit. Il complète les outils existants au lieu de les remplacer.",
+  h_defi:"L'idée",
+  defi:[["Le problème","Les données d'énergie sont dispersées entre plusieurs systèmes, et chaque commune paie ses propres licences."],["Notre réponse","Un seul code ouvert pour toutes les communes, qui rassemble les données par bâtiment, par énergie et par mois."],["Souverain","Hébergement mutualisé et chiffré, ou installation sur le serveur de la commune. Les données restent à elle."]],
+  h_who:"Pour qui",
+  who:[["Élu·e·s et gestion du patrimoine","Suivre le plan directeur de l'énergie.","Prévu : indice de dépense de chaleur (IDC), électricité par m², CO₂, part de chaleur renouvelable"],["Citoyen·ne·s","Voir les progrès sans exposer la consommation de chaque bâtiment.","Prévu : étiquette A–G comparée aux bâtiments du même type, part du solaire consommée sur place, autonomie électrique"],["Responsable énergie","Repérer les dérives et vérifier les données.","Prévu : rapport de qualité à l'import, COP des pompes à chaleur, cohérence des sous-compteurs"]],
   h_now:"Déjà en ligne",
   now:[["#gestion","Gestion","48 sites, 172 compteurs, 2021–2025 : consommation, CO₂, coûts estimés, qualité des données.","fake"],["#citoyens","Citoyen·ne·s","Page publique : objectifs et changements, en mots simples.","fake"],["#carte","Carte 3D","Rive-Claire (plan des organisateurs) et Genève centre (10 574 bâtiments réels).",""],["#apropos","Comment ça marche","Pourquoi souverain, format des données, sources.",""]],
   h_fake:"Commune fictive", h_real:"Données publiques réelles",
   h_next:"Prochaines étapes",
-  next:["Bâtiments de la Ville marqués sur la carte","Un objectif par bâtiment, avec un feu vert / orange / rouge","Chaque chiffre : mesuré, estimé ou calculé","Import CSV : une autre commune charge ses fichiers","Poser une question en langage courant","Prévoir les besoins et les flexibilités","Avis des citoyens par bâtiment"],
-  h_later:"Pour un vrai outil",
-  later:["Vraies données : compteurs et factures","Correction météo (hiver doux ou froid)","Comptes et droits d'accès","Rapport annuel en PDF","Sauvegardes et protection des données"],
+  next:["Import des données avec un rapport de qualité : doublons, identifiants inconnus, formats, mois manquants, relevés estimés","Ré-importer sans créer de doublons, avec la raison de chaque ligne rejetée","Les indicateurs ci-dessus, calculés sur les données importées","Un objectif par bâtiment avec un feu vert / orange / rouge, modifiable seulement par une personne autorisée","Comptes et droits par profil (maquette sur ce site de démonstration)"],
   nav_manage:"Gestion", nav_citizen:"Citoyen·ne·s", nav_about:"Comment ça marche",
   m_title:"Patrimoine communal", m_lede:"48 sites, 172 compteurs, tous les fluides au même endroit. Cliquez sur un site pour toutes ses données.",
   k_energy:"Énergie achetée", k_cost:"Coût estimé", k_co2:"CO₂ direct sur site", k_fossil:"Sites chauffés au fossile", k_solar:"Solaire produit",
@@ -387,7 +386,7 @@ fr:{
   model:[["sites[]","Identifiant, nom, typologie, quartier, SRE (m²), bâtiments (toutes les colonnes), installations (dates, puissance), solaire (kWc)"],["meters[site][]","Les 172 compteurs : fluide, unité, niveau, parent, relève, 60 valeurs brutes et en kWh, qualité (estimé, manquant, doublon)"],["series[site][fluide]","60 valeurs mensuelles calculées : électricité soutirée, solaire produit et injecté, chaleur (kWh, gaz en PCI), eau (m³), CO₂ (kg), coût (CHF estimé)"],["heating_history","Agent de chauffage et date de changement, déduits des installations"],["events[]","Mises en service, retraits, ouvertures, défauts de données"],["meta","Source et licence, règles de calcul, facteurs CO₂ du jeu, prix supposés, objectifs, climat mensuel"]],
   a_next:"La suite (pistes pour le hackathon)",
   road:[["Objectifs par site","Cibles kWh/m² et feu tricolore par bâtiment"],["Rapports IA mensuels","Un rapport par service, en langage métier"],["Questions en langage naturel","« Quelle école consomme le plus de chaleur ? »"],["Import CSV","Glisser ses fichiers : une autre commune démarre en une heure"],["Anticipation","Prévision des besoins, flexibilités, stockage thermique"],["Mutualisation","Plusieurs communes, un même format, des comparaisons équitables"]],
-  foot:"Prototype Energ-IACK 2026 · Défi 2 « EDM citoyen et souverain » · Rive-Claire est une commune fictive ; données : Energ-IA Transition, Energ-IACK 2026 (CC BY 4.0). Prix estimés. CO₂ : émissions directes sur site. Carte de Genève : bâtiments et indices réels (SITG, swisstopo), électricité et eau simulées.",
+  foot:"openEDM · prototype Energ-IACK 2026 · Défi 2 « EDM citoyen et souverain » · Rive-Claire est une commune fictive ; données : Energ-IA Transition, Energ-IACK 2026 (CC BY 4.0). Prix estimés. CO₂ : émissions directes sur site. Carte de Genève : bâtiments et indices réels (SITG, swisstopo), électricité et eau simulées.",
   nav_map:"Carte 3D", notice_map:"Prototype · Rive-Claire : données des organisateurs, volumes schématiques · Genève : bâtiments réels (SITG, swisstopo), électricité et eau simulées",
   m_loading:"Chargement des bâtiments…", m_loading_scene:"Construction de la scène 3D…", m_map_title:"Genève · centre-ville", m_search:"Rechercher une adresse…", m_noresult:"Aucune adresse trouvée", m_filter_hint:"Cliquer une classe pour l'isoler", m_filter_clear:"Cliquer à nouveau pour tout afficher", m_north:"Orienter au nord", m_t_pan:"Glisser pour déplacer", m_t_orbit:"Glisser pour pivoter", m_t_in:"Zoom avant", m_t_out:"Zoom arrière", m_t_rl:"Tourner à gauche", m_t_rr:"Tourner à droite", m_t_top:"Vue d'oiseau (2D)", m_t_tilt:"Vue inclinée (3D)", m_t_full:"Plein écran", m_t_fullx:"Quitter le plein écran", m_sub:"{n} bâtiments réels · données publiques SITG et swisstopo",
   m_l_idc:"Chaleur (IDC)", m_l_heat:"Chauffage", m_l_solar:"Solaire", m_l_elec:"Électricité", m_l_water:"Eau",
@@ -413,17 +412,17 @@ en:{
   notice:"Prototype · Rive-Claire, a fictional municipality: organisers' data (Energ-IA Transition, CC BY 4.0)",
   tagline:"Citizen-owned, sovereign EDM",
   nav_home:"Welcome",
-  h_kicker:"Energ-IACK hackathon · Challenge 2", h_title:"Citizen and sovereign EDM",
-  h_lede:"An EDM (energy data management) tracks electricity, heat and water for every building a municipality owns. Ours belongs to the municipality, and several municipalities can share it.",
-  h_defi:"The challenge",
-  defi:[["The problem","Municipalities pay a lot for closed software to track their buildings' energy."],["The question","Can we build, in 2 days, an EDM a municipality owns, controls and shares with others?"],["The ideas","Data per building and per utility, targets, AI-written reports, an open format anyone can reuse."]],
+  h_kicker:"Energ-IACK 2026 · Challenge 2 \"Citizen and sovereign EDM\"", h_title:"openEDM",
+  h_lede:"An open-source tool to track the energy of every building a municipality owns: electricity, heat, solar and water in one place. It complements existing tools instead of replacing them.",
+  h_defi:"The idea",
+  defi:[["The problem","Energy data is scattered across several systems, and every municipality pays for its own licences."],["Our answer","One open codebase for every municipality, bringing data together by building, energy source and month."],["Sovereign","Shared, encrypted hosting or an install on the municipality's own server. The data stays theirs."]],
+  h_who:"Who it's for",
+  who:[["Elected officials and portfolio managers","Track the energy master plan.","Planned: heat index (IDC), electricity per m², CO₂, renewable share of heat"],["Citizens","See progress without exposing each building's consumption.","Planned: A–G label against similar buildings, share of solar used on site, electricity self-sufficiency"],["Energy manager","Spot drifts and check the data.","Planned: quality report on import, heat-pump COP, sub-meter consistency"]],
   h_now:"Already online",
   now:[["#gestion","Manage","48 sites, 172 meters, 2021–2025: use, CO₂, estimated costs, data quality.","fake"],["#citoyens","Citizens","Public page: goals and changes, in plain words.","fake"],["#carte","3D map","Rive-Claire (organisers' plan) and central Geneva (10,574 real buildings).",""],["#apropos","How it works","Why sovereign, data format, sources.",""]],
   h_fake:"Fictional municipality", h_real:"Real public data",
   h_next:"Next steps",
-  next:["City-owned buildings marked on the map","A target per building, with a green / amber / red light","Every figure: measured, estimated or computed","CSV import: another municipality loads its files","Ask a question in plain language","Forecast needs and flexibility","Citizen feedback per building"],
-  h_later:"For a real tool",
-  later:["Real data: meters and invoices","Weather correction (mild or cold winter)","Accounts and access rights","Annual report as PDF","Backups and data protection"],
+  next:["Data import with a quality report: duplicates, unknown IDs, formats, missing months, estimated readings","Re-import without creating duplicates, with the reason for every rejected row","The indicators above, computed on the imported data","A target per building with a green / amber / red light, editable only by an authorised person","Accounts and rights per profile (mock-up on this demo site)"],
   nav_manage:"Manage", nav_citizen:"Citizens", nav_about:"How it works",
   m_title:"Municipal buildings", m_lede:"48 sites, 172 meters, every utility in one place. Click a site for all its data.",
   k_energy:"Energy purchased", k_cost:"Estimated cost", k_co2:"Direct on-site CO₂", k_fossil:"Sites heated by fossil fuel", k_solar:"Solar produced",
@@ -469,7 +468,7 @@ en:{
   model:[["sites[]","ID, name, typology, district, energy reference area (m²), buildings (every column), installations (dates, capacity), solar (kWp)"],["meters[site][]","All 172 meters: utility, unit, level, parent, reading method, 60 raw and kWh values, quality (estimated, missing, duplicate)"],["series[site][utility]","60 computed monthly values: grid electricity, solar produced and fed in, heat (kWh, gas at net value), water (m³), CO₂ (kg), cost (estimated CHF)"],["heating_history","Heating carrier and when it changed, derived from the installations"],["events[]","Commissioning, removals, openings, data defects"],["meta","Source and licence, calculation rules, the dataset's CO₂ factors, assumed prices, targets, monthly climate"]],
   a_next:"Next steps (ideas for the hackathon)",
   road:[["Targets per site","kWh/m² targets and a traffic light per building"],["Monthly AI reports","One report per department, in plain operational language"],["Ask in plain language","\"Which school uses the most heat?\""],["CSV import","Drop your files in: another municipality starts in an hour"],["Anticipation","Demand forecasting, flexibility, thermal storage"],["Pooling","Several municipalities, one format, fair comparisons"]],
-  foot:"Energ-IACK 2026 prototype · Challenge 2 \"Citizen-owned, sovereign EDM\" · Rive-Claire is a fictional municipality; data: Energ-IA Transition, Energ-IACK 2026 (CC BY 4.0). Prices estimated. CO₂: direct on-site emissions. Geneva map: real buildings and indices (SITG, swisstopo), electricity and water simulated.",
+  foot:"openEDM · Energ-IACK 2026 prototype · Challenge 2 \"Citizen-owned, sovereign EDM\" · Rive-Claire is a fictional municipality; data: Energ-IA Transition, Energ-IACK 2026 (CC BY 4.0). Prices estimated. CO₂: direct on-site emissions. Geneva map: real buildings and indices (SITG, swisstopo), electricity and water simulated.",
   nav_map:"3D map", notice_map:"Prototype · Rive-Claire: organisers' data, schematic volumes · Geneva: real buildings (SITG, swisstopo), electricity and water simulated",
   m_loading:"Loading buildings…", m_loading_scene:"Building the 3D scene…", m_map_title:"Geneva · city centre", m_search:"Search an address…", m_noresult:"No address found", m_filter_hint:"Click a class to isolate it", m_filter_clear:"Click again to show all", m_north:"Face north", m_t_pan:"Drag to move", m_t_orbit:"Drag to rotate", m_t_in:"Zoom in", m_t_out:"Zoom out", m_t_rl:"Turn left", m_t_rr:"Turn right", m_t_top:"Bird's-eye view (2D)", m_t_tilt:"Tilted view (3D)", m_t_full:"Full screen", m_t_fullx:"Exit full screen", m_sub:"{n} real buildings · public SITG and swisstopo data",
   m_l_idc:"Heat (IDC)", m_l_heat:"Heating", m_l_solar:"Solar", m_l_elec:"Electricity", m_l_water:"Water",
@@ -689,7 +688,7 @@ function renderWelcome(){
   document.getElementById("h-defi").innerHTML = t("defi").map(([a,b])=>`<div class="card defi"><b>${esc(a)}</b><span>${esc(b)}</span></div>`).join("");
   document.getElementById("h-now").innerHTML = t("now").map(([h,a,b,k])=>`<a class="card go" href="${h}"><b>${esc(a)} →</b><span>${esc(b)}</span>${k?`<i class="pill ${k==="real"?"p-ren":"p-warn"}" style="font-style:normal">${esc(t("h_"+k))}</i>`:""}</a>`).join("");
   document.getElementById("h-next").innerHTML = t("next").map(x=>`<li>${esc(x)}</li>`).join("");
-  document.getElementById("h-later").innerHTML = t("later").map(x=>`<li>${esc(x)}</li>`).join("");
+  document.getElementById("h-who").innerHTML = t("who").map(([a,b,c])=>`<div class="card defi"><b>${esc(a)}</b><span>${esc(b)}</span><span class="sub" style="display:block;margin:8px 0 0">${esc(c)}</span></div>`).join("");
 }
 function renderAbout(){
   document.getElementById("flow").innerHTML = [1,2,3,4].map(i=>`<div class="step"><b>${esc(t("fl"+i))}</b><span>${esc(t("fl"+i+"s"))}</span></div>`).join("");
@@ -842,7 +841,7 @@ let RZ, LASTW = innerWidth;
 window.addEventListener("resize", () => { clearTimeout(RZ); RZ = setTimeout(() => { if (Math.abs(innerWidth - LASTW) < 40 || !D) return; LASTW = innerWidth; const open = document.getElementById("drawer").classList.contains("open"); renderAll(); if (open) openSite(location.hash.slice(6)); }, 200); });
 matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", renderAll);
 
-const V = "7";
+const V = "8";
 fetch("data.json?v="+V).then(r=>r.json()).then(d => { D = d; compute(); route(); });
 </script>
 </body>
