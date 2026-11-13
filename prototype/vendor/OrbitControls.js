@@ -494,7 +494,10 @@ class OrbitControls extends EventDispatcher {
 
 		function getZoomScale( delta ) {
 
-			const normalized_delta = Math.abs( delta ) / ( 100 * ( window.devicePixelRatio | 0 ) );
+			// openEDM patch (as in later three.js): the 0.160 code divided by `devicePixelRatio | 0`,
+			// which is 0 when the browser is zoomed out, so one wheel notch jumped to min/max distance.
+			// Also cap one event at ~3 notches.
+			const normalized_delta = Math.min( Math.abs( delta * 0.01 ), 3 );
 			return Math.pow( 0.95, scope.zoomSpeed * normalized_delta );
 
 		}
@@ -732,13 +735,16 @@ class OrbitControls extends EventDispatcher {
 
 			updateZoomParameters( event.clientX, event.clientY );
 
-			if ( event.deltaY < 0 ) {
+			// openEDM patch (as in later three.js): line/page wheel modes to pixels
+			const dy = event.deltaY * ( event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? 100 : 1 );
 
-				dollyIn( getZoomScale( event.deltaY ) );
+			if ( dy < 0 ) {
 
-			} else if ( event.deltaY > 0 ) {
+				dollyIn( getZoomScale( dy ) );
 
-				dollyOut( getZoomScale( event.deltaY ) );
+			} else if ( dy > 0 ) {
+
+				dollyOut( getZoomScale( dy ) );
 
 			}
 

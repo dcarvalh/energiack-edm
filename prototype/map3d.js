@@ -2,13 +2,13 @@
 // Rive-Claire (fictional commune of the challenge): schematic blocks from tools/make_rive_claire_map.py, measured values per site.
 // Loaded on demand by index.html when the "3D map" tab opens. No external requests: three.js is vendored.
 import * as THREE from "three";
-import { OrbitControls } from "./vendor/OrbitControls.js";
+import { OrbitControls } from "./vendor/OrbitControls.js?v=2";  // patched: wheel zoom, see file
 import { computeBoundsTree, acceleratedRaycast } from "./vendor/three-mesh-bvh.module.js";
 
 THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
 
-const V = "10";
+const V = "11";
 const GREY = 0xb9bfbb;
 const RAMP = {
   idc:   [0x2e9e6e, 0x9cc95a, 0xf0b33c, 0xe0663a, 0xb8322a],
