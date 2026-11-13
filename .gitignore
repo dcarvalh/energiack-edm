@@ -12,3 +12,6 @@ __pycache__/
 # Local outputs
 shots/
 .claude/worktrees/
+
+# Personal Claude Code notes
+CLAUDE.local.md
