@@ -152,6 +152,43 @@ CREATE TABLE IF NOT EXISTS staged_file (
 );
 CREATE INDEX IF NOT EXISTS staged_file_import ON staged_file (staged_import_id);
 
+-- ── imported 3D map (Swiss geo platform) ──────────────────────────────────────
+-- One imported map per municipality. Buildings are fetched from the national GWR
+-- (ch.bfs.gebaeude_wohnungs_register) and matched to our sites by EGID or by hand.
+ALTER TABLE building ADD COLUMN IF NOT EXISTS egid text;
+
+CREATE TABLE IF NOT EXISTS map_import (
+    id          integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    locality_id integer NOT NULL REFERENCES locality ON DELETE CASCADE,
+    at          timestamptz NOT NULL DEFAULT now(),
+    bbox        text NOT NULL,          -- "xmin,ymin,xmax,ymax" in LV95 (EPSG:2056)
+    meta        jsonb NOT NULL,         -- buildings.json "meta" (origin, size, terrain grid, labels)
+    terrain     bytea,                  -- terrain.bin (Int16 little-endian)
+    n_buildings integer,
+    UNIQUE (locality_id)                -- one map per municipality; re-import replaces it
+);
+
+CREATE TABLE IF NOT EXISTS map_building (
+    id            integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    map_import_id integer NOT NULL REFERENCES map_import ON DELETE CASCADE,
+    egid          text,                 -- federal building id (may be null)
+    rings         jsonb NOT NULL,       -- footprint [[[x,y],...]] in map-local metres
+    h             numeric,              -- height (m)
+    z             numeric,              -- base elevation (m, map-local)
+    attrs         jsonb,                -- use, year, levels, addr from GWR
+    id_site       text,                 -- matched site in our data (null = unmatched)
+    match_kind    text                  -- 'egid' | 'manual' | null
+);
+CREATE INDEX IF NOT EXISTS map_building_import ON map_building (map_import_id);
+
+CREATE TABLE IF NOT EXISTS map_tile (
+    map_import_id integer NOT NULL REFERENCES map_import ON DELETE CASCADE,
+    i             integer NOT NULL,
+    j             integer NOT NULL,
+    jpg           bytea NOT NULL,
+    PRIMARY KEY (map_import_id, i, j)
+);
+
 -- ── seed ──────────────────────────────────────────────────────────────────────
 INSERT INTO locality (slug, name, map_config, demo)
 VALUES ('rive-claire', 'Rive-Claire', '{"key":"rc","dir":"map-rc/"}', true)

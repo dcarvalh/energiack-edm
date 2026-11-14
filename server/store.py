@@ -16,6 +16,7 @@ from psycopg.types.json import Jsonb
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
 import import_rive_claire as rc  # noqa: E402  (build(), check(), read_guide(): shared with the static build)
+import fetch_swiss_map as geomap  # noqa: E402  (fetch(), geocode(): the national Swiss geo platform)
 
 # dataset table -> (database table, key, columns in the source order)
 REF = {
@@ -310,3 +311,96 @@ def reimport_bundled(conn, locality_id):
     """Re-run the bundled Rive-Claire import from the guide file. Returns the import_run row dict."""
     T = rc.read_guide()
     return load(conn, T, "rive-claire (bundled guide, re-imported via API)", locality_id)
+
+
+# ── imported 3D map (Swiss geo platform) ──────────────────────────────────────
+
+def map_import(conn, locality_id, bbox, step=16, px=1.0, tiles=1, name=None):
+    """Fetch a zone from geo.admin.ch, store it (replacing any existing map), auto-match, return a summary."""
+    result = geomap.fetch(bbox, step=step, px=px, tiles=tiles, name=name)
+    with conn.transaction(), conn.cursor() as cur:
+        cur.execute("DELETE FROM map_import WHERE locality_id = %s", (locality_id,))
+        mid = cur.execute(
+            "INSERT INTO map_import (locality_id, bbox, meta, terrain, n_buildings) "
+            "VALUES (%s, %s, %s, %s, %s) RETURNING id",
+            (locality_id, ",".join(f"{v:.0f}" for v in bbox), Jsonb(result["meta"]),
+             result["terrain"], len(result["buildings"]))).fetchone()["id"]
+        cur.executemany(
+            "INSERT INTO map_building (map_import_id, egid, rings, h, z, attrs) VALUES (%s,%s,%s,%s,%s,%s)",
+            [(mid, b["egid"], Jsonb(b["rings"]), b["h"], b["z"],
+              Jsonb({"use": b["use"], "year": b["year"], "levels": b["levels"], "addr": b["addr"]}))
+             for b in result["buildings"]])
+        cur.executemany(
+            "INSERT INTO map_tile (map_import_id, i, j, jpg) VALUES (%s,%s,%s,%s)",
+            [(mid, i, j, jpg) for i, j, jpg in result["tiles"]])
+    matched = map_automatch(conn, locality_id)
+    n = len(result["buildings"])
+    return {"n": n, "matched": matched, "unmatched": n - matched, "bbox": bbox}
+
+
+def map_automatch(conn, locality_id):
+    """Link map buildings to our sites by EGID (map_building.egid == building.egid). Returns count matched."""
+    row = conn.execute(
+        "UPDATE map_building mb SET id_site = b.id_site, match_kind = 'egid' "
+        "FROM map_import mi, building b "
+        "WHERE mb.map_import_id = mi.id AND mi.locality_id = %s "
+        "  AND b.locality_id = %s AND b.egid IS NOT NULL AND mb.egid = b.egid "
+        "  AND mb.id_site IS NULL "
+        "RETURNING mb.id", (locality_id, locality_id)).fetchall()
+    conn.commit()
+    return len(row)
+
+
+def map_get(conn, locality_id):
+    """Rebuild buildings.json (meta + buildings with id_site) for this locality, or None if no map."""
+    mi = conn.execute(
+        "SELECT id, meta, n_buildings FROM map_import WHERE locality_id = %s", (locality_id,)).fetchone()
+    if not mi:
+        return None
+    rows = conn.execute(
+        "SELECT id, egid, rings, h, z, attrs, id_site, match_kind FROM map_building "
+        "WHERE map_import_id = %s ORDER BY id", (mi["id"],)).fetchall()
+    buildings = []
+    for r in rows:
+        a = r["attrs"] or {}
+        buildings.append({
+            "id": r["id"], "egid": r["egid"], "rings": r["rings"],
+            "h": float(r["h"]) if r["h"] is not None else 6.0,
+            "z": float(r["z"]) if r["z"] is not None else 0.0,
+            "use": a.get("use"), "year": a.get("year"), "levels": a.get("levels"), "addr": a.get("addr"),
+            "id_site": r["id_site"], "match_kind": r["match_kind"],
+        })
+    return {"meta": mi["meta"], "buildings": buildings}
+
+
+def map_terrain(conn, locality_id):
+    r = conn.execute("SELECT terrain FROM map_import WHERE locality_id = %s", (locality_id,)).fetchone()
+    return bytes(r["terrain"]) if r and r["terrain"] is not None else None
+
+
+def map_tile(conn, locality_id, i, j):
+    r = conn.execute(
+        "SELECT t.jpg FROM map_tile t JOIN map_import mi ON mi.id = t.map_import_id "
+        "WHERE mi.locality_id = %s AND t.i = %s AND t.j = %s", (locality_id, i, j)).fetchone()
+    return bytes(r["jpg"]) if r else None
+
+
+def map_set_site(conn, locality_id, building_id, id_site):
+    """Manual match: assign (or clear) the site of one map building."""
+    r = conn.execute(
+        "UPDATE map_building mb SET id_site = %s, match_kind = %s "
+        "FROM map_import mi WHERE mb.map_import_id = mi.id AND mi.locality_id = %s AND mb.id = %s "
+        "RETURNING mb.id",
+        (id_site, "manual" if id_site else None, locality_id, building_id)).fetchone()
+    conn.commit()
+    return r is not None
+
+
+def map_delete(conn, locality_id):
+    conn.execute("DELETE FROM map_import WHERE locality_id = %s", (locality_id,))
+    conn.commit()
+
+
+def geocode(text):
+    """Place name -> candidate zones (for the UI zone picker)."""
+    return geomap.geocode(text)

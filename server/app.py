@@ -66,6 +66,17 @@ class NewLocality(BaseModel):
     country: str = "CH"
 
 
+class MapImport(BaseModel):
+    bbox: str                 # "xmin,ymin,xmax,ymax" in LV95 (EPSG:2056)
+    name: str | None = None
+    tiles: int = 1
+    px: float = 1.0
+
+
+class MapMatch(BaseModel):
+    id_site: str | None = None
+
+
 def _start(request, response, conn, token):
     https = request.headers.get("x-forwarded-proto", request.url.scheme) == "https"
     response.set_cookie(auth.COOKIE, token, max_age=auth.HOURS * 3600, httponly=True, samesite="lax", secure=https, path="/")
@@ -216,6 +227,106 @@ def locality_rejected(slug: str, u=Depends(need(*auth.FULL)), conn=Depends(db)):
     return conn.execute(
         "SELECT pos, reason, row FROM rejected_row WHERE import_id = %s ORDER BY pos",
         (run_id,)).fetchall()
+
+
+# ── Imported 3D map (Swiss geo platform) ─────────────────────────────────────
+
+MAX_SPAN_M = 2500           # cap the zone side (metres) to bound the fetch
+
+
+@app.get("/api/geo/search")
+def geo_search(q: str, u=Depends(need(*auth.FULL))):
+    """Geocode a place name -> candidate zones (label, LV95 centre, bbox). For the UI zone picker."""
+    if not q or len(q) < 2:
+        return []
+    try:
+        return store.geocode(q)
+    except Exception as e:
+        raise HTTPException(502, f"geo search failed: {e}")
+
+
+@app.post("/api/localities/{slug}/map/import")
+def map_import(slug: str, body: MapImport, u=Depends(need(*auth.FULL)), conn=Depends(db)):
+    """Fetch a real 3D map for a zone from geo.admin.ch, store it, auto-match by EGID."""
+    loc = store.locality_by_slug(conn, slug)
+    if not loc:
+        raise HTTPException(404, "locality not found")
+    try:
+        bbox = tuple(float(v) for v in body.bbox.split(","))
+        assert len(bbox) == 4
+    except (ValueError, AssertionError):
+        raise HTTPException(422, "bbox must be 'xmin,ymin,xmax,ymax' in LV95")
+    xmin, ymin, xmax, ymax = bbox
+    if xmax <= xmin or ymax <= ymin:
+        raise HTTPException(422, "bbox: xmax>xmin and ymax>ymin required")
+    if max(xmax - xmin, ymax - ymin) > MAX_SPAN_M:
+        raise HTTPException(422, f"zone too large (max {MAX_SPAN_M} m per side)")
+    try:
+        summary = store.map_import(conn, loc["id"], bbox, tiles=max(1, min(body.tiles, 3)),
+                                   px=body.px, name=body.name)
+    except Exception as e:
+        raise HTTPException(502, f"map fetch failed: {e}")
+    # Point this locality's map_config at the imported map
+    conn.execute("UPDATE locality SET map_config = %s WHERE id = %s",
+                 (json.dumps({"key": "imported", "dir": f"api/localities/{slug}/map/"}), loc["id"]))
+    conn.commit()
+    return summary
+
+
+@app.get("/api/localities/{slug}/map/buildings.json")
+def map_buildings(slug: str, u=Depends(current), conn=Depends(db)):
+    loc = store.locality_by_slug(conn, slug)
+    if not loc:
+        raise HTTPException(404, "locality not found")
+    data = store.map_get(conn, loc["id"])
+    if not data:
+        raise HTTPException(404, "no map imported for this locality")
+    return Response(json.dumps(data, ensure_ascii=False, separators=(",", ":")),
+                    media_type="application/json")
+
+
+@app.get("/api/localities/{slug}/map/terrain.bin")
+def map_terrain(slug: str, u=Depends(current), conn=Depends(db)):
+    loc = store.locality_by_slug(conn, slug)
+    if not loc:
+        raise HTTPException(404, "locality not found")
+    t = store.map_terrain(conn, loc["id"])
+    if t is None:
+        raise HTTPException(404, "no terrain")
+    return Response(t, media_type="application/octet-stream")
+
+
+@app.get("/api/localities/{slug}/map/aerial_{i}_{j}.jpg")
+def map_aerial(slug: str, i: int, j: int, u=Depends(current), conn=Depends(db)):
+    loc = store.locality_by_slug(conn, slug)
+    if not loc:
+        raise HTTPException(404, "locality not found")
+    jpg = store.map_tile(conn, loc["id"], i, j)
+    if jpg is None:
+        raise HTTPException(404, "no tile")
+    return Response(jpg, media_type="image/jpeg")
+
+
+@app.put("/api/localities/{slug}/map/building/{building_id}")
+def map_match(slug: str, building_id: int, body: MapMatch, u=Depends(need(*auth.FULL)), conn=Depends(db)):
+    """Manually attach (or clear) a map building to one of our sites."""
+    loc = store.locality_by_slug(conn, slug)
+    if not loc:
+        raise HTTPException(404, "locality not found")
+    if not store.map_set_site(conn, loc["id"], building_id, body.id_site):
+        raise HTTPException(404, "map building not found")
+    return {"id": building_id, "id_site": body.id_site}
+
+
+@app.delete("/api/localities/{slug}/map")
+def map_delete(slug: str, u=Depends(need(*auth.FULL)), conn=Depends(db)):
+    loc = store.locality_by_slug(conn, slug)
+    if not loc:
+        raise HTTPException(404, "locality not found")
+    store.map_delete(conn, loc["id"])
+    conn.execute("UPDATE locality SET map_config = NULL WHERE id = %s", (loc["id"],))
+    conn.commit()
+    return {"deleted": slug}
 
 
 # ── Staging (sas de chargement) ──────────────────────────────────────────────

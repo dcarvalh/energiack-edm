@@ -8,7 +8,7 @@ import { computeBoundsTree, acceleratedRaycast } from "./vendor/three-mesh-bvh.m
 THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
 
-const V = "13";
+const V = "14";
 const GREY = 0xb9bfbb;
 const RAMP = {
   idc:   [0x2e9e6e, 0x9cc95a, 0xf0b33c, 0xe0663a, 0xb8322a],
@@ -82,17 +82,18 @@ function layers(t, nf) {
 function layersRC(t, nf) {
   const yr = t("m_yr"), heatKeys = ["fossil", "district", "heatpump", "wood", "electric"], mwh = v => `${nf(v / 1000)} MWh/${yr}`;
   return {
-    // approximate heat index, same unit and classes as the Geneva IDC layer so the two maps read the same way
-    idc: { cls: b => b.rc.mj_m2 == null ? -1 : bucket(b.rc.mj_m2, [350, 450, 600, 800]), ramp: RAMP.idc,
-           labels: ["< 350", "350–450", "450–600", "600–800", "≥ 800"], unit: "MJ/m²·" + yr, val: b => b.rc.mj_m2 == null ? null : `${nf(b.rc.mj_m2)} MJ/m²` },
-    heat: { cls: b => b.rc.heat ? heatKeys.indexOf(b.rc.heat) : -1, ramp: heatKeys.map(k => HEAT[k]),
-            labels: heatKeys.map(k => t("m_heat_" + k)), val: b => b.rc.heat ? t("m_heat_" + b.rc.heat) : null },
-    solar: { cls: b => b.rc.pv_kwh ? bucket(b.rc.pv_kwh, [50000, 100000, 150000]) : -1, ramp: RAMP.solar,
-             labels: ["< 50", "50–100", "100–150", "≥ 150"], unit: "MWh/" + yr, val: b => b.rc.pv_kwh ? mwh(b.rc.pv_kwh) : null },
-    elec: { cls: b => b.rc.elec_kwh ? bucket(b.rc.elec_kwh, [25000, 75000, 150000]) : -1, ramp: RAMP.elec,
-            labels: ["< 25", "25–75", "75–150", "≥ 150"], unit: "MWh/" + yr, val: b => b.rc.elec_kwh ? mwh(b.rc.elec_kwh) : null },
-    water: { cls: b => b.rc.water_m3 ? bucket(b.rc.water_m3, [500, 1500, 4000]) : -1, ramp: RAMP.water,
-             labels: ["< 500", "500–1 500", "1 500–4 000", "≥ 4 000"], unit: "m³/" + yr, val: b => b.rc.water_m3 ? `${nf(b.rc.water_m3)} m³/${yr}` : null },
+    // approximate heat index, same unit and classes as the Geneva IDC layer so the two maps read the same way.
+    // b.rc may be null (imported map: building not matched to a site) -> class -1 (no data).
+    idc: { cls: b => b.rc?.mj_m2 == null ? -1 : bucket(b.rc.mj_m2, [350, 450, 600, 800]), ramp: RAMP.idc,
+           labels: ["< 350", "350–450", "450–600", "600–800", "≥ 800"], unit: "MJ/m²·" + yr, val: b => b.rc?.mj_m2 == null ? null : `${nf(b.rc.mj_m2)} MJ/m²` },
+    heat: { cls: b => b.rc?.heat ? heatKeys.indexOf(b.rc.heat) : -1, ramp: heatKeys.map(k => HEAT[k]),
+            labels: heatKeys.map(k => t("m_heat_" + k)), val: b => b.rc?.heat ? t("m_heat_" + b.rc.heat) : null },
+    solar: { cls: b => b.rc?.pv_kwh ? bucket(b.rc.pv_kwh, [50000, 100000, 150000]) : -1, ramp: RAMP.solar,
+             labels: ["< 50", "50–100", "100–150", "≥ 150"], unit: "MWh/" + yr, val: b => b.rc?.pv_kwh ? mwh(b.rc.pv_kwh) : null },
+    elec: { cls: b => b.rc?.elec_kwh ? bucket(b.rc.elec_kwh, [25000, 75000, 150000]) : -1, ramp: RAMP.elec,
+            labels: ["< 25", "25–75", "75–150", "≥ 150"], unit: "MWh/" + yr, val: b => b.rc?.elec_kwh ? mwh(b.rc.elec_kwh) : null },
+    water: { cls: b => b.rc?.water_m3 ? bucket(b.rc.water_m3, [500, 1500, 4000]) : -1, ramp: RAMP.water,
+             labels: ["< 500", "500–1 500", "1 500–4 000", "≥ 4 000"], unit: "m³/" + yr, val: b => b.rc?.water_m3 ? `${nf(b.rc.water_m3)} m³/${yr}` : null },
   };
 }
 const LAYER_KEYS = ["idc", "heat", "solar", "elec", "water"];
@@ -100,7 +101,7 @@ const hex = c => "#" + c.toString(16).padStart(6, "0");
 const norm = s => (s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
 export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
-  const { t, nf, esc } = api, RC = cfg.key === "rc", DIR = cfg.dir;
+  const { t, nf, esc } = api, RC = cfg.key === "rc", IMP = cfg.key === "imported", RCLIKE = RC || IMP, DIR = cfg.dir;
   const tr = s => (api.lang() === "en" && EN[s]) || s;
   root.innerHTML = `
     <div class="m3-stage"><div class="m3-loading"><div class="m3-spin"></div><span>${esc(t("m_loading"))}</span></div></div>
@@ -123,10 +124,18 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
   const data = await fetch(DIR + "buildings.json?v=" + V).then(r => r.json());
   loading("m_loading_scene");
   const M = data.meta, B = data.buildings, [W, H] = M.size, { nx, ny, scale, step } = M.terrain, NT = M.tiles || 1;
-  if (RC && api.heatIndex) for (const b of B) {            // heat index from the app's own figures (one calculation for table, site page and map)
+  // heat index from the app's own figures (table, site page and map share one calculation)
+  const enrichHeat = b => {
+    if (!b.rc || !api.heatIndex) return;
     const x = api.heatIndex(b.site, b.rc.year);
     b.rc.mj_m2 = x && x.hi != null ? Math.round(x.hi) : null; b.rc.hi_est = !!(x && x.hiEst);
+  };
+  // Imported map: attach each matched building to its site's figures (same shape as the RC map's b.rc).
+  if (IMP && api.siteData) for (const b of B) {
+    b.site = b.id_site || null;
+    b.rc = b.id_site ? (api.siteData(b.id_site) || null) : null;
   }
+  if (RCLIKE) for (const b of B) enrichHeat(b);
   const [terr, imgs] = await Promise.all([
     fetch(DIR + "terrain.bin?v=" + V).then(r => r.arrayBuffer()).then(b => new Int16Array(b)),
     Promise.all(Array.from({ length: NT * NT }, (_, k) => new Promise((res, rej) => {
@@ -235,13 +244,18 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
   stage.innerHTML = ""; stage.appendChild(renderer.domElement);
 
   // ---------------------------------------------------------------- colouring + class filter
-  let LAYER = "idc", SEL = -1, HOV = -1, ONLY = null;   // ONLY = isolated class index, or "nd" for no data
+  let LAYER = "idc", SEL = -1, HOV = -1, ONLY = null;   // ONLY = isolated class index, or "nd" for no data, or "un" for unmatched
   const col = new THREE.Color(), white = new THREE.Color(0xffffff), ghost = new THREE.Color();
-  const L = () => (RC ? layersRC : layers)(t, nf)[LAYER];
+  const WARN = 0xe0893a;                                 // imported map: a building not yet matched to a site
+  const L = () => (RCLIKE ? layersRC : layers)(t, nf)[LAYER];
+  const unmatched = bi => IMP && !B[bi].id_site;
   function paint(bi, lay = L()) {
     const c = lay.cls(B[bi]);
-    const hidden = ONLY !== null && (ONLY === "nd" ? c !== -1 : c !== ONLY);
-    if (hidden) col.copy(ghost); else col.setHex(c < 0 ? GREY : lay.ramp[c]);
+    const un = unmatched(bi);
+    const hidden = ONLY !== null && (ONLY === "un" ? !un : ONLY === "nd" ? (un || c !== -1) : c !== ONLY);
+    if (hidden) col.copy(ghost);
+    else if (un) col.setHex(WARN);
+    else col.setHex(c < 0 ? GREY : lay.ramp[c]);
     if (bi === SEL) col.lerp(white, 0.6); else if (bi === HOV) col.lerp(white, 0.35);
     const [s, e] = ranges[bi];
     for (let k = s; k < e; k++) { colors[3 * k] = col.r; colors[3 * k + 1] = col.g; colors[3 * k + 2] = col.b; }
@@ -251,24 +265,28 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
 
   // ---------------------------------------------------------------- UI
   function legendHtml() {
-    const lay = L(), counts = new Array(lay.labels.length).fill(0); let nd = 0;
-    for (const b of B) { const c = lay.cls(b); if (c < 0) nd++; else counts[c]++; }
+    const lay = L(), counts = new Array(lay.labels.length).fill(0); let nd = 0, un = 0;
+    for (let i = 0; i < B.length; i++) { if (unmatched(i)) { un++; continue; } const c = lay.cls(B[i]); if (c < 0) nd++; else counts[c]++; }
     const item = (key, colour, label, n) => `<button class="m3-key ${ONLY === key ? "on" : ""} ${ONLY !== null && ONLY !== key ? "off" : ""}" data-cls="${key}"><i style="background:${hex(colour)}"></i><span>${esc(label)}</span><em>${nf(n)}</em></button>`;
-    return `<div class="m3-unit">${esc(t((RC ? "m_lg_rc_" : "m_lg_") + LAYER))}${lay.unit ? ` · ${esc(lay.unit)}` : ""}${lay.sim ? ` <span class="pill p-warn">${esc(t("m_sim"))}</span>` : ""}</div>`
-      + `<div class="m3-keys">${lay.labels.map((l, i) => item(i, lay.ramp[i], l, counts[i])).join("")}${item("nd", GREY, t("m_nodata"), nd)}</div>`
+    return `<div class="m3-unit">${esc(t((RCLIKE ? "m_lg_rc_" : "m_lg_") + LAYER))}${lay.unit ? ` · ${esc(lay.unit)}` : ""}${lay.sim ? ` <span class="pill p-warn">${esc(t("m_sim"))}</span>` : ""}</div>`
+      + `<div class="m3-keys">${lay.labels.map((l, i) => item(i, lay.ramp[i], l, counts[i])).join("")}${item("nd", GREY, t("m_nodata"), nd)}${IMP ? item("un", WARN, t("m_unmatched"), un) : ""}</div>`
       + `<div class="m3-fhint">${esc(ONLY === null ? t("m_filter_hint") : t("m_filter_clear"))}</div>`;
   }
   function ui() {
+    const maps = root.querySelector(".m3-maps");
+    if (maps) maps.classList.toggle("hide", IMP);        // the rc/ge switcher does not apply to an imported map
     for (const b of root.querySelectorAll("[data-map]")) { b.textContent = t("m_map_" + b.dataset.map); b.classList.toggle("on", b.dataset.map === cfg.key); }
-    root.querySelector(".m3-title").textContent = t(RC ? "m_map_title_rc" : "m_map_title");
-    root.querySelector(".m3-sub").textContent = RC ? t("m_sub_rc", { n: nf(B.length), s: nf(new Set(B.map(b => b.site)).size), y: M.year }) : t("m_sub", { n: nf(B.length) });
-    root.querySelector(".m3-search input").placeholder = t(RC ? "m_search_rc" : "m_search");
-    root.querySelector(".m3-layers").innerHTML = LAYER_KEYS.map(k => `<button class="chip ${k === LAYER ? "on" : ""}" data-ml="${k}">${esc(t(RC && k === "idc" ? "m_l_hi" : "m_l_" + k))}</button>`).join("");
+    root.querySelector(".m3-title").textContent = IMP ? (M.area || t("m_map_title_imp")) : t(RC ? "m_map_title_rc" : "m_map_title");
+    const nMatched = IMP ? B.filter(b => b.id_site).length : 0;
+    root.querySelector(".m3-sub").textContent = IMP ? t("m_sub_imp", { n: nf(B.length), m: nf(nMatched), u: nf(B.length - nMatched) })
+      : RC ? t("m_sub_rc", { n: nf(B.length), s: nf(new Set(B.map(b => b.site)).size), y: M.year }) : t("m_sub", { n: nf(B.length) });
+    root.querySelector(".m3-search input").placeholder = t(RCLIKE ? "m_search_rc" : "m_search");
+    root.querySelector(".m3-layers").innerHTML = LAYER_KEYS.map(k => `<button class="chip ${k === LAYER ? "on" : ""}" data-ml="${k}">${esc(t(RCLIKE && k === "idc" ? "m_l_hi" : "m_l_" + k))}</button>`).join("");
     root.querySelector(".m3-legend").innerHTML = legendHtml();
     root.querySelector(".m3-hint").textContent = matchMedia("(pointer:coarse)").matches ? t("m_hint_touch") : t("m_hint");
     const tips = { pan: "m_t_pan", orbit: "m_t_orbit", in: "m_t_in", out: "m_t_out", rl: "m_t_rl", rr: "m_t_rr", top: isTop() ? "m_t_tilt" : "m_t_top", north: "m_north", full: isFull() ? "m_t_fullx" : "m_t_full", home: "m_reset" };
     for (const [k, v] of Object.entries(tips)) { const el = root.querySelector(`[data-tool="${k}"]`); el.title = t(v); el.setAttribute("aria-label", t(v)); }
-    root.querySelector(".m3-attr").textContent = RC ? t("m_attr_rc", { k: nf(M.scale || 1, 1) }) : t("m_attr");
+    root.querySelector(".m3-attr").textContent = IMP ? t("m_attr_imp") : RC ? t("m_attr_rc", { k: nf(M.scale || 1, 1) }) : t("m_attr");
     if (SEL >= 0) panel(SEL);
   }
   function row(label, value, sim) { return value == null || value === "" ? "" : `<div class="m3-row"><span>${esc(label)}</span><b>${value}${sim ? ` <span class="pill p-warn">${esc(t("m_sim"))}</span>` : ""}</b></div>`; }
@@ -292,8 +310,37 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
         ${row(t("m_p_pvprod"), mwh(r.pv_kwh))}${row(t("m_l_water"), r.water_m3 ? nf(r.water_m3) + " m³" : null)}</div>
       <div class="m3-src">${esc(b.site)} · ${esc(t("m_src_rc"))}</div>`;
   }
+  function panelIMP(b) {
+    const r = b.rc, yr = t("m_yr"), hc = r && r.heat ? hex(HEAT[r.heat]) : null, mwh = v => v ? nf(v / 1000) + " MWh" : null;
+    const title = b.addr || (b.egid ? "EGID " + b.egid : t("m_map_title_imp"));
+    const head = `<div class="row"><div style="min-width:0;flex:1"><div class="tsub">${esc(tr(b.use) || "EGID " + (b.egid || "–"))}</div><h2 style="margin:2px 0 0">${esc(title)}</h2></div><button class="x m3-close" aria-label="close">×</button></div>
+      <div class="m3-sec">${row(t("m_p_year"), b.year)}${row(t("m_p_levels"), b.levels)}${row(t("m_p_height"), nf(b.h, 1) + " m")}</div>`;
+    // matched: show the site's figures + a link to the site page; unmatched: a match affordance (wired in index.html via api.match)
+    const siteData = api.siteName ? api.siteName(b.id_site) : b.id_site;
+    const body = b.id_site && r
+      ? `<div class="m3-sec"><div class="m3-h">${esc(t("m_imp_matched"))}</div>
+           <span class="pill p-ren">${esc(siteData || b.id_site)}</span>
+           <div class="m3-acts" style="margin-top:8px"><a class="btn alt" href="#site/${esc(b.id_site)}">${esc(t("m_open_site"))}</a>
+             ${api.canMatch ? `<button class="btn alt m3-unmatch">${esc(t("m_imp_unmatch"))}</button>` : ""}</div></div>
+         <div class="m3-sec"><div class="m3-h">${esc(t("m_p_measured", { y: r.year }))}</div>
+           ${row(t("m_p_hi"), r.mj_m2 == null ? esc(t("m_na")) : `<span class="pill ${r.mj_m2 >= 800 ? "p-fossil" : r.mj_m2 >= 450 ? "p-warn" : "p-ren"}">${nf(r.mj_m2)} MJ/m²</span> ≈ ${nf(r.mj_m2 / 3.6)} kWh/m²`)}
+           ${row(t("m_l_heat"), r.heat ? `<span class="pill" style="background:${hc}22;color:${hc}">${esc(t("m_heat_" + r.heat))}</span>` : null)}
+           ${row(t("m_p_heatkwh"), mwh(r.heat_kwh))}${row(t("m_l_elec"), mwh(r.elec_kwh))}${row(t("m_p_pvprod"), mwh(r.pv_kwh))}${row(t("m_l_water"), r.water_m3 ? nf(r.water_m3) + " m³" : null)}</div>`
+      : `<div class="m3-sec"><span class="pill p-warn">${esc(t("m_unmatched"))}</span>
+           <div class="mut" style="font-size:12px;margin-top:6px">${esc(t("m_imp_unmatched_hint"))}</div>
+           ${api.canMatch ? `<div class="m3-acts" style="margin-top:8px"><button class="btn m3-match">${esc(t("m_imp_match_btn"))}</button></div>` : ""}</div>`;
+    return head + body + `<div class="m3-src">EGID ${esc(b.egid || "–")} · ${esc(t("m_attr_imp"))}</div>`;
+  }
   function panel(bi) {
     const b = B[bi], el = root.querySelector(".m3-panel"), yr = t("m_yr");
+    if (IMP) {
+      el.innerHTML = panelIMP(b); el.classList.remove("hide");
+      el.querySelector(".m3-close").onclick = () => select(-1);
+      const mb = el.querySelector(".m3-match"), um = el.querySelector(".m3-unmatch");
+      if (mb) mb.onclick = () => api.matchBuilding && api.matchBuilding(b, s => { b.id_site = s; b.match_kind = "manual"; b.rc = s ? (api.siteData(s) || null) : null; enrichHeat(b); paint(bi); flush(); ui(); panel(bi); });
+      if (um) um.onclick = () => api.matchBuilding && api.setMatch && api.setMatch(b.id, null, () => { b.id_site = null; b.rc = null; paint(bi); flush(); ui(); panel(bi); });
+      return;
+    }
     if (RC) { el.innerHTML = panelRC(b); el.classList.remove("hide"); el.querySelector(".m3-close").onclick = () => select(-1); return; }
     const idcClass = b.idc ? (b.idc.mj_m2 >= 800 ? "p-fossil" : b.idc.mj_m2 >= 450 ? "p-warn" : "p-ren") : "";
     const hc = b.heat ? hex(HEAT[b.heat]) : null;

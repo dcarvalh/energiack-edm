@@ -566,7 +566,13 @@ fr:{
   loc_no_data:"Aucun import",
   loc_created:"Localité créée.", loc_create_err:"Erreur lors de la création.",
   loc_readings:"{n} relevés", loc_active:"actif", loc_open:"Ouvrir",
-  loc_delete_tip:"Supprimer cette localité et toutes ses données",
+  loc_map_btn:"Carte 3D…", loc_map_tip:"Importer une carte 3D réelle depuis geo.admin.ch et la rattacher aux sites",
+  mi_title:"Importer une carte 3D", mi_sub:"Choisissez une zone sur la plateforme suisse (geo.admin.ch)",
+  mi_search:"Rechercher un lieu", mi_search_ph:"Commune, quartier, rue…", mi_noresult:"Aucun résultat",
+  mi_scale:"Taille de la zone", mi_scale_s:"Petite (≈600 m)", mi_scale_m:"Moyenne (≈1 km)", mi_scale_l:"Grande (≈2 km)",
+  mi_zone:"Zone : {label} · ≈{m} m de côté", mi_import:"Importer la carte 3D", mi_importing:"Import en cours (bâtiments, photo aérienne)…",
+  mi_done:"{n} bâtiments · {m} rattachés par EGID · {u} à rattacher. Ouverture de la carte…", mi_fail:"Échec :",
+  mp_title:"Rattacher à un site", mp_search:"Rechercher un site…", mp_none:"Aucun site",
   loc_delete_confirm:"Supprimer la localité « {name} » et TOUTES ses données (bâtiments, compteurs, mesures, sas) ?\n\nTapez le nom pour confirmer :",
   loc_delete_ok:"Localité supprimée.", loc_delete_err:"Erreur lors de la suppression.",
   loc_delete_mismatch:"Nom incorrect — suppression annulée.",
@@ -680,6 +686,11 @@ fr:{
   m_map_rc:"Rive-Claire", m_map_ge:"Genève", m_map_title_rc:"Rive-Claire · patrimoine communal",
   m_sub_rc:"{n} bâtiments · {s} sites · relevés {y} · plan fictif, volumes schématiques", m_search_rc:"Rechercher un site…",
   m_attr_rc:"Données : Energ-IA Transition, Energ-IACK 2026 (CC BY 4.0) · volumes déduits de la SRE et des niveaux, agrandis ×{k} · lac, routes et arbres inventés",
+  m_map_title_imp:"Carte 3D importée", m_sub_imp:"{n} bâtiments · {m} rattachés · {u} à rattacher",
+  m_attr_imp:"Bâtiments : Registre fédéral des bâtiments (RegBL) · photo aérienne : swisstopo SWISSIMAGE · geo.admin.ch",
+  m_unmatched:"Non rattaché", m_imp_matched:"Rattaché au site", m_imp_unmatch:"Détacher",
+  m_imp_unmatched_hint:"Ce bâtiment n'est pas encore rattaché à un de vos sites. Cliquez sur « Rattacher » pour lui associer un site et afficher ses données.",
+  m_imp_match_btn:"Rattacher à un site…",
   m_src_rc:"Source : Energ-IA Transition, Energ-IACK 2026 (CC BY 4.0)", m_l_int:"Énergie / m²", m_l_hi:"Indice de chaleur", m_p_hi:"Indice de chaleur", m_n_hi:"Approximatif, non corrigé du climat : pas l'IDC officiel.", m_n_hi_est:"Approximatif, non corrigé du climat : pas l'IDC officiel. Chaleur de la pompe à chaleur estimée.",
   m_lg_rc_idc:"Indice de chaleur approximatif, non corrigé du climat", m_lg_rc_heat:"Chauffage en service", m_lg_rc_solar:"Production solaire mesurée",
   m_lg_rc_elec:"Électricité consommée sur site", m_lg_rc_water:"Consommation d'eau",
@@ -729,6 +740,13 @@ en:{
   loc_no_data:"No import yet",
   loc_created:"Locality created.", loc_create_err:"Error creating locality.",
   loc_readings:"{n} readings", loc_active:"active", loc_open:"Open",
+  loc_map_btn:"3D map…", loc_map_tip:"Import a real 3D map from geo.admin.ch and match it to the sites",
+  mi_title:"Import a 3D map", mi_sub:"Pick a zone on the Swiss platform (geo.admin.ch)",
+  mi_search:"Search a place", mi_search_ph:"Municipality, district, street…", mi_noresult:"No result",
+  mi_scale:"Zone size", mi_scale_s:"Small (≈600 m)", mi_scale_m:"Medium (≈1 km)", mi_scale_l:"Large (≈2 km)",
+  mi_zone:"Zone: {label} · ≈{m} m per side", mi_import:"Import the 3D map", mi_importing:"Importing (buildings, aerial photo)…",
+  mi_done:"{n} buildings · {m} matched by EGID · {u} to match. Opening the map…", mi_fail:"Failed:",
+  mp_title:"Match to a site", mp_search:"Search a site…", mp_none:"No site",
   loc_delete_tip:"Delete this locality and all its data",
   loc_delete_confirm:"Delete locality « {name} » and ALL its data (buildings, meters, readings, staging)?\n\nType the name to confirm:",
   loc_delete_ok:"Locality deleted.", loc_delete_err:"Delete failed.",
@@ -843,6 +861,11 @@ en:{
   m_map_rc:"Rive-Claire", m_map_ge:"Geneva", m_map_title_rc:"Rive-Claire · municipal buildings",
   m_sub_rc:"{n} buildings · {s} sites · {y} readings · fictional plan, schematic volumes", m_search_rc:"Search a site…",
   m_attr_rc:"Data: Energ-IA Transition, Energ-IACK 2026 (CC BY 4.0) · volumes from floor area and levels, enlarged ×{k} · lake, roads and trees invented",
+  m_map_title_imp:"Imported 3D map", m_sub_imp:"{n} buildings · {m} matched · {u} to match",
+  m_attr_imp:"Buildings: Federal Register of Buildings (RegBL) · aerial photo: swisstopo SWISSIMAGE · geo.admin.ch",
+  m_unmatched:"Not matched", m_imp_matched:"Matched to site", m_imp_unmatch:"Detach",
+  m_imp_unmatched_hint:"This building is not yet linked to one of your sites. Click \"Match\" to assign a site and show its data.",
+  m_imp_match_btn:"Match to a site…",
   m_src_rc:"Source: Energ-IA Transition, Energ-IACK 2026 (CC BY 4.0)", m_l_int:"Energy / m²", m_l_hi:"Heat index", m_p_hi:"Heat index", m_n_hi:"Approximate, not weather-corrected: not the official IDC.", m_n_hi_est:"Approximate, not weather-corrected: not the official IDC. Heat-pump heat estimated.",
   m_lg_rc_idc:"Approximate heat index, not weather-corrected", m_lg_rc_heat:"Heating in service", m_lg_rc_solar:"Measured solar output",
   m_lg_rc_elec:"Electricity used on site", m_lg_rc_water:"Water use",
@@ -1240,14 +1263,68 @@ function switchMap(k){
   if (MAP) { MAP.destroy(); MAP = null; }
   renderMap();
 }
+// Carrier (oil/gas/district/heat_pump/wood/electric/none) -> the 5 map heat kinds
+const CARRIER_KIND = {oil:"fossil", gas:"fossil", district:"district", heat_pump:"heatpump", wood:"wood", electric:"electric"};
+// Per-site figures in the shape the 3D map expects as b.rc (matches make_rive_claire_map output)
+function mapSiteData(sid){
+  const s = D.sites.find(x=>x.id===sid), cur = M.sites[sid] && M.sites[sid][YEAR];
+  if (!s || !cur) return null;
+  const car = carrierAt(sid, (YEAR-2021)*12+11);
+  return { year: YEAR, heat: CARRIER_KIND[car] || null, heat_kwh: cur.heat, elec_kwh: cur.elec,
+           pv_kwh: cur.pv, water_m3: cur.water, kwh_m2: cur.int, mj_m2: cur.hi, hiEst: cur.hiEst };
+}
+function mapSiteName(sid){ const s = D.sites.find(x=>x.id===sid); return s ? s.name[LANG] : sid; }
+
 function renderMap(){
   if (MAP || MAP_LOADING) return;
   MAP_LOADING = true;
-  // Prefer the municipality's declared map; fall back to the current tab selection
   const mc = LOC?.map_config;
-  const mapCfg = (mc?.key && MAPS[mc.key]) ? {key: mc.key, dir: mc.dir} : MAPS[MAPKEY];
-  import("./map3d.js?v="+V).then(m => m.initMap(document.getElementById("m3"), {t, nf, esc, showTip, hideTip, dark:isDark, lang:()=>LANG, switchMap, heatIndex:(sid, y)=>(M.sites[sid]||{})[y]}, mapCfg))
+  const imported = mc?.key === "imported";
+  const mapCfg = imported ? {key:"imported", dir:`api/localities/${LOC.slug}/map/`}
+    : (mc?.key && MAPS[mc.key]) ? {key: mc.key, dir: mc.dir} : MAPS[MAPKEY];
+  const canMatch = SERVER && USER && (USER.role==="admin" || USER.role==="technique");
+  const apiObj = {t, nf, esc, showTip, hideTip, dark:isDark, lang:()=>LANG, switchMap,
+    heatIndex:(sid, y)=>(M.sites[sid]||{})[y], siteData:mapSiteData, siteName:mapSiteName, canMatch,
+    matchBuilding: (b, done) => mapPickSite(b, done),
+    setMatch: (buildingId, idSite, done) => mapSetMatch(buildingId, idSite, done)};
+  import("./map3d.js?v="+V).then(m => m.initMap(document.getElementById("m3"), apiObj, mapCfg))
     .then(x => { MAP = x; MAP_LOADING = false; }).catch(e => { MAP_LOADING = false; document.getElementById("m3").innerHTML = `<div class="m3-loading">${esc(String(e))}</div>`; });
+}
+// Assign (or clear) the site of a map building via the API, then let the map recolour.
+async function mapSetMatch(buildingId, idSite, done){
+  try {
+    const r = await fetch(`api/localities/${LOC.slug}/map/building/${buildingId}`, {method:"PUT", headers:{"Content-Type":"application/json"}, body:JSON.stringify({id_site:idSite})});
+    if (r.ok && done) done(idSite);
+  } catch(e){}
+}
+// Searchable site picker modal: click an (unmatched) map building -> choose which of our sites it is.
+function mapPickSite(b, done){
+  const modal = document.getElementById("login");
+  const addr = b.addr || (b.egid ? "EGID "+b.egid : "");
+  const render = (q="") => {
+    const needle = q.trim().toLowerCase();
+    const list = D.sites.filter(s => !needle || s.id.toLowerCase().includes(needle)
+      || s.name[LANG].toLowerCase().includes(needle) || (t("type_"+s.type)||"").toLowerCase().includes(needle)).slice(0, 40);
+    document.getElementById("mp-list").innerHTML = list.map(s =>
+      `<button class="chip" style="display:block;width:100%;text-align:left;margin:2px 0" data-sid="${esc(s.id)}">
+        <b>${esc(s.name[LANG])}</b> <span class="mut">· ${esc(s.id)} · ${esc(t("type_"+s.type))}</span></button>`).join("")
+      || `<p class="sub">${esc(t("mp_none"))}</p>`;
+    document.querySelectorAll("#mp-list [data-sid]").forEach(btn => btn.onclick = () => {
+      modal.classList.remove("open");
+      mapSetMatch(b.id, btn.dataset.sid, () => done && done(btn.dataset.sid));
+    });
+  };
+  document.getElementById("login-in").innerHTML = `
+    <h2 style="margin-bottom:4px">${esc(t("mp_title"))}</h2>
+    <p class="sub" style="margin-bottom:10px">${esc(addr)}</p>
+    <input id="mp-q" type="text" placeholder="${esc(t("mp_search"))}" style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px">
+    <div id="mp-list" style="max-height:320px;overflow:auto"></div>
+    <div class="row" style="margin-top:10px"><button id="mp-cancel" class="chip">${esc(t("loc_f_cancel"))}</button></div>`;
+  modal.classList.add("open");
+  document.getElementById("mp-cancel").onclick = () => modal.classList.remove("open");
+  document.getElementById("mp-q").oninput = (e) => render(e.target.value);
+  render();
+  setTimeout(()=>document.getElementById("mp-q").focus(), 50);
 }
 
 /* ---------------------------------------------------------------- site drawer */
@@ -1604,6 +1681,7 @@ function renderLocalities(){
       <td id="loc-st-${esc(l.slug)}">${esc(t("loc_no_data"))}</td>
       <td style="white-space:nowrap">
         <button class="chip" style="margin-right:4px" onclick="switchToLocality('${esc(l.slug)}')">${esc(t("loc_open"))}</button>
+        <button class="chip" style="margin-right:4px" onclick="mapImportDialog('${esc(l.slug)}','${esc(l.name)}')" title="${esc(t('loc_map_tip'))}">${esc(t("loc_map_btn"))}</button>
         ${list.length > 1 ? `<button class="chip" style="color:var(--warn)" onclick="locDelete('${esc(l.slug)}','${esc(l.name)}')" title="${esc(t('loc_delete_tip'))}">✕</button>` : ""}
       </td>
     </tr>`).join("")}</tbody></table></div>`;
@@ -1634,6 +1712,89 @@ function renderLocalities(){
       renderLocalities();
     } catch(e) { msg(t("loc_create_err"), true); }
   };
+}
+
+/* ---------------------------------------------------------------- 3D map import (Swiss geo platform) */
+let MAP_ZONE = null;   // {bbox:[xmin,ymin,xmax,ymax], label}
+function mapImportDialog(slug, name){
+  const modal = document.getElementById("login");
+  const fr = LANG==="fr";
+  MAP_ZONE = null;
+  document.getElementById("login-in").innerHTML = `
+    <h2 style="margin-bottom:4px">${esc(t("mi_title"))}</h2>
+    <p class="sub" style="margin-bottom:12px">${esc(name)} — ${esc(t("mi_sub"))}</p>
+    <label style="display:block;margin-bottom:6px;font-size:.9rem">${esc(t("mi_search"))}
+      <input id="mi-q" type="text" placeholder="${esc(t("mi_search_ph"))}" style="display:block;width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px;margin-top:4px">
+    </label>
+    <div id="mi-results" style="max-height:160px;overflow:auto;margin-bottom:10px"></div>
+    <label style="display:block;margin-bottom:10px;font-size:.9rem">${esc(t("mi_scale"))}
+      <select id="mi-scale" style="display:block;width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px;margin-top:4px">
+        <option value="300">${esc(t("mi_scale_s"))}</option>
+        <option value="500" selected>${esc(t("mi_scale_m"))}</option>
+        <option value="1000">${esc(t("mi_scale_l"))}</option>
+      </select>
+    </label>
+    <p id="mi-zone" class="sub" style="margin:0 0 10px"></p>
+    <div class="row" style="gap:8px">
+      <button id="mi-go" class="chip" style="background:var(--accent);color:#fff" disabled>${esc(t("mi_import"))}</button>
+      <button id="mi-cancel" class="chip">${esc(t("loc_f_cancel"))}</button>
+    </div>
+    <p id="mi-msg" style="margin-top:8px;font-size:.9rem"></p>`;
+  modal.classList.add("open");
+  document.getElementById("mi-cancel").onclick = () => modal.classList.remove("open");
+
+  const q = document.getElementById("mi-q"), res = document.getElementById("mi-results");
+  const go = document.getElementById("mi-go"), zoneEl = document.getElementById("mi-zone");
+  let timer;
+  const showZone = () => {
+    if (!MAP_ZONE) { go.disabled = true; zoneEl.textContent = ""; return; }
+    go.disabled = false;
+    const [x0,y0,x1,y1] = MAP_ZONE.bbox;
+    zoneEl.textContent = t("mi_zone", {label: MAP_ZONE.label, m: Math.round(Math.max(x1-x0, y1-y0))});
+  };
+  const pickCentre = (cx, cy, label) => {
+    const half = +document.getElementById("mi-scale").value;
+    MAP_ZONE = {label, bbox: [cx-half, cy-half, cx+half, cy+half]};
+    showZone();
+  };
+  document.getElementById("mi-scale").onchange = () => { if (MAP_ZONE) { const [x0,y0,x1,y1]=MAP_ZONE.bbox; pickCentre((x0+x1)/2,(y0+y1)/2, MAP_ZONE.label); } };
+  q.oninput = () => {
+    clearTimeout(timer);
+    timer = setTimeout(async () => {
+      const text = q.value.trim(); if (text.length < 2) { res.innerHTML=""; return; }
+      try {
+        const list = await fetch(`api/geo/search?q=${encodeURIComponent(text)}`).then(r=>r.json());
+        res.innerHTML = (list||[]).filter(r=>r.x&&r.y).slice(0,8).map((r,i)=>
+          `<button class="chip" style="display:block;width:100%;text-align:left;margin:2px 0" data-cx="${r.x}" data-cy="${r.y}" data-label="${esc(r.label)}">${esc(r.label)}</button>`).join("")
+          || `<p class="sub">${esc(t("mi_noresult"))}</p>`;
+        res.querySelectorAll("[data-cx]").forEach(bq => bq.onclick = () => {
+          res.querySelectorAll("[data-cx]").forEach(x=>x.classList.remove("on")); bq.classList.add("on");
+          pickCentre(+bq.dataset.cx, +bq.dataset.cy, bq.dataset.label);
+        });
+      } catch(e){ res.innerHTML = `<p class="sub" style="color:var(--warn)">${esc(String(e))}</p>`; }
+    }, 300);
+  };
+  go.onclick = async () => {
+    if (!MAP_ZONE) return;
+    go.disabled = true; const msg = document.getElementById("mi-msg");
+    msg.textContent = t("mi_importing"); msg.style.color = "var(--muted)";
+    try {
+      const r = await fetch(`api/localities/${slug}/map/import`, {method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({bbox: MAP_ZONE.bbox.map(v=>Math.round(v)).join(","), name: MAP_ZONE.label, tiles: 1})});
+      if (!r.ok) throw new Error((await r.json()).detail || r.status);
+      const s = await r.json();
+      msg.style.color = "var(--accent)";
+      msg.textContent = t("mi_done", {n: nf(s.n), m: nf(s.matched), u: nf(s.unmatched)});
+      // refresh localities (map_config changed) and switch to this one, open the 3D map
+      const lr = await fetch("api/localities",{cache:"no-store"}); if (lr.ok) LOCALITIES = await lr.json();
+      LOC = LOCALITIES.find(l=>l.slug===slug) || LOC;
+      try { localStorage.setItem("edm-locality", LOC.slug); } catch(e){}
+      if (MAP) { MAP.destroy(); MAP = null; MAP_LOADING = false; }
+      await loadData();
+      setTimeout(() => { modal.classList.remove("open"); location.hash = "#carte"; renderAll(); }, 1200);
+    } catch(e){ msg.style.color = "var(--warn)"; msg.textContent = t("mi_fail") + " " + e.message; go.disabled = false; }
+  };
+  setTimeout(()=>q.focus(), 50);
 }
 
 function locDelete(slug, name) {
@@ -2138,7 +2299,7 @@ let RZ, LASTW = innerWidth;
 window.addEventListener("resize", () => { clearTimeout(RZ); RZ = setTimeout(() => { if (Math.abs(innerWidth - LASTW) < 40 || !D) return; LASTW = innerWidth; const open = document.getElementById("drawer").classList.contains("open"); renderAll(); if (open) reopen(); }, 200); });
 matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", renderAll);
 
-const V = "36";
+const V = "39";
 (async () => {
   try {
     const c = await fetch("api/config.json?v="+V, {cache:"no-store"}).then(r => r.json());
