@@ -3,7 +3,8 @@
 Reports JS errors, FR/EN dictionary mismatches, horizontal overflow, and saves screenshots.
 Usage: .venv/bin/python tools/check_page.py [URL] [OUTDIR]
 On the server stack (compose.yaml with DEMO_LOGIN=1), CHECK_ROLE=technique (or admin) logs in first, since Manage
-and Data quality need a role; tools/check_roles.py checks what each role sees.
+and Data quality need a role; tools/check_roles.py checks what each role sees. The server-only views are added for the
+roles that have them: Data (technique, admin), Municipalities and Users (admin). CHECK_ROLE=admin covers every view.
 """
 import os
 import sys
@@ -15,6 +16,8 @@ OUT = Path(sys.argv[2] if len(sys.argv) > 2 else "shots")
 OUT.mkdir(parents=True, exist_ok=True)
 problems = []
 ROLE = os.environ.get("CHECK_ROLE")
+VIEWS = ["accueil", "gestion", "qualite", "citoyens", "carte", "apropos", "site/S01"]
+VIEWS += {"technique": ["donnees"], "admin": ["donnees", "localites", "utilisateurs"]}.get(ROLE, [])
 
 with sync_playwright() as p:
     b = p.chromium.launch(args=["--use-angle=swiftshader", "--enable-unsafe-swiftshader"])
@@ -29,7 +32,7 @@ with sync_playwright() as p:
                 r = page.request.post(URL.rstrip("/") + "/api/demo-login", data={"role": ROLE})
                 assert r.ok, f"demo login as {ROLE} failed: {r.status}"
             for lang in ("fr", "en"):
-                for view in ("accueil", "gestion", "qualite", "citoyens", "carte", "apropos", "site/S01"):
+                for view in VIEWS:
                     if scheme == "dark" and (dev == "phone" or view not in ("gestion", "accueil", "qualite")):
                         continue
                     page.goto(f"{URL}?lang={lang}#{view}")
@@ -38,6 +41,8 @@ with sync_playwright() as p:
                         page.wait_for_selector("#m3 canvas", timeout=60000); page.wait_for_timeout(2000)
                     if view == "site/S01":
                         page.wait_for_selector("#drawer.open")
+                    elif not page.is_visible(f"#v-{view}"):
+                        problems.append(f"{dev} {lang} {view}: the view is not shown")
                     ow = page.evaluate("document.documentElement.scrollWidth - innerWidth")
                     if ow > 1:
                         problems.append(f"{dev} {lang} {view}: horizontal overflow {ow}px")

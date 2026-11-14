@@ -114,14 +114,14 @@ tools/import_rive_claire.py    builds data.json from the organisers' Rive-Claire
 tools/make_rive_claire_map.py  builds prototype/map-rc/ from the same guide (--out/--scale/--year)
 tools/make_map.py       builds prototype/map/ from SITG + swisstopo (--box/--out/--step/--px/--tiles)
 tools/check_page.py     headless browser check: all views, FR/EN, desktop/phone, light/dark, JS errors, overflow
-                        (on the server version: CHECK_ROLE=technique logs in first)
+                        (on the server version: CHECK_ROLE=admin logs in first and adds the server-only views)
 tools/record_video.py   records clips of the app: one MP4 per shot + joined file in video-out/
                         (--lang fr|en, --shots, --size, --zoom, --url, --audio); edit SHOTS at the top of the file
 prototype/pitch/        the pitch deck (French), self-contained: index.html, clips/, fonts/, qr-server.svg (see "Pitch deck")
 prototype/api/config.json  {"server": false} on a static host; on the server the API answers instead (logins on)
 compose.yaml, .env.example the server version: PostgreSQL + API + Caddy
 server/                 the API (FastAPI): schema.sql, store.py (database ↔ data.json), auth.py (accounts, roles), cli.py
-tools/check_stack.sh    end-to-end check of the server version (also run on every pull request)
+tools/check_stack.sh    end-to-end check of the server version, incl. a second municipality from a ZIP (also run on every pull request)
 tools/check_upgrade.sh  upgrade check: a database created by main must start with the new code, nothing lost (every pull request)
 tools/csv_detect.py     recognises which table an uploaded CSV is, from its column names
 tools/make_geneva_fake.py  generates geneve/: the fictional second municipality (CSV tables + ZIP to upload)
