@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>openEDM · pitch</title>
+<meta name="robots" content="noindex">
+<style>
+/* Pitch deck: one 16:9 stage, one <section class="slide"> per slide.
+   Text on the left (40%), a pre-rendered clip of the app on the right (60%).
+   Keys: → / space / click = next, ← = back, F = full screen. Clips: tools/record_video.py --size 1200x900. */
+@font-face{font-family:"Inter";font-style:normal;font-weight:100 900;font-display:swap;src:url(../vendor/fonts/inter-latin-wght-normal.woff2) format("woff2")}
+:root{
+  --bg:#f6f7f8; --surface:#ffffff; --text:#16191d; --muted:#5f6871; --line:#e3e6e9;
+  --accent:#17765a; --accent-soft:#e4f1ec; --bad:#b83a2e; --bad-soft:#fae9e7; --warn:#a4520c; --warn-soft:#fbf0e4;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:#dfe3e6;color:var(--text);font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:grid;place-items:center;overflow:hidden}
+.stage{width:min(100vw,calc(100vh * 16 / 9));aspect-ratio:16/9;background:var(--bg);container-type:inline-size;overflow:hidden;position:relative;cursor:pointer}
+.slide{position:absolute;inset:0;display:none;grid-template-columns:40fr 60fr;gap:3.2cqw;align-items:center;padding:5cqw 4cqw 6cqw 5cqw}
+.slide.on{display:grid}
+.copy{min-width:0;display:flex;flex-direction:column;gap:2cqw}
+.eyebrow{font-size:1.25cqw;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+h1{margin:0;font-size:3.7cqw;line-height:1.08;font-weight:700;letter-spacing:-.022em;text-wrap:balance}
+.lead{margin:0;font-size:1.7cqw;line-height:1.4;color:var(--muted)}
+.facts{list-style:none;margin:.6cqw 0 0;padding:0;display:flex;flex-direction:column;gap:1cqw;font-size:1.5cqw;font-variant-numeric:tabular-nums}
+.facts li{display:flex;align-items:baseline;gap:1cqw}
+.facts b{font-weight:700;min-width:3.4em}
+.pill{font-size:1.15cqw;font-weight:600;padding:.25cqw .8cqw;border-radius:.5cqw;white-space:nowrap}
+.bad{background:var(--bad-soft);color:var(--bad)} .warn{background:var(--warn-soft);color:var(--warn)} .ok{background:var(--accent-soft);color:var(--accent)}
+.panel{min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:1.1cqw;overflow:hidden;box-shadow:0 1px 2px rgba(16,20,24,.06),0 10px 34px rgba(16,20,24,.12)}
+.panel video{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;background:var(--surface)}
+.foot{position:absolute;left:5cqw;right:4cqw;bottom:2.2cqw;display:flex;justify-content:space-between;font-size:1.1cqw;color:var(--muted);font-variant-numeric:tabular-nums;pointer-events:none}
+.foot strong{color:var(--text);font-weight:600}
+@media (prefers-reduced-motion:no-preference){
+  .slide.on .copy > *{animation:rise .6s cubic-bezier(.2,.7,.2,1) both}
+  .slide.on .copy > :nth-child(2){animation-delay:.12s} .slide.on .copy > :nth-child(3){animation-delay:.3s} .slide.on .copy > :nth-child(4){animation-delay:.5s}
+  .slide.on .panel{animation:rise .7s cubic-bezier(.2,.7,.2,1) .2s both}
+}
+@keyframes rise{from{opacity:0;transform:translateY(1.2cqw)}to{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+<main class="stage" id="stage">
+
+  <section class="slide">
+    <div class="copy">
+      <div class="eyebrow">Qualité des données</div>
+      <h1>Chaque relevé est vérifié avant d'entrer dans les chiffres.</h1>
+      <p class="lead">17 contrôles à l'import. Rien n'est caché&nbsp;: chaque anomalie est signalée, estimée ou rejetée.</p>
+      <ul class="facts">
+        <li><b>9&#8239;437</b> lignes lues</li>
+        <li><b>1</b> <span class="pill bad">Rejeté</span> doublon écarté</li>
+        <li><b>12</b> <span class="pill warn">À vérifier</span> points signalés</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <video src="clips/quality.mp4" poster="clips/quality.jpg" muted loop playsinline preload="auto"
+             aria-label="Extrait de l'application : la page Qualité défile sur la liste des contrôles"></video>
+    </div>
+  </section>
+
+  <div class="foot"><span><strong>openEDM</strong> · Rive-Claire, commune fictive</span><span id="count"></span></div>
+</main>
+<script>
+const slides = [...document.querySelectorAll(".slide")];
+let i = Math.min(slides.length - 1, Math.max(0, (parseInt(location.hash.slice(1)) || 1) - 1));
+function show(n){
+  i = Math.min(slides.length - 1, Math.max(0, n));
+  slides.forEach((s, k) => {
+    s.classList.toggle("on", k === i);
+    s.querySelectorAll("video").forEach(v => { if (k === i){ v.currentTime = 0; v.play().catch(() => {}); } else v.pause(); });
+  });
+  document.getElementById("count").textContent = (i + 1) + " / " + slides.length;
+  history.replaceState(null, "", "#" + (i + 1));
+}
+addEventListener("keydown", e => {
+  if (["ArrowRight", "PageDown", " ", "Enter"].includes(e.key)){ e.preventDefault(); show(i + 1); }
+  else if (["ArrowLeft", "PageUp", "Backspace"].includes(e.key)){ e.preventDefault(); show(i - 1); }
+  else if (e.key === "Home") show(0);
+  else if (e.key === "End") show(slides.length - 1);
+  else if (e.key.toLowerCase() === "f"){ document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen().catch(() => {}); }
+});
+document.getElementById("stage").addEventListener("click", e => show(i + (e.clientX < innerWidth * 0.25 ? -1 : 1)));
+show(i);
+</script>
+</body>
+</html>
