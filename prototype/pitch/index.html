@@ -12,7 +12,7 @@
 @font-face{font-family:"Inter";font-style:normal;font-weight:100 900;font-display:swap;src:url(../vendor/fonts/inter-latin-wght-normal.woff2) format("woff2")}
 :root{
   --bg:#f6f7f8; --surface:#ffffff; --text:#16191d; --muted:#5f6871; --line:#e3e6e9; --line-2:#c3c9ce;
-  --accent:#17765a; --accent-soft:#e4f1ec; --bad:#b83a2e; --bad-soft:#fae9e7;
+  --accent:#17765a; --accent-soft:#e4f1ec; --bad:#b83a2e; --bad-soft:#fae9e7; --cons:#3b6fd8; --sol:#d99a0b; --sol-soft:#fbeec6;
   color-scheme:light;
 }
 *{box-sizing:border-box}
@@ -61,6 +61,21 @@ h1{margin:0;font-size:3.3cqw;line-height:1.1;font-weight:700;letter-spacing:-.02
 /* Two visuals stacked: 16:9 clips */
 .visuals.two .panel, .visuals.two .ph{flex:none;height:21.3cqw;aspect-ratio:16/9;align-self:center;max-height:none}
 .visuals.two video{aspect-ratio:16/9}
+/* Slide 4: illustrative chart, drawn once */
+.chart{padding:2cqw 2.2cqw 1.6cqw;display:flex;flex-direction:column;gap:1cqw}
+.chart-head{display:flex;align-items:center;gap:1.8cqw;font-size:1.2cqw;font-weight:600}
+.chart-head small{margin-left:auto;font-size:1.05cqw;font-weight:500;color:var(--muted)}
+.key{display:flex;align-items:center;gap:.6cqw}
+.key i{width:1.6cqw;height:.35cqw;border-radius:.2cqw}
+.k-sol{background:var(--sol)} .k-cons{background:var(--cons)}
+.chart svg{display:block;width:100%;height:auto;font-family:inherit}
+.chart text{font-size:12px;fill:var(--muted)}
+.ax line{stroke:var(--line-2);stroke-width:1}
+.ln{fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1;stroke-dashoffset:0}
+.ln.cons{stroke:var(--cons)} .ln.sol{stroke:var(--sol)}
+.sur{fill:var(--sol-soft)}
+.note text{font-size:13px;font-weight:600;fill:var(--text)}
+.note line{stroke:var(--text);stroke-width:1.5} .note path{fill:var(--text)}
 /* Slide 3: the five steps */
 .steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.7cqw;counter-reset:s}
 .steps li{display:flex;align-items:baseline;gap:1cqw;font-size:1.45cqw;color:var(--muted);counter-increment:s}
@@ -85,6 +100,15 @@ h1{margin:0;font-size:3.3cqw;line-height:1.1;font-weight:700;letter-spacing:-.02
   .slide.on .rows div:nth-child(1) i{animation-delay:2.3s} .slide.on .rows div:nth-child(2) i{animation-delay:2.7s} .slide.on .rows div:nth-child(3) i{animation-delay:3.1s}
   .slide.on .asks span:nth-child(1){animation-delay:1.3s} .slide.on .asks span:nth-child(2){animation-delay:2.1s} .slide.on .asks span:nth-child(3){animation-delay:2.9s}
 }
+@media (prefers-reduced-motion:no-preference){
+  .slide.on .ln.cons{animation:draw 1.6s ease-in-out .6s both}
+  .slide.on .ln.sol{animation:draw 1.6s ease-in-out 2.1s both}
+  .slide.on .sur{animation:fade .8s ease-out 3.7s both}
+  .slide.on .note{animation:fade .6s ease-out both}
+  .slide.on .n1{animation-delay:4.2s} .slide.on .n2{animation-delay:4.9s} .slide.on .n3{animation-delay:5.7s}
+}
+@keyframes draw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
 @keyframes rise{from{opacity:0;transform:translateY(1.2cqw)}to{opacity:1;transform:none}}
 </style>
 </head>
@@ -158,7 +182,7 @@ h1{margin:0;font-size:3.3cqw;line-height:1.1;font-weight:700;letter-spacing:-.02
     </div>
     <div class="visuals two">
       <div class="panel"><video src="clips/quality.mp4" poster="clips/quality.jpg" muted loop playsinline preload="auto" aria-label="Extrait de l'application : la page Qualité des données et sa liste de contrôles"></video></div>
-      <div class="ph"><span class="ph-kind">Clip de l'app à venir</span><span class="ph-what">Gestion des accès</span></div>
+      <div class="panel"><video src="clips/access.mp4" poster="clips/access.jpg" muted loop playsinline preload="auto" aria-label="Extrait de l'application : le menu change selon le rôle connecté, puis la page Utilisateurs et rôles de l'administrateur"></video></div>
     </div>
   </section>
 
@@ -175,7 +199,18 @@ h1{margin:0;font-size:3.3cqw;line-height:1.1;font-weight:700;letter-spacing:-.02
       </ul>
     </div>
     <div class="visuals">
-      <div class="ph"><span class="ph-kind">Graphique à venir</span><span class="ph-what">Production solaire et consommation&nbsp;: le décalage entre les deux courbes</span></div>
+      <div class="panel chart">
+        <div class="chart-head"><span class="key"><i class="k-sol"></i>Production solaire</span><span class="key"><i class="k-cons"></i>Consommation</span><small>exemple illustratif, une journée</small></div>
+        <svg viewBox="0 0 600 340" role="img" aria-label="Graphique illustratif sur 24 heures : la production solaire culmine à midi, la consommation le soir ; le surplus de midi est mis en évidence">
+          <g class="ax"><line x1="50" y1="300" x2="570" y2="300"/><text x="50" y="322" text-anchor="middle">0 h</text><text x="180" y="322" text-anchor="middle">6 h</text><text x="310" y="322" text-anchor="middle">12 h</text><text x="440" y="322" text-anchor="middle">18 h</text><text x="570" y="322" text-anchor="middle">24 h</text></g>
+          <path class="sur" d="M282.9 198.2 L288.3 179.4 L293.8 159.8 L299.2 140.4 L304.6 121.8 L310.0 105.0 L315.4 90.9 L320.8 80.2 L326.2 73.5 L331.7 71.2 L337.1 73.5 L342.5 80.2 L347.9 90.9 L353.3 105.0 L358.8 121.8 L364.2 140.4 L369.6 159.8 L375.0 179.4 L380.4 198.2 L380.4 202.6 L375.0 204.3 L369.6 205.4 L364.2 206.0 L358.8 206.2 L353.3 206.3 L347.9 206.3 L342.5 206.3 L337.1 206.2 L331.7 206.3 L326.2 206.4 L320.8 206.6 L315.4 206.9 L310.0 207.2 L304.6 207.6 L299.2 208.0 L293.8 208.2 L288.3 208.3 L282.9 208.0 Z"/>
+          <path class="ln cons" pathLength="1" d="M50.0 222.0 L55.4 222.0 L60.8 222.0 L66.2 222.0 L71.7 222.0 L77.1 222.0 L82.5 222.0 L87.9 222.0 L93.3 222.0 L98.8 222.0 L104.2 222.0 L109.6 221.9 L115.0 221.8 L120.4 221.7 L125.8 221.5 L131.2 221.0 L136.7 220.4 L142.1 219.3 L147.5 217.6 L152.9 215.2 L158.3 211.9 L163.8 207.5 L169.2 201.9 L174.6 195.1 L180.0 187.5 L185.4 179.4 L190.8 171.2 L196.2 163.8 L201.7 157.8 L207.1 153.7 L212.5 152.0 L217.9 152.9 L223.3 156.1 L228.8 161.4 L234.2 168.0 L239.6 175.2 L245.0 182.5 L250.4 189.3 L255.8 195.1 L261.2 199.8 L266.7 203.3 L272.1 205.7 L277.5 207.2 L282.9 208.0 L288.3 208.3 L293.8 208.2 L299.2 208.0 L304.6 207.6 L310.0 207.2 L315.4 206.9 L320.8 206.6 L326.2 206.4 L331.7 206.3 L337.1 206.2 L342.5 206.3 L347.9 206.3 L353.3 206.3 L358.8 206.2 L364.2 206.0 L369.6 205.4 L375.0 204.3 L380.4 202.6 L385.8 200.2 L391.2 196.7 L396.7 192.2 L402.1 186.6 L407.5 179.6 L412.9 171.6 L418.3 162.6 L423.8 152.8 L429.2 142.8 L434.6 133.0 L440.0 124.0 L445.4 116.4 L450.8 110.5 L456.2 107.0 L461.7 106.0 L467.1 107.6 L472.5 111.8 L477.9 118.2 L483.3 126.6 L488.8 136.3 L494.2 146.8 L499.6 157.5 L505.0 168.0 L510.4 177.8 L515.8 186.7 L521.2 194.5 L526.7 201.0 L532.1 206.4 L537.5 210.7 L542.9 213.9 L548.3 216.4 L553.8 218.2 L559.2 219.5 L564.6 220.4 L570.0 221.0"/>
+          <path class="ln sol" pathLength="1" d="M50.0 300.0 L55.4 300.0 L60.8 300.0 L66.2 300.0 L71.7 300.0 L77.1 300.0 L82.5 300.0 L87.9 300.0 L93.3 300.0 L98.8 300.0 L104.2 300.0 L109.6 300.0 L115.0 300.0 L120.4 300.0 L125.8 300.0 L131.2 300.0 L136.7 300.0 L142.1 300.0 L147.5 300.0 L152.9 300.0 L158.3 300.0 L163.8 300.0 L169.2 300.0 L174.6 299.9 L180.0 299.9 L185.4 299.8 L190.8 299.7 L196.2 299.6 L201.7 299.3 L207.1 298.8 L212.5 298.2 L217.9 297.2 L223.3 295.8 L228.8 293.8 L234.2 291.0 L239.6 287.3 L245.0 282.3 L250.4 275.9 L255.8 267.8 L261.2 257.8 L266.7 245.8 L272.1 231.8 L277.5 215.8 L282.9 198.2 L288.3 179.4 L293.8 159.8 L299.2 140.4 L304.6 121.8 L310.0 105.0 L315.4 90.9 L320.8 80.2 L326.2 73.5 L331.7 71.2 L337.1 73.5 L342.5 80.2 L347.9 90.9 L353.3 105.0 L358.8 121.8 L364.2 140.4 L369.6 159.8 L375.0 179.4 L380.4 198.2 L385.8 215.8 L391.2 231.8 L396.7 245.8 L402.1 257.8 L407.5 267.8 L412.9 275.9 L418.3 282.3 L423.8 287.3 L429.2 291.0 L434.6 293.8 L440.0 295.8 L445.4 297.2 L450.8 298.2 L456.2 298.8 L461.7 299.3 L467.1 299.6 L472.5 299.7 L477.9 299.8 L483.3 299.9 L488.8 299.9 L494.2 300.0 L499.6 300.0 L505.0 300.0 L510.4 300.0 L515.8 300.0 L521.2 300.0 L526.7 300.0 L532.1 300.0 L537.5 300.0 L542.9 300.0 L548.3 300.0 L553.8 300.0 L559.2 300.0 L564.6 300.0 L570.0 300.0"/>
+          <g class="note n1"><text x="332" y="57" text-anchor="middle">Surplus solaire à midi</text></g>
+          <g class="note n2"><text x="462" y="92" text-anchor="middle">Pic de consommation le soir</text></g>
+          <g class="note n3"><line x1="338" y1="248" x2="456" y2="248"/><path d="M456 248 l-8 -5 v10 z"/><path d="M338 248 l8 -5 v10 z"/><text x="397" y="240" text-anchor="middle">décalage</text></g>
+        </svg>
+      </div>
     </div>
   </section>
 

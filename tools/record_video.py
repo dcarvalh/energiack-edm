@@ -138,7 +138,17 @@ def sheet(c):
     c.page.evaluate("location.hash = '#fiche/S30-B1'")   # the building sheet of the indoor pool
     c.wait(2.2); c.scroll(450, 2.5); c.wait(1.5)
 
-SHOTS = [home, manage, quality, citizens, map3d, map_rc, map_ge, sheet]
+def access(c):
+    """Server version with demo logins (--url): each role sees a different menu; the admin manages the accounts."""
+    c.open("accueil"); c.wait(1.5)
+    c.click("#login-btn", after=2.5)                 # the dialog lists one button per role
+    c.click("[data-demo='elu']", after=2.5)
+    c.click("#logout-btn", after=1.0)
+    c.click("#login-btn", after=1.2)
+    c.click("[data-demo='admin']", after=2.0)
+    c.click("nav a[data-view='utilisateurs']", after=3.0)
+
+SHOTS = [home, manage, quality, citizens, map3d, map_rc, map_ge, sheet, access]
 # -----------------------------------------------------------------------------
 
 
@@ -160,6 +170,7 @@ def main():
     ap.add_argument("--lang", default="fr", choices=["fr", "en"])
     ap.add_argument("--shots", help="comma-separated shot names (default: all, in SHOTS order)")
     ap.add_argument("--out", default=str(ROOT / "video-out"), help="output folder (git-ignored)")
+    ap.add_argument("--url", help="record a running copy instead of the local prototype/ (e.g. the server version, for logins)")
     ap.add_argument("--audio", help="narration or music file to put on the joined video")
     ap.add_argument("--scheme", default="light", choices=["light", "dark"])
     ap.add_argument("--zoom", type=float, default=1.5, help="page zoom, so text is readable on a projector")
@@ -170,7 +181,7 @@ def main():
     by_name = {f.__name__: f for f in SHOTS}
     shots = [by_name[n] for n in a.shots.split(",")] if a.shots else SHOTS
     out = Path(a.out); out.mkdir(parents=True, exist_ok=True)
-    base = serve(ROOT / "prototype")
+    base = a.url or serve(ROOT / "prototype")
     tmp = Path(tempfile.mkdtemp(prefix="rec-"))
     clips = []
 
