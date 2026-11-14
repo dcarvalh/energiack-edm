@@ -5,6 +5,8 @@
 #      raw readings and the quality report
 #   3. importing the same dataset again adds 0 rows
 #   4. roles (issue #15): password login, demo logins, what each role is refused, role changes by an admin
+#   5. several municipalities: create one, upload the fictional Geneva ZIP to staging, commit, read it next to
+#      Rive-Claire (unchanged), delete it
 # Usage: tools/check_stack.sh [--keep]     (--keep leaves the stack running on http://127.0.0.1:18088/)
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -87,5 +89,26 @@ post -c "$TMP/real" -d "{\"username\":\"check\",\"password\":\"$PW\"}" "$URL/api
 as real -X POST "$URL/api/logout" >/dev/null
 [ "$(as real "$URL/api/me")" = null ]
 [ "$(code -b "$TMP/real" "$URL/api/users")" = 401 ]
+
+echo "5. several municipalities"
+L="$URL/api/localities"
+NEW='{"slug":"geneve","name":"Geneve (fictional)"}'
+[ "$(code -b "$TMP/technique" -H 'content-type: application/json' -d "$NEW" "$L")" = 403 ]         # admins only
+post -b "$TMP/admin" -d "$NEW" "$L" | grep -q '"slug":"geneve"'
+[ "$(code "$L/geneve/staging")" = 401 ]
+[ "$(code -b "$TMP/elu" "$L/geneve/staging")" = 403 ]
+[ "$(code -b "$TMP/technique" -F "file=@README.md" "$L/geneve/staging")" = 422 ]                   # not a ZIP
+as technique -F "file=@geneve/geneve-energy-data.zip" "$L/geneve/staging" -o "$TMP/staged.json"
+sid=$("$PY" -c 'import json, sys; d = json.load(open(sys.argv[1])); assert len(d["files"]) == 10 and not d["unrecognised"], d; print(d["staging_id"])' "$TMP/staged.json")
+if curl -fsS "$L" | grep -q '"slug":"geneve"'; then echo "a municipality without data is listed to visitors"; exit 1; fi
+as technique -X POST "$L/geneve/staging/$sid/commit" | grep -q '"added":7872'
+[ "$(code -b "$TMP/technique" -X POST "$L/geneve/staging/$sid/commit")" = 422 ]                     # already committed
+as technique --compressed "$URL/api/data.json?locality=geneve" -o "$TMP/geneve.json"
+"$PY" -c 'import json, sys; d = json.load(open(sys.argv[1])); n = len(d["sites"]); assert n == 40, n' "$TMP/geneve.json"
+as technique --compressed "$URL/api/data.json?locality=rive-claire" | cmp -s - "$TMP/full.json" || { echo "Rive-Claire changed after the Geneva import"; exit 1; }
+[ "$(code -b "$TMP/technique" -X DELETE "$L/geneve")" = 403 ]
+[ "$(code -b "$TMP/admin" -X DELETE "$L/geneve")" = 200 ]
+[ "$(code -b "$TMP/technique" "$URL/api/data.json?locality=geneve")" = 404 ]
+as technique --compressed "$URL/data.json" | cmp -s - "$TMP/full.json" || { echo "Rive-Claire changed after deleting Geneva"; exit 1; }
 
 echo "stack check OK"

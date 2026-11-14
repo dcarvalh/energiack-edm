@@ -2,7 +2,7 @@
 #   check: the database stack from an empty database (tools/check_stack.sh), then the upgrade of a database created by
 #          the base branch (tools/check_upgrade.sh): the server keeps its database between deploys.
 #   page:  the app in a headless browser (tools/check_page.py: JS errors, FR/EN keys, phone width), on the static site
-#          and logged in on the stack, and what each role sees (tools/check_roles.py).
+#          and logged in as administrator on the stack (every view), and what each role sees (tools/check_roles.py).
 # The deploy job is skipped until the repository variable DEPLOY_HOST is set (Settings › Secrets and variables › Actions).
 # Setup: docs/deploy.md
 name: Stack
@@ -46,11 +46,11 @@ jobs:
           python3 -m http.server 8000 -d prototype >/dev/null 2>&1 &
           sleep 1
           python3 tools/check_page.py http://127.0.0.1:8000/ shots/static
-      - name: Server version, what each role sees and the pages as technical staff
+      - name: Server version, what each role sees and every page as administrator
         run: |
           tools/check_stack.sh --keep
           python3 tools/check_roles.py http://127.0.0.1:18088/
-          CHECK_ROLE=technique python3 tools/check_page.py http://127.0.0.1:18088/ shots/server
+          CHECK_ROLE=admin python3 tools/check_page.py http://127.0.0.1:18088/ shots/server
       - uses: actions/upload-artifact@v4
         if: always()
         with: { name: screenshots, path: shots, if-no-files-found: ignore, retention-days: 7 }

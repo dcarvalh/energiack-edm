@@ -111,6 +111,7 @@ th .ar{opacity:.5;margin-left:3px}
 .search{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:5px 10px;min-width:220px;font-size:13px}
 .search:focus,.chip:focus-visible,.ib:focus-visible{outline:2px solid color-mix(in srgb,var(--accent) 60%,transparent);outline-offset:1px}
 .tablewrap{overflow-x:auto;margin:0 -16px;padding:0 16px}
+#v-localites .card{min-width:0}                    /* a grid item: lets the table scroll inside the card on a phone */
 .tablewrap.scroll{max-height:560px;overflow-y:auto;border-top:1px solid var(--line)}
 .tablewrap.scroll th{position:sticky;top:0;z-index:1}
 .count{font-size:12px;color:var(--muted);margin-top:10px}
@@ -2139,7 +2140,7 @@ let RZ, LASTW = innerWidth;
 window.addEventListener("resize", () => { clearTimeout(RZ); RZ = setTimeout(() => { if (Math.abs(innerWidth - LASTW) < 40 || !D) return; LASTW = innerWidth; const open = document.getElementById("drawer").classList.contains("open"); renderAll(); if (open) reopen(); }, 200); });
 matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", renderAll);
 
-const V = "37";
+const V = "38";
 (async () => {
   try {
     const c = await fetch("api/config.json?v="+V, {cache:"no-store"}).then(r => r.json());
