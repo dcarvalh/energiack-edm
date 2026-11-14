@@ -20,6 +20,9 @@ What it does and how to run it: `README.md`. Team plan, decisions and next steps
   Link the issue (`Closes #N`) when there is one. Ideas and bugs from the team arrive as GitHub issues.
 - Before the PR: serve `prototype/` locally and run `tools/check_page.py http://127.0.0.1:PORT/` (screenshots in `shots/`).
   Check FR/EN and phone width. Say what was not verified.
+- Pitch video: `.venv/bin/python tools/record_video.py --lang fr` (storyboard = `SHOTS` in that file; output in the
+  git-ignored `video-out/`, never commit media). It captures the browser's frames over CDP because Playwright's own
+  recorder is limited to the CSS viewport size.
 - The site is served under `/energiack-edm/`: keep every URL in the app relative (no leading `/`).
 - After changing data or JS, bump the cache constants: `const V` in `prototype/index.html` and `const V` in `prototype/map3d.js`.
 

@@ -53,6 +53,8 @@ tools/import_rive_claire.py    builds data.json from the organisers' Rive-Claire
 tools/make_rive_claire_map.py  builds prototype/map-rc/ from the same guide (--out/--scale/--year)
 tools/make_map.py       builds prototype/map/ from SITG + swisstopo (--box/--out/--step/--px/--tiles)
 tools/check_page.py     headless browser check: all views, FR/EN, desktop/phone, light/dark, JS errors, overflow
+tools/record_video.py   records the pitch video from the local prototype: one MP4 per shot + joined file in video-out/
+                        (--lang fr|en, --shots, --audio); edit SHOTS at the top of the file to change the story
 docs/research.md        what Geneva has today, with sources
 rive-claire/            the Rive-Claire dataset as published by the organisers (guide, workbook, CSV tables)
 docs/rive-claire-data.md  the Rive-Claire dataset: tables, rules, known defects
