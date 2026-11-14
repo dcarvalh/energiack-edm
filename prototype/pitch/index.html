@@ -81,6 +81,10 @@ h1{margin:0;font-size:3.3cqw;line-height:1.1;font-weight:700;letter-spacing:-.02
 .steps li{display:flex;align-items:baseline;gap:1cqw;font-size:1.45cqw;color:var(--muted);counter-increment:s}
 .steps li::before{content:counter(s);flex:none;width:2cqw;height:2cqw;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-size:1.05cqw;font-weight:700;display:grid;place-items:center;align-self:center}
 .steps b{color:var(--text);font-weight:600;min-width:5.6em}
+h1.long{font-size:2.15cqw;line-height:1.18;letter-spacing:-.015em}
+.qr{align-self:center;display:flex;flex-direction:column;align-items:center;gap:1.2cqw;background:var(--surface);border:1px solid var(--line);border-radius:1.1cqw;padding:2cqw 2cqw 1.5cqw;box-shadow:0 1px 2px rgba(16,20,24,.06),0 10px 34px rgba(16,20,24,.12)}
+.qr img{display:block;width:26cqw;height:26cqw}
+.qr span{font-size:1.5cqw;font-weight:600}
 /* Slide 6: closing */
 .slide.end .copy{gap:2.4cqw}
 .slide.end h1{font-size:4cqw}
@@ -134,17 +138,17 @@ h1{margin:0;font-size:3.3cqw;line-height:1.1;font-weight:700;letter-spacing:-.02
         <div class="anim" aria-hidden="true">
           <div class="rows"><div><b>IDC</b><i>source&nbsp;?</i></div><div><b>CO₂</b><i>source&nbsp;?</i></div><div><b>Fossile</b><i>source&nbsp;?</i></div></div>
         </div>
-        <div class="who">Romain · élu</div>
+        <div class="who">Romain · représentant de la commune</div>
         <h2>Des chiffres impossibles à défendre</h2>
         <p>IDC, CO₂, part de fossile&nbsp;: des données agrégées sans traçabilité, la veille du comité intercommunal.</p>
       </div>
       <div class="card">
         <div class="anim" aria-hidden="true">
-          <div class="asks"><span>Quels bâtiments&nbsp;?</span><span>Quels coûts&nbsp;?</span><span>Quel calendrier&nbsp;?</span></div>
+          <div class="asks"><span>Quels travaux&nbsp;?</span><span>Pour quel objectif&nbsp;?</span><span>Quel calendrier&nbsp;?</span></div>
         </div>
         <div class="who">Les habitants</div>
-        <h2>Des slogans plutôt que des faits</h2>
-        <p>Sortie du fossile&nbsp;: quels bâtiments, quels coûts, quel calendrier&nbsp;? Aucune donnée publique claire.</p>
+        <h2>De nouveaux désagréments</h2>
+        <p>Des travaux de rénovation des bâtiments annoncés, mais pour quel objectif&nbsp;?</p>
       </div>
     </div>
   </section>
@@ -153,11 +157,11 @@ h1{margin:0;font-size:3.3cqw;line-height:1.1;font-weight:700;letter-spacing:-.02
   <section class="slide">
     <div class="copy">
       <div class="eyebrow">Solution · Rive-Claire</div>
-      <h1>Pendant ce temps, à Rive-Claire, Gilles prend son café</h1>
+      <h1>Pendant ce temps, à Rive-Claire, ambiance sereine</h1>
       <ul class="points">
         <li><b>Le technicien</b>&nbsp;: rapports générés automatiquement, il suit les dérives signalées.</li>
-        <li><b>Le maire</b>&nbsp;: IDC légal et bilan carbone à jour, dans son espace privé.</li>
-        <li><b>Les citoyens</b>&nbsp;: la commune face à ses objectifs, en ligne.</li>
+        <li><b>Le représentant de la commune</b>&nbsp;: indicateurs de la performance des bâtiments à jour pour faciliter la prise de décision.</li>
+        <li><b>Les citoyens</b>&nbsp;: disposent en tout temps des informations qui les concernent.</li>
       </ul>
     </div>
     <div class="visuals two">
@@ -170,12 +174,13 @@ h1{margin:0;font-size:3.3cqw;line-height:1.1;font-weight:700;letter-spacing:-.02
   <section class="slide">
     <div class="copy">
       <div class="eyebrow">openEDM · en ligne et open source</div>
-      <h1>Le quotidien de Meyrin était celui de Gilles</h1>
+      <h1 class="long">Le quotidien de Meyrin était celui de Rive-Claire, mais depuis l'installation d'openEDM qui permet de&nbsp;:</h1>
       <ol class="steps">
-        <li><b>Collecter</b></li>
+        <li><b>Collecter</b> multisources</li>
         <li><b>Contrôler</b> doublons, unités</li>
         <li><b>Agréger</b> bâtiments et compteurs</li>
         <li><b>Calculer</b> IDC, CO₂, IEE, part d'EnR</li>
+        <li><b>Publier</b> rapports statiques, tableaux de bord</li>
         <li><b>Simuler</b> les trajectoires PDCE</li>
       </ol>
       <p class="lead"><strong>Une seule donnée, quatre vues</strong>&nbsp;: stratégique, technique, citoyenne, analyste. Accès par rôle.</p>
@@ -190,7 +195,7 @@ h1{margin:0;font-size:3.3cqw;line-height:1.1;font-weight:700;letter-spacing:-.02
   <section class="slide">
     <div class="copy">
       <div class="eyebrow">Projection</div>
-      <h1>Libéré de la compilation, Gilles conçoit la suite</h1>
+      <h1>Libérée de la compilation, Rive-Claire conçoit la suite</h1>
       <ul class="points">
         <li><b>Autoconsommation collective (RCP)</b>&nbsp;: le surplus solaire d'une école alimente la piscine.</li>
         <li><b>Power-to-heat</b>&nbsp;: le surplus solaire devient chaleur.</li>
@@ -226,7 +231,7 @@ h1{margin:0;font-size:3.3cqw;line-height:1.1;font-weight:700;letter-spacing:-.02
       </ul>
     </div>
     <div class="visuals">
-      <div class="panel"><video src="clips/map-rc.mp4" poster="clips/map-rc.jpg" muted loop playsinline preload="auto" aria-label="Extrait de l'application : la carte 3D de Rive-Claire qui tourne"></video></div>
+      <div class="panel"><video src="clips/map-ge.mp4" poster="clips/map-ge.jpg" muted loop playsinline preload="auto" aria-label="Extrait de l'application : la carte 3D du centre de Genève, bâtiments réels"></video></div>
     </div>
   </section>
 
@@ -235,10 +240,10 @@ h1{margin:0;font-size:3.3cqw;line-height:1.1;font-weight:700;letter-spacing:-.02
     <div class="copy">
       <div class="eyebrow">Et maintenant</div>
       <h1>Et vous, adopteriez&#8209;vous openEDM&nbsp;?</h1>
-      <p class="lead"><strong>Premier pas proposé</strong>&nbsp;: un pilote avec la MOA de la Ville de Genève, sur ses vraies données.</p>
+      <p class="lead"><strong>Prochaine étape</strong>&nbsp;: un pilote avec la MOA de la Ville de Genève.</p>
     </div>
     <div class="visuals">
-      <div class="panel"><video src="clips/map-ge.mp4" poster="clips/map-ge.jpg" muted loop playsinline preload="auto" aria-label="Extrait de l'application : la carte 3D du centre de Genève, bâtiments réels"></video></div>
+      <div class="qr"><img src="qr-server.svg" alt="Code QR vers la version serveur d'openEDM : openedm.davidcarvalho.work"><span>openedm.davidcarvalho.work</span></div>
     </div>
   </section>
 
