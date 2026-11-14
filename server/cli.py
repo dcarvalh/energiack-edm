@@ -16,7 +16,10 @@ from . import auth, store
 
 
 def do_import(conn):
-    r = store.load(conn, store.rc.read_guide(), "rive-claire (bundled guide)")
+    loc = store.locality_by_slug(conn, "rive-claire")
+    if not loc:
+        raise SystemExit("locality 'rive-claire' not found — run seed first")
+    r = store.load(conn, store.rc.read_guide(), "rive-claire (bundled guide)", loc["id"])
     print(f"import {r['id']}: read {r['rows_read']}, loaded {r['loaded']}, rejected {r['rejected']} · "
           f"added {r['added']}, unchanged {r['unchanged']}, changed {r['changed']}")
 
@@ -38,6 +41,15 @@ def main():
             do_import(conn)
         if A.cmd == "seed" and os.environ.get("DEMO_LOGIN", "0") == "1":
             auth.ensure_demo(conn)
+            # Grant all users (including freshly created demo accounts) access to all localities
+            conn.execute("""
+                INSERT INTO user_locality (user_id, locality_id, role)
+                SELECT u.id, l.id,
+                    CASE u.role WHEN 'admin' THEN 'admin' WHEN 'technique' THEN 'manager' ELSE 'viewer' END
+                FROM app_user u CROSS JOIN locality l
+                ON CONFLICT DO NOTHING
+            """)
+            conn.commit()
             print("demo accounts reset")
         elif A.cmd == "users":
             for u in auth.users(conn):

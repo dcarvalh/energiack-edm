@@ -1,0 +1,6 @@
+﻿vecteur;kg_co2_par_unite;unite;kg_co2_par_kwh;base_kwh;portee;source
+gaz naturel;2.086;m3;0.188;kWh de la colonne energie_kwh (facteur moyen du jeu : 11,1 kWh/m³);émissions directes de combustion;Convention du lot : facteur fixe de 2,086 kg CO₂/m³ pour les cinq années. L’OFEV publie les facteurs annuels dans « Facteurs d’émission de CO₂ selon l’inventaire des gaz à effet de serre de la Suisse » (01-2026), tableau 2.
+mazout extra-léger;2.65;litre;0.265;kWh de la colonne energie_kwh (10 kWh/litre);émissions directes de combustion;OFEV, même document, tableau 1 : 73,7 t CO₂/TJ, 2,65 t CO₂/m³
+granulés de bois;0;kg;0;;émissions directes (CO₂ biogène compté neutre);Convention de l'inventaire suisse des gaz à effet de serre
+électricité;0;kWh;0;;aucune émission directe sur le site;Pour le cycle de vie, voir les données d'écobilan KBOB (mix consommateur suisse)
+chaleur à distance;0;kWh;0;;aucune émission directe sur le site;Dépend du réseau : à demander au distributeur

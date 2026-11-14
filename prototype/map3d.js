@@ -497,5 +497,16 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
     scene.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) { if (o.material.map) o.material.map.dispose(); o.material.dispose(); } });
     renderer.dispose(); renderer.forceContextLoss(); root.innerHTML = "";
   }
-  return { relabel: () => ui(), theme, destroy, count: B.length };
+  function focusSite(siteId) {
+    const hits = B.reduce((acc, b, i) => { if (b.site === siteId) acc.push(i); return acc; }, []);
+    if (!hits.length) return;
+    const avg = new THREE.Vector3();
+    for (const i of hits) avg.add(centers[i]);
+    avg.divideScalar(hits.length);
+    anim = { p0: camera.position.clone(), p1: new THREE.Vector3(avg.x - 150, 500, avg.z + 400),
+             q0: controls.target.clone(), q1: avg.clone(), t0: performance.now(), ms: 1000 };
+    if (hits[0] !== SEL) { SEL = hits[0]; paintAll(); }
+    request();
+  }
+  return { relabel: () => ui(), theme, destroy, count: B.length, focusSite };
 }

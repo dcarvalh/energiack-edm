@@ -213,6 +213,30 @@ def run(tables):
             if sum(sub) > 1.02 * onsite + 1:
                 add("submeter", m=p, s=sid, mo=ym(i), v=round(sum(sub)), x=round(onsite))
 
+    # ---------------------------------------------------------------- coverage: expected vs actual per active period
+    _delivery = {mid for mid, c in meters.items() if c["releve"] == DELIVERY}
+    cov_expected = 0
+    for mid, c in meters.items():
+        if mid in _delivery:
+            continue
+        lo = max(0, midx(c["debut"]) if c["debut"] else 0)
+        hi = min(MONTHS - 1, midx(c["fin"]) if c["fin"] else MONTHS - 1)
+        if hi >= lo:
+            cov_expected += hi - lo + 1
+    cov_loaded = sum(1 for (mid, _mo), r in store.items()
+                     if r.get("qualite") != "manquant" and mid not in _delivery)
+    cov_missing = len(found["missing"])
+    cov_estimated = len(found["estimated"])
+    cov_excluded = len(found["negative"]) + len(found["spike"])
+    coverage = {
+        "expected": cov_expected,
+        "loaded": cov_loaded,
+        "missing": cov_missing,
+        "estimated": cov_estimated,
+        "excluded": cov_excluded,
+        "pct": round(100 * cov_loaded / cov_expected, 1) if cov_expected else None,
+    }
+
     order = ["ref_ids", "ref_links", "unknown_meter", "bad_month", "link_mismatch", "unit_mismatch", "bad_value", "duplicate",
              "missing", "estimated", "negative", "spike", "zero_run", "alternating", "conversion", "submeter", "out_of_window"]
     kind = lambda code: ("rejected" if order.index("unknown_meter") <= order.index(code) < order.index("missing")
@@ -225,6 +249,7 @@ def run(tables):
         "excluded": sum(ch["n"] for ch in checks if ch["kind"] == "excluded"),
         "replacements": replacements,
         "reimport": {"first": first, "second": second},
+        "coverage": coverage,
         "checks": checks,
     }
     return report, rejected

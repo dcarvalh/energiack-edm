@@ -109,7 +109,7 @@ def demo_login(conn, role):
 def user_for(conn, token):
     if not token:
         return None
-    return conn.execute("SELECT u.username, u.role, u.demo FROM session s JOIN app_user u ON u.id = s.user_id "
+    return conn.execute("SELECT u.id, u.username, u.role, u.demo FROM session s JOIN app_user u ON u.id = s.user_id "
                         "WHERE s.token_hash = %s AND s.expires_at > now()", (_sha(token),)).fetchone()
 
 
