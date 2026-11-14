@@ -42,10 +42,21 @@ class Cam:
         vp = page.viewport_size
         self.x, self.y = vp["width"] * 0.5, vp["height"] * 0.55
 
-    def open(self, view):
+    def open(self, view, record=True):
         self.page.goto(f"{self.base}?lang={self.lang}#{view}")
         self.page.wait_for_timeout(800)
-        self.start()   # recording begins once the shot's first view is on screen
+        if record:
+            self.start()   # recording begins once the shot's first view is on screen
+
+    def open_map(self, min_buildings=1):
+        """Open the 3D tab and start recording only once the map is drawn."""
+        self.open("carte", record=False)
+        self.page.wait_for_selector("#m3 canvas", timeout=90000)
+        self.page.wait_for_function(f"window.__m3 && window.__m3.n >= {min_buildings}", timeout=120000)
+        # In a small clip the legend card covers half the map: hide it and the key hints, keep tools and credits.
+        self.page.add_style_tag(content=".m3-card,.m3-hint{display:none!important}")
+        self.wait(2.5)
+        self.start()
 
     def wait(self, seconds):
         self.page.wait_for_timeout(int(seconds * 1000))
@@ -75,14 +86,14 @@ class Cam:
             self.page.mouse.wheel(0, pixels / n)
             self.page.wait_for_timeout(1000 // 30)
 
-    def drag(self, dx, dy, seconds=2.0):
-        """Drag from the current pointer position (orbits the 3D map)."""
+    def drag(self, dx, dy, seconds=2.0, button="left"):
+        """Drag from the current pointer position. On the 3D map: left = move, right = turn."""
         n = max(2, int(seconds * 30))
-        self.page.mouse.down()
+        self.page.mouse.down(button=button)
         for i in range(1, n + 1):
             self.page.mouse.move(self.x + dx * i / n, self.y + dy * i / n)
             self.page.wait_for_timeout(1000 // 30)
-        self.page.mouse.up()
+        self.page.mouse.up(button=button)
         self.x, self.y = self.x + dx, self.y + dy
 
 
@@ -111,7 +122,23 @@ def map3d(c):
     c.wait(2)
     c.move("#m3 canvas"); c.drag(260, 40, 3.0); c.wait(1.5)
 
-SHOTS = [home, manage, quality, citizens, map3d]
+# Shots for the pitch deck (prototype/pitch/clips/)
+def map_rc(c):
+    c.open_map(); c.wait(1)
+    c.move("#m3 canvas"); c.drag(260, -30, 4.0, "right"); c.wait(0.8); c.drag(-160, 20, 3.0, "right"); c.wait(1.2)
+
+def map_ge(c):
+    c.page.evaluate("localStorage.setItem('energiack-map', 'ge')"); c.page.reload()   # the choice is read on load
+    c.open_map(min_buildings=1000); c.wait(1)
+    c.move("#m3 canvas"); c.drag(220, -20, 4.0, "right"); c.wait(1.2)
+
+def sheet(c):
+    c.open_map(); c.wait(0.8)
+    c.move("#m3 canvas"); c.drag(200, -25, 2.0, "right"); c.wait(0.8)
+    c.page.evaluate("location.hash = '#fiche/S30-B1'")   # the building sheet of the indoor pool
+    c.wait(2.2); c.scroll(450, 2.5); c.wait(1.5)
+
+SHOTS = [home, manage, quality, citizens, map3d, map_rc, map_ge, sheet]
 # -----------------------------------------------------------------------------
 
 
