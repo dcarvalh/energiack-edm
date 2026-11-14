@@ -8,7 +8,7 @@ import { computeBoundsTree, acceleratedRaycast } from "./vendor/three-mesh-bvh.m
 THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
 
-const V = "12";
+const V = "13";
 const GREY = 0xb9bfbb;
 const RAMP = {
   idc:   [0x2e9e6e, 0x9cc95a, 0xf0b33c, 0xe0663a, 0xb8322a],
@@ -278,6 +278,7 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
     const note = k => `<div class="mut" style="font-size:12px;margin:-2px 0 4px">${esc(t(k))}</div>`;
     const inst = b.inst.map(x => row(tr(x.t), [x.kw ? nf(x.kw) + (/photovolta/.test(x.t) ? " kWp" : " kW") : "", x.from ? (x.to ? `${nb(x.from)} → ${nb(x.to)}` : t("m_p_since", { d: nb(x.from) })) : ""].filter(Boolean).join(" · "))).join("");
     return `<div class="row" style="flex-wrap:nowrap;align-items:flex-start"><div style="min-width:0;flex:1"><div class="tsub">${esc(tr(b.use))} · ${esc(b.q)}</div><h2 style="margin:2px 0 0">${esc(b.name)}</h2>${b.bname ? `<div class="mut">${esc(tr(b.bname))}</div>` : ""}</div><button class="x m3-close" aria-label="close">×</button></div>
+      <div class="m3-acts"><a class="btn" href="#fiche/${esc(b.id)}">${esc(t("fs_title"))}</a><a class="btn alt" href="#site/${esc(b.site)}">${esc(t("m_open_site"))}</a></div>
       <div class="m3-sec">${row(t("m_p_year"), b.year)}${row(t("m_p_reno"), b.reno)}${row(t("m_p_levels"), b.levels ? nf(b.levels) + (b.under ? " · " + esc(t("m_p_under")) : "") : null)}${row(t("m_p_sre"), b.sre ? nf(b.sre) + " m²" : esc(t("m_na")))}${row(t("m_p_label"), b.label ? esc(tr(b.label)) : null)}${row(t("m_p_homes"), b.homes)}${row(t("m_p_open"), b.open)}
         ${b.note ? note(tr(b.note)) : ""}</div>
       <div class="m3-sec"><div class="m3-h">${esc(t("m_l_heat"))}</div>
@@ -289,7 +290,6 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
         ${row(t("m_p_heatkwh"), mwh(r.heat_kwh))}${r.deliveries ? note("m_n_deliv") : ""}
         ${row(t("m_l_elec"), mwh(r.elec_kwh))}${b.homes ? note("m_n_common") : ""}
         ${row(t("m_p_pvprod"), mwh(r.pv_kwh))}${row(t("m_l_water"), r.water_m3 ? nf(r.water_m3) + " m³" : null)}</div>
-      <a class="chip m3-open" href="#site/${esc(b.site)}">${esc(t("m_open_site"))}</a>
       <div class="m3-src">${esc(b.site)} · ${esc(t("m_src_rc"))}</div>`;
   }
   function panel(bi) {

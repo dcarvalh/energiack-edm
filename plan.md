@@ -74,6 +74,7 @@ hosting, and it **complements** existing tools as an aggregator instead of repla
 | Site page with every meter, quality flags, CSV | done |
 | 3D map · Rive-Claire (default) and Geneva (real SITG/swisstopo) | done; checked headless, not on a real phone GPU |
 | Data quality report on import (17 checks, re-import test, CSV) | done (13 Nov); negative values and spikes replaced by an estimate |
+| Building sheet (`#fiche/<building id>`, from the 3D map panel, every role) | first simple version (14 Nov): heat index, heating, electricity per m², CO₂, monthly bars, solar. Not computed yet: renewable share of heat, COP, night base load, A–G label |
 | Heat index per site in MJ/m²·yr (#7): Manage table, site page, Rive-Claire map layer with the Geneva IDC classes | done 14 Nov. Approximate, **not weather-corrected**, never called the IDC. Heat-pump heat: heat meter at S09/S12, elsewhere pump electricity × the COP measured that month at S09/S12, marked estimated. No index where heating is direct electric (not metered apart) |
 | Server stack: PostgreSQL + API + Caddy (`compose.yaml`, `server/`, `docs/deploy.md`) | merged 13 Nov night (#23); live since 13 Nov night on one small cloud server (EU), with its own domain and HTTPS since 14 Nov. `data.json` comes from the database, identical to the static build |
 | Logins and roles (#15): admin, technique, élu·e, public; menus filtered, data filtered by the server, Users page, one-click demo accounts | done 14 Nov (#25), live on the server version with demo accounts on; GitHub Pages stays open without login |
