@@ -27,7 +27,12 @@ What it does and how to run it: `README.md`. Team plan, decisions and next steps
 - PostgreSQL + FastAPI + Caddy. The API rebuilds `data.json` with `build()` from `tools/import_rive_claire.py`: keep
   that function the single source of the format, so the static site and the server never drift.
 - `tools/check_stack.sh` (also run by the Stack workflow on every PR) must pass: `data.json` from the database equals the
-  static build, a re-import adds 0 rows, login works. Hosting and deploys: `docs/deploy.md`. Never commit `.env`.
+  static build, a re-import adds 0 rows, every role gets what it should. Hosting and deploys: `docs/deploy.md`. Never commit `.env`.
+- Roles (issue #15: admin, technique, elu, public): `server/auth.py` decides, the API enforces it on the data (no raw
+  readings or quality report below `technique`); `ACCESS` in `prototype/index.html` only hides menus and must mirror it.
+  Change both together. On a static host `prototype/api/config.json` (`{"server": false}`) keeps every page open, no login.
+- UI checks on a running stack: `tools/check_roles.py <url>` and `CHECK_ROLE=technique tools/check_page.py <url>`;
+  in static mode `tools/check_page.py` as before.
 
 ## Map (3D tab)
 - Two maps: Rive-Claire (`prototype/map-rc/`, `tools/make_rive_claire_map.py`, default) and Geneva (`prototype/map/`,

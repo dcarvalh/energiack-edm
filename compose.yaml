@@ -12,6 +12,7 @@ x-api: &api
     PGUSER: openedm
     PGPASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env (copy .env.example)}
     SEED_DEMO: ${SEED_DEMO:-1}
+    DEMO_LOGIN: ${DEMO_LOGIN:-0}
 
 services:
   db:
