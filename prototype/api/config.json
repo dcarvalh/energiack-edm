@@ -1,0 +1,1 @@
+{"server": false, "note": "Static host (e.g. GitHub Pages): no accounts, every page open. On the server stack the API answers this path instead (server/app.py)."}

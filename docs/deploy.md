@@ -31,14 +31,29 @@ API description: `/api/openapi.json`.
 
 ## Accounts
 
-Built in, no extra service: users and roles (`admin`, `manager`) in PostgreSQL, scrypt password hashes, a session
-cookie (HttpOnly, Secure over HTTPS, 12 h), lock for 5 minutes after 5 wrong passwords. Accounts are created on the
-server with the command above (no self sign-up).
+Built in, no extra service: users and roles in PostgreSQL, scrypt password hashes, a session cookie (HttpOnly,
+Secure over HTTPS, 12 h), lock for 5 minutes after 5 wrong passwords. Real accounts are created on the server with
+the command above (no self sign-up). Roles (issue #15):
 
-**Nothing is really protected yet.** Accounts and sessions work, and `/api/imports`, `/api/rejected` and
-`/api/readings` require a session, but `/data.json` is public and already contains every meter's raw readings. There
-is no login screen in the app. Which pages need a login is an open decision (see `plan.md`); once decided, the API must
-serve a public `data.json` without the restricted parts and the rest only to a session, not just hide it in the page.
+| Role | Sees |
+|---|---|
+| visitor / `public` | Welcome, Citizens, 3D map, How it works; site pages without raw readings |
+| `elu` (elected official) | + Manage |
+| `technique` (energy service) | + Data quality, raw meter readings, CSV exports |
+| `admin` | + Users page: change other accounts' roles |
+
+The **server enforces it on the data**: without `technique` or `admin`, `/data.json` comes without `meters` (raw
+readings) and `quality` (import report), and the raw-data endpoints answer 403. The app only hides the menus a role
+cannot use (`ACCESS` in `prototype/index.html`, mirroring `server/auth.py`). On a static host (GitHub Pages)
+`api/config.json` says `{"server": false}`: no login, every page open, as before.
+
+**Demo accounts** (`DEMO_LOGIN=1` in `.env`, for a public demo with fictional data only): the login dialog shows one
+button per role (`demo-admin`, `demo-technique`, `demo-elu`, `demo-public`; no password, roles fixed), and three
+fictional staff accounts (`a.martin`, `c.rochat`, `l.favre`) for the demo admin to re-assign. All are reset at every
+start. A demo admin cannot change real accounts. Never turn it on with real data.
+
+Checks: `tools/check_stack.sh` (API, every role) and, on a running stack, `tools/check_roles.py <url>` (the app as each
+role, FR/EN, phone) and `CHECK_ROLE=technique tools/check_page.py <url>`.
 
 When a commune wants its own single sign-on (Microsoft Entra, a cantonal IdP), add an OpenID Connect server
 such as Keycloak, Authentik or Zitadel in front, instead of growing this one.
@@ -95,7 +110,8 @@ docker compose exec -T db pg_dump -U openedm -Fc openedm > openedm-$(date +%F).d
 ## Not done yet
 
 - Import a new file through the app (upload): today the import runs on the server (`server.cli import`).
-- Login screen in the app, and pages that need a login (decision pending).
+- Accounts per commune (today one commune per install, and roles apply to all of it).
+- Creating accounts or resetting passwords from the app (today: the server command).
 - Partial or monthly imports: `data.json` takes the quality report and the replaced values from the latest import
   only, which is right while every import is the whole dataset. Incremental files would drop earlier flags.
 - Several communes on one install (one database per commune is the simplest: one stack per commune).

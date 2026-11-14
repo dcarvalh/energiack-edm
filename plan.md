@@ -74,12 +74,13 @@ hosting, and it **complements** existing tools as an aggregator instead of repla
 | Site page with every meter, quality flags, CSV | done |
 | 3D map · Rive-Claire (default) and Geneva (real SITG/swisstopo) | done; checked headless, not on a real phone GPU |
 | Data quality report on import (17 checks, re-import test, CSV) | done (13 Nov); negative values and spikes replaced by an estimate |
-| Server stack: PostgreSQL + API + Caddy (`compose.yaml`, `server/`, `docs/deploy.md`) | built on branch `feat/server-stack` (13 Nov night), checked locally by `tools/check_stack.sh`; not hosted yet. The app runs unchanged on it (`data.json` comes from the database, identical to the static build) |
+| Server stack: PostgreSQL + API + Caddy (`compose.yaml`, `server/`, `docs/deploy.md`) | merged 13 Nov night (#23); hosted on one small cloud server since 14 Nov, at its own domain. `data.json` comes from the database, identical to the static build |
+| Logins and roles (#15): admin, technique, élu·e, public; menus filtered, data filtered by the server, Users page, one-click demo accounts | done 14 Nov on the server version; GitHub Pages stays open without login |
 
-**Open decisions for the hosted version:** which host (recommended: one small server running `compose.yaml`, deployed
-by the Stack workflow on merge; see `docs/deploy.md`); which pages need a login (today nothing is gated: accounts work,
-but the public `data.json` holds all raw readings and the app has no login screen); built-in accounts now, an OpenID Connect server (Keycloak,
-Authentik, Zitadel) only when a commune wants its own single sign-on.
+**Hosted version, decided (14 Nov):** one small server running `compose.yaml` (see `docs/deploy.md`); built-in
+accounts, an OpenID Connect server (Keycloak, Authentik, Zitadel) only when a commune wants its own single sign-on.
+Roles per #15. Still open: accounts per commune (several communes on one install), deploys on merge (the server is
+updated by hand), creating accounts from the app.
 
 ## Next steps (keep the UI minimal; FR and EN for every string)
 1. Corrections: negative values and spikes are replaced by the median of the same month in other years (David, 13 Nov).

@@ -2,7 +2,10 @@
 
 Reports JS errors, FR/EN dictionary mismatches, horizontal overflow, and saves screenshots.
 Usage: .venv/bin/python tools/check_page.py [URL] [OUTDIR]
+On the server stack (compose.yaml with DEMO_LOGIN=1), CHECK_ROLE=technique (or admin) logs in first, since Manage
+and Data quality need a role; tools/check_roles.py checks what each role sees.
 """
+import os
 import sys
 from pathlib import Path
 from playwright.sync_api import sync_playwright
@@ -11,6 +14,7 @@ URL = sys.argv[1] if len(sys.argv) > 1 else "https://dcarvalh.github.io/energiac
 OUT = Path(sys.argv[2] if len(sys.argv) > 2 else "shots")
 OUT.mkdir(parents=True, exist_ok=True)
 problems = []
+ROLE = os.environ.get("CHECK_ROLE")
 
 with sync_playwright() as p:
     b = p.chromium.launch(args=["--use-angle=swiftshader", "--enable-unsafe-swiftshader"])
@@ -21,6 +25,9 @@ with sync_playwright() as p:
             errs = []
             page.on("pageerror", lambda e: errs.append(str(e)))
             page.on("console", lambda m: m.type == "error" and errs.append(m.text))
+            if ROLE:                                  # server stack with DEMO_LOGIN=1: run the whole check as this role
+                r = page.request.post(URL.rstrip("/") + "/api/demo-login", data={"role": ROLE})
+                assert r.ok, f"demo login as {ROLE} failed: {r.status}"
             for lang in ("fr", "en"):
                 for view in ("accueil", "gestion", "qualite", "citoyens", "carte", "apropos", "site/S01"):
                     if scheme == "dark" and (dev == "phone" or view not in ("gestion", "accueil", "qualite")):
