@@ -78,7 +78,8 @@ hosting, and it **complements** existing tools as an aggregator instead of repla
 | Logins and roles (#15): admin, technique, élu·e, public; menus filtered, data filtered by the server, Users page, one-click demo accounts | done 14 Nov (#25), live on the server version with demo accounts on; GitHub Pages stays open without login |
 
 **Two live copies.** GitHub Pages (static, open, no login; the pitch QR code points there) and the server version
-(database, logins, roles). The server's address is in David's private notes; ask him. Publishing it here is his call.
+(database, logins, roles, one-click demo accounts): https://openedm.davidcarvalho.work/ (both links in `README.md`).
+Server access and its cost are with David.
 
 **Hosted version, decided (14 Nov):** one small server running `compose.yaml` (see `docs/deploy.md`); built-in
 accounts, an OpenID Connect server (Keycloak, Authentik, Zitadel) only when a commune wants its own single sign-on.
