@@ -85,6 +85,11 @@ h1.long{font-size:2.15cqw;line-height:1.18;letter-spacing:-.015em}
 .qr{align-self:center;display:flex;flex-direction:column;align-items:center;gap:1.2cqw;background:var(--surface);border:1px solid var(--line);border-radius:1.1cqw;padding:2cqw 2cqw 1.5cqw;box-shadow:0 1px 2px rgba(16,20,24,.06),0 10px 34px rgba(16,20,24,.12)}
 .qr img{display:block;width:26cqw;height:26cqw}
 .qr span{font-size:1.5cqw;font-weight:600}
+/* Slide 0: title */
+.slide.title{grid-template-columns:1fr;place-items:center}
+.slide.title h1{font-size:9cqw;letter-spacing:-.035em}
+.team{position:absolute;left:5cqw;bottom:2.2cqw;margin:0;font-size:1.5cqw;font-weight:500;color:var(--muted)}
+.stage.on-title .foot{display:none}
 /* Slide 6: closing */
 .slide.end .copy{gap:2.4cqw}
 .slide.end h1{font-size:4cqw}
@@ -118,6 +123,12 @@ h1.long{font-size:2.15cqw;line-height:1.18;letter-spacing:-.015em}
 </head>
 <body>
 <main class="stage" id="stage">
+
+  <!-- 0. Title: no animation -->
+  <section class="slide title">
+    <h1>openEDM</h1>
+    <p class="team">David · Audrey · Hammed · Pierre-Yves</p>
+  </section>
 
   <!-- 1. Problématique : Eric, Romain, les habitants -->
   <section class="slide wide">
@@ -270,7 +281,8 @@ function show(n){
         show.r = requestAnimationFrame(step); }, +tm.dataset.delay);
     }
   }
-  document.getElementById("count").textContent = (i + 1) + " / " + slides.length;
+  document.getElementById("stage").classList.toggle("on-title", i === 0);   // the title slide is not numbered
+  document.getElementById("count").textContent = i + " / " + (slides.length - 1);
   history.replaceState(null, "", "#" + (i + 1));
 }
 addEventListener("keydown", e => {
