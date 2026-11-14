@@ -20,7 +20,7 @@ Costs in CHF are **assumed prices**, not in the dataset, and labelled "estimated
 | three.js (`three.module.min.js`) | 0.160.0 | MIT, © 2010–2023 three.js authors |
 | three.js `OrbitControls.js` (from `examples/jsm/controls`) | 0.160.0, wheel-zoom fix patched in | MIT, © three.js authors |
 | three-mesh-bvh (`three-mesh-bvh.module.js`) | 0.7.6 | MIT, © Garrett Johnson |
-| Inter variable font, latin subset (`fonts/inter-latin-wght-normal.woff2`, from the `@fontsource-variable/inter` npm package) | 5.3.0 | SIL Open Font License 1.1, © 2016 The Inter Project Authors (licence text in `fonts/Inter-OFL.txt`) |
+| Inter variable font, latin subset (`fonts/inter-latin-wght-normal.woff2`, also copied with its licence text to `prototype/pitch/fonts/` so the deck folder works on its own; from the `@fontsource-variable/inter` npm package) | 5.3.0 | SIL Open Font License 1.1, © 2016 The Inter Project Authors (licence text in `fonts/Inter-OFL.txt`) |
 
 ## Icons (inlined in `prototype/index.html`)
 
