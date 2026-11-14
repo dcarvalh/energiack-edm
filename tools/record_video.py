@@ -37,13 +37,14 @@ addEventListener('DOMContentLoaded', () => {
 class Cam:
     """Small helpers so a shot reads like a storyboard."""
 
-    def __init__(self, page, base, lang):
-        self.page, self.base, self.lang = page, base, lang
+    def __init__(self, page, base, lang, start):
+        self.page, self.base, self.lang, self.start = page, base, lang, start
         self.x, self.y = 960, 600
 
     def open(self, view):
         self.page.goto(f"{self.base}?lang={self.lang}#{view}")
         self.page.wait_for_timeout(800)
+        self.start()   # recording begins once the shot's first view is on screen
 
     def wait(self, seconds):
         self.page.wait_for_timeout(int(seconds * 1000))
@@ -163,8 +164,12 @@ def main():
                 frames.append((f, ev["metadata"]["timestamp"]))
                 cdp.send("Page.screencastFrameAck", {"sessionId": ev["sessionId"]})
             cdp.on("Page.screencastFrame", on_frame)
-            cdp.send("Page.startScreencast", {"format": "jpeg", "quality": 95, "maxWidth": W, "maxHeight": H})
-            shot(Cam(page, base, a.lang))
+            started = []
+            def start():
+                if not started:
+                    started.append(1)
+                    cdp.send("Page.startScreencast", {"format": "jpeg", "quality": 95, "maxWidth": W, "maxHeight": H})
+            shot(Cam(page, base, a.lang, start))
             page.wait_for_timeout(300)
             cdp.send("Page.stopScreencast")
             ctx.close()
