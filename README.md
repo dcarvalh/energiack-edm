@@ -80,6 +80,8 @@ tools/make_rive_claire_map.py  builds prototype/map-rc/ from the same guide (--o
 tools/make_map.py       builds prototype/map/ from SITG + swisstopo (--box/--out/--step/--px/--tiles)
 tools/check_page.py     headless browser check: all views, FR/EN, desktop/phone, light/dark, JS errors, overflow
                         (on the server version: CHECK_ROLE=technique logs in first)
+tools/record_video.py   records the pitch video from the local prototype: one MP4 per shot + joined file in video-out/
+                        (--lang fr|en, --shots, --audio); edit SHOTS at the top of the file to change the story
 prototype/api/config.json  {"server": false} on a static host; on the server the API answers instead (logins on)
 compose.yaml, .env.example the server version: PostgreSQL + API + Caddy
 server/                 the API (FastAPI): schema.sql, store.py (database ↔ data.json), auth.py (accounts, roles), cli.py

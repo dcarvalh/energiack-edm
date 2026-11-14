@@ -42,4 +42,5 @@ Installed or pulled at build time, nothing vendored in the repo.
 | psycopg (with `psycopg-binary`) | 3.3.9 | LGPL-3.0 (used as an unmodified library) |
 
 Python tools use only the standard library plus `requirements.txt` (Playwright for the headless check; numpy, Pillow,
-rasterio for the Geneva map build).
+rasterio for the Geneva map build; imageio-ffmpeg, BSD-2-Clause, for the pitch video: its package ships an FFmpeg binary
+built with GPL parts (x264), used as a separate program and not redistributed here).

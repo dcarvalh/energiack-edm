@@ -1,5 +1,6 @@
 # Tools only (the app itself needs nothing). After install: .venv/bin/playwright install chromium
-playwright==1.65.1      # tools/check_page.py
+imageio-ffmpeg==0.8.1   # tools/record_video.py (brings its own ffmpeg binary)
+playwright==1.65.1      # tools/check_page.py, tools/record_video.py
 numpy==2.5.4            # tools/make_map.py
 pillow==13.0.0          # tools/make_map.py
 rasterio==1.5.2         # tools/make_map.py
