@@ -1,5 +1,6 @@
 # Tools only (the app itself needs nothing). After install: .venv/bin/playwright install chromium
 imageio-ffmpeg==0.8.1   # tools/record_video.py (brings its own ffmpeg binary)
+segno==1.6.6            # made prototype/pitch/qr-server.svg: segno.make(url, error="m").save(path, scale=10, border=2)
 playwright==1.65.1      # tools/check_page.py, tools/record_video.py
 numpy==2.5.4            # tools/make_map.py
 pillow==13.0.0          # tools/make_map.py

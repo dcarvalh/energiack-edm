@@ -8,6 +8,9 @@ Energ-IACK hackathon, Geneva, 13–14 Nov 2026.
 
 **Live demo, open: https://dcarvalh.github.io/energiack-edm/** (FR/EN toggle top right, also `?lang=en`). Static, no login, every page visible.
 
+**Pitch deck (French): https://dcarvalh.github.io/energiack-edm/pitch/** Seven slides in the browser; it also runs
+offline from `prototype/pitch/index.html` (see "Pitch deck" below).
+
 **Live demo with logins: https://openedm.davidcarvalho.work/** The same app on PostgreSQL, with four roles enforced by
 the server. "Log in" (top right) shows one-click demo accounts for each role. Fictional data only.
 
@@ -67,6 +70,25 @@ tools/check_stack.sh          # full check in a throwaway copy of the stack: dat
 The same app reads its data from PostgreSQL. Putting it on a server with HTTPS, roles, demo accounts, deploys and
 backups: `docs/deploy.md`.
 
+## Pitch deck
+
+**Live: https://dcarvalh.github.io/energiack-edm/pitch/** The pitch as a web page, in French: a title slide and six
+slides, with short clips of the app, small animations and a QR code to the version with logins.
+
+- **Keys:** → / space / click = next, ← (or a click on the left quarter) = back, Home / End, `F` = full screen.
+- **Run it locally, no server and no internet:** `prototype/pitch/` holds everything it needs (font, clips, QR code).
+  Clone the repo (or "Code › Download ZIP" on GitHub), then open `prototype/pitch/index.html` in a browser. That folder
+  can also be copied alone, to a USB stick for example. Only the QR code needs a connection, on the phone that scans it.
+- **Or through the local server:** `python3 -m http.server 8000 -d prototype`, then http://127.0.0.1:8000/pitch/
+- **Edit a slide:** one `<section class="slide">` per slide in `prototype/pitch/index.html`.
+- **Re-record a clip** (needs the tools setup under "Files"; then copy the MP4 to `prototype/pitch/clips/`):
+
+```bash
+.venv/bin/python tools/record_video.py --shots quality,citizens,sheet --size 1280x720     # data quality, citizen page, building sheet
+.venv/bin/python tools/record_video.py --shots map_ge --size 1200x900                     # Geneva 3D view (sped up 4x with ffmpeg afterwards)
+.venv/bin/python tools/record_video.py --shots access --size 1280x720 --zoom 1.2 --url https://openedm.davidcarvalho.work/   # roles, with the demo logins
+```
+
 ## Files
 
 ```
@@ -80,9 +102,9 @@ tools/make_rive_claire_map.py  builds prototype/map-rc/ from the same guide (--o
 tools/make_map.py       builds prototype/map/ from SITG + swisstopo (--box/--out/--step/--px/--tiles)
 tools/check_page.py     headless browser check: all views, FR/EN, desktop/phone, light/dark, JS errors, overflow
                         (on the server version: CHECK_ROLE=technique logs in first)
-tools/record_video.py   records clips of the local prototype: one MP4 per shot + joined file in video-out/
-                        (--lang fr|en, --shots, --size, --audio); edit SHOTS at the top of the file
-prototype/pitch/        the pitch deck (French): HTML slides with clips of the app; arrows or click, F = full screen
+tools/record_video.py   records clips of the app: one MP4 per shot + joined file in video-out/
+                        (--lang fr|en, --shots, --size, --zoom, --url, --audio); edit SHOTS at the top of the file
+prototype/pitch/        the pitch deck (French), self-contained: index.html, clips/, fonts/, qr-server.svg (see "Pitch deck")
 prototype/api/config.json  {"server": false} on a static host; on the server the API answers instead (logins on)
 compose.yaml, .env.example the server version: PostgreSQL + API + Caddy
 server/                 the API (FastAPI): schema.sql, store.py (database ↔ data.json), auth.py (accounts, roles), cli.py

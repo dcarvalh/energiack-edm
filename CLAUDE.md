@@ -21,10 +21,16 @@ What it does and how to run it: `README.md`. Team plan, decisions and next steps
 - Before the PR: serve `prototype/` locally and run `tools/check_page.py http://127.0.0.1:PORT/` (screenshots in `shots/`).
   Check FR/EN and phone width. Say what was not verified.
 - Pitch video: `.venv/bin/python tools/record_video.py --lang fr` (storyboard = `SHOTS` in that file; output in the
-  git-ignored `video-out/`). The live deck is `prototype/pitch/index.html` (French only, David 14 Nov; one
-  `<section class="slide">` per slide, clips in `prototype/pitch/clips/` recorded with `--size 1200x900`): those short
-  clips are the only media committed. The recorder captures the browser's frames over CDP because Playwright's own
+  git-ignored `video-out/`). The recorder captures the browser's frames over CDP because Playwright's own
   recorder is limited to the CSS viewport size.
+- **Pitch deck** = `prototype/pitch/index.html`, live at `/pitch/` (README › Pitch deck). Decided 14 Nov: French only,
+  silent, light, clicked through live; a title slide (not numbered) + 6 slides, one `<section class="slide">` each;
+  short text (summarise, cut minor bullets); app clips only where the storyboard asks for one; slide 1's animations
+  play once, clips loop. The folder must stay self-contained (own `fonts/`, `clips/`, no `../` URL) so it opens from
+  disk offline: test with the network off. Clips (16:9 when two are stacked, 4:3 alone) are the only media committed;
+  record `access` on the server version with `--url` and the demo logins. Headless Chromium cannot play H.264: a
+  screenshot shows the poster frame, so say clips were not seen playing. "Energo" and the team's first names are
+  allowed on the deck (David, 14 Nov).
 - The site is served under `/energiack-edm/`: keep every URL in the app relative (no leading `/`).
 - After changing data or JS, bump the cache constants: `const V` in `prototype/index.html` and `const V` in `prototype/map3d.js`.
 

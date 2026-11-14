@@ -91,7 +91,9 @@ updated by hand), creating accounts from the app.
 ## What's missing (14 Nov, 10:00)
 
 **For 14:00 today (deliverables):**
-1. Slides, the one-page project sheet, the 2-minute video. Not in this repo; nothing about them was checked here.
+1. Slides: **done, in this repo** as a web deck (`prototype/pitch/`, live at `/pitch/`, runs offline; README › Pitch
+   deck). David chose a silent deck clicked through live, with clips of the app, over a separate video file (14 Nov).
+   The one-page project sheet is not in this repo; nothing about it was checked here.
 2. Which link the pitch shows: Pages (QR code, open) or the server version (logins, demo roles). Both work.
 3. Optional quick wins, not started: weather-corrected heat (the climate data is in `data.json`, unused) and a traffic
    light per site against its typology (Buyer review below, items 1 and 2).
@@ -118,7 +120,8 @@ SITG/swisstopo attribution wording; real-phone performance of the 3D map.
    Later: let an authorised person correct a value with a trace (who, when, why).
 2. Indicators: weather-corrected heat index (the raw one is done), dynamic COP shown for heat-pump sites (the monthly COP is in `meta.hp_cop`, used but not displayed).
 3. Targets per site with a traffic light (kWh/m² vs target).
-4. Videos for the pitch (QR code done: it points to the Pages site).
+4. Pitch deck: done (14 Nov), `prototype/pitch/`. Its last slide carries a second QR code, to the server version.
+   Open: the two clips stacked on slides 2 and 3 are small on a projector; an English copy does not exist.
 5. Ideas, not started: consumption breaks after renovations, synergies between buildings, price scenarios; place the
    fictional commune in a recognisable Geneva neighbourhood on the map.
 
