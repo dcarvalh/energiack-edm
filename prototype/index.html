@@ -49,6 +49,10 @@ nav a.on{color:var(--text);background:var(--surface-2);font-weight:600}
 nav a.on .ic{color:var(--accent)}
 .side-foot{margin-top:auto;padding:12px 10px 4px;font-size:12px;color:var(--muted);border-top:1px solid var(--line)}
 .side-foot b{display:block;color:var(--text);font-weight:600;font-size:13px}
+.side-loc-current{padding:4px 10px 2px;border-bottom:1px solid var(--line);margin-bottom:2px}
+.side-loc-label{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:2px}
+.side-loc-name{display:block;font-size:13px;font-weight:700;color:var(--text);padding:2px 0 4px}
+.side-loc-select{display:block;width:100%;font-size:13px;font-weight:700;color:var(--text);background:transparent;border:none;border-bottom:2px solid var(--accent);padding:2px 0 4px;cursor:pointer;outline:none}
 .content{min-width:0;display:flex;flex-direction:column}
 .top{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:10px;height:52px;padding:0 24px;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
 .crumb{display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--muted);min-width:0;white-space:nowrap}
@@ -283,23 +287,33 @@ footer{color:var(--muted);font-size:12px;border-top:1px solid var(--line);margin
     <div>openEDM<small data-t="tagline"></small></div>
   </div>
   <nav>
-    <a href="#accueil" data-view="accueil"><i data-ic="house"></i><span data-t="nav_home"></span></a>
+    <!-- ── Municipalities (top — always visible to admins) ── -->
+    <a href="#localites" data-view="localites" class="hide"><i data-ic="map-pin"></i><span data-t="nav_localities"></span></a>
+    <div id="side-foot-nav" class="side-loc-current hide"></div>
+
+    <!-- ── Current municipality ── -->
     <div class="ng" data-t="nav_g_ops"></div>
     <a href="#gestion" data-view="gestion"><i data-ic="layout-dashboard"></i><span data-t="nav_manage"></span></a>
+    <a href="#donnees" data-view="donnees" class="hide"><i data-ic="table-2"></i><span data-t="nav_data"></span></a>
     <a href="#qualite" data-view="qualite"><i data-ic="clipboard-check"></i><span data-t="nav_quality"></span></a>
     <a href="#carte" data-view="carte"><i data-ic="box"></i><span data-t="nav_map"></span></a>
+
+    <!-- ── Platform admin ── -->
     <a href="#utilisateurs" data-view="utilisateurs" class="hide"><i data-ic="key-round"></i><span data-t="nav_users"></span></a>
+
+    <!-- ── Public ── -->
     <div class="ng" data-t="nav_g_pub"></div>
     <a href="#citoyens" data-view="citoyens"><i data-ic="users"></i><span data-t="nav_citizen"></span></a>
+    <a href="#accueil" data-view="accueil"><i data-ic="house"></i><span data-t="nav_home"></span></a>
     <a href="#apropos" data-view="apropos"><i data-ic="book-open"></i><span data-t="nav_about"></span></a>
   </nav>
-  <div class="side-foot"><b>Rive-Claire</b><span data-t="side_commune"></span></div>
+  <div class="side-foot" id="side-foot" style="display:none"></div>
 </aside>
 <div class="side-scrim" id="side-scrim"></div>
 <div class="content">
 <div class="top">
   <button class="ib menu-btn" id="menu-btn" data-ta="menu"><i data-ic="menu"></i></button>
-  <div class="crumb"><span>Rive-Claire</span><span aria-hidden="true">/</span><b id="crumb"></b></div>
+  <div class="crumb"><span id="crumb-loc"></span><span aria-hidden="true">/</span><b id="crumb"></b></div>
   <div class="spacer"></div>
   <span class="acct" id="acct"></span>
   <button class="ib" id="theme-btn" data-ta="theme"><i id="theme-ic"></i></button>
@@ -361,10 +375,58 @@ footer{color:var(--muted);font-size:12px;border-top:1px solid var(--line);margin
     </div>
   </section>
 
+  <!-- ================= DATA MANAGER ================= -->
+  <section id="v-donnees" class="hide">
+    <h1 data-t="nav_data"></h1>
+    <p class="lede" data-t="dm_lede"></p>
+
+    <!-- Upload + preview zone -->
+    <div class="card" id="dm-upload-card">
+      <div class="row" style="margin-bottom:12px">
+        <div><h2 data-t="dm_upload_title"></h2><p class="sub" style="margin:0" data-t="dm_upload_sub"></p></div>
+        <div class="spacer"></div>
+        <label class="chip" style="cursor:pointer">
+          <span data-t="dm_upload_btn"></span>
+          <input type="file" accept=".zip" id="dm-file-input" style="display:none">
+        </label>
+      </div>
+      <div id="dm-preview"></div>
+    </div>
+
+    <!-- Loaded tables -->
+    <div class="card" style="margin-top:14px" id="dm-tables-card">
+      <h2 style="margin-bottom:12px" data-t="dm_tables_title"></h2>
+      <div id="dm-tables"></div>
+    </div>
+
+    <!-- Per-table viewer (shown on demand) -->
+    <div class="card hide" style="margin-top:14px" id="dm-viewer-card">
+      <div class="row" style="margin-bottom:8px">
+        <div><h2 id="dm-viewer-title"></h2><p class="sub" id="dm-viewer-info" style="margin:0"></p></div>
+        <div class="spacer"></div>
+        <input type="search" id="dm-search" style="padding:4px 8px;border:1px solid #ddd;border-radius:6px;width:200px" placeholder="🔍">
+        <label class="chip" style="cursor:pointer;margin-left:4px" id="dm-replace-label">
+          <span data-t="dm_replace_btn"></span>
+          <input type="file" accept=".csv" id="dm-replace-input" style="display:none">
+        </label>
+        <button class="chip" id="dm-viewer-close" style="margin-left:4px">✕</button>
+      </div>
+      <div id="dm-viewer-table" class="tablewrap" style="max-height:400px;overflow:auto"></div>
+      <div class="row" style="margin-top:8px;gap:8px" id="dm-pager"></div>
+    </div>
+    <p id="dm-msg" style="margin-top:8px;font-size:.9rem"></p>
+  </section>
+
   <!-- ================= DATA QUALITY ================= -->
   <section id="v-qualite" class="hide">
     <h1 data-t="qr_title"></h1>
     <p class="lede" style="margin-bottom:0" data-t="qr_lede"></p>
+    <div id="qr-upload" class="hide" style="margin:12px 0">
+      <label class="chip" style="cursor:pointer">
+        <span data-t="qr_upload_btn"></span>
+        <input type="file" accept=".zip,.csv" style="display:none" id="qr-file-input">
+      </label>
+    </div>
     <div class="grid kpis" id="qr-kpis"></div>
     <div class="card">
       <div class="row" style="margin-bottom:8px">
@@ -410,6 +472,40 @@ footer{color:var(--muted);font-size:12px;border-top:1px solid var(--line);margin
     <div class="grid roadmap" id="roadmap"></div>
   </section>
   <!-- ================= USERS (admin, server only) ================= -->
+  <!-- ================= LOCALITIES ================= -->
+  <section id="v-localites" class="hide">
+    <h1 data-t="nav_localities"></h1>
+    <p class="lede" data-t="loc_lede"></p>
+    <div class="grid two">
+      <div class="card">
+        <div class="row" style="margin-bottom:12px">
+          <h2 data-t="loc_list"></h2><div class="spacer"></div>
+          <button class="chip" id="loc-new-btn" data-t="loc_create_btn"></button>
+        </div>
+        <div id="loc-table"></div>
+        <p id="loc-msg" style="margin-top:8px;font-size:.9rem"></p>
+      </div>
+      <div class="card hide" id="loc-form-card">
+        <h2 data-t="loc_create_title" style="margin-bottom:16px"></h2>
+        <form id="loc-form">
+          <label style="display:block;margin-bottom:12px">
+            <span data-t="loc_f_name" style="font-size:.85rem;color:#888;display:block;margin-bottom:4px"></span>
+            <input id="loc-f-name" type="text" required style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px">
+          </label>
+          <label style="display:block;margin-bottom:16px">
+            <span data-t="loc_f_slug" style="font-size:.85rem;color:#888;display:block;margin-bottom:4px"></span>
+            <input id="loc-f-slug" type="text" required pattern="[a-z0-9-]+" style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px">
+          </label>
+          <div class="row" style="gap:8px">
+            <button type="submit" class="chip" data-t="loc_f_submit"></button>
+            <button type="button" class="chip" id="loc-f-cancel" data-t="loc_f_cancel"></button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= USERS ================= -->
   <section id="v-utilisateurs" class="hide">
     <h1 data-t="u_title"></h1>
     <p class="lede" data-t="u_lede"></p>
@@ -434,7 +530,9 @@ footer{color:var(--muted);font-size:12px;border-top:1px solid var(--line);margin
 /* ---------------------------------------------------------------- i18n */
 const T = {
 fr:{
-  notice:"Prototype · Rive-Claire, commune fictive : données des organisateurs (Energ-IA Transition, CC BY 4.0)",
+  notice:"openEDM · données Energ-IA Transition (CC BY 4.0)",
+  notice_demo:"Données de démonstration",
+  notice_server:"{name}",
   tagline:"EDM citoyen et souverain",
   nav_home:"Accueil",
   h_kicker:"Energ-IACK 2026 · Défi 2 « EDM citoyen et souverain »", h_title:"openEDM",
@@ -449,7 +547,29 @@ fr:{
   h_next:"Prochaines étapes",
   next:["Corriger les points à vérifier de façon traçable","Les indicateurs ci-dessus, calculés sur les données importées","Un objectif par bâtiment avec un feu vert / orange / rouge, modifiable seulement par une personne autorisée","Comptes et droits par profil (maquette sur ce site de démonstration)"],
   nav_manage:"Gestion", nav_citizen:"Citoyen·ne·s", nav_about:"Comment ça marche",
-  nav_quality:"Qualité",
+  nav_data:"Données", nav_quality:"Qualité",
+  dm_lede:"Chargez un ZIP contenant vos CSV. L'application détecte automatiquement chaque table par ses colonnes.",
+  dm_upload_title:"Import de données", dm_upload_sub:"ZIP de fichiers CSV — les tables sont identifiées par leurs colonnes, pas leur nom",
+  dm_upload_btn:"Choisir un ZIP", dm_preview_title:"Fichiers détectés", dm_preview_ready:"Prêt à importer",
+  dm_preview_missing:"Tables manquantes :", dm_preview_unknown:"Non reconnu",
+  dm_confirm_btn:"Confirmer l'import", dm_importing:"Import en cours…", dm_import_ok:"Import terminé.",
+  dm_tables_title:"Tables chargées", dm_view_btn:"Voir", dm_replace_btn:"Remplacer (CSV)",
+  dm_viewer_rows:"{n} lignes", dm_del_row:"Supprimer", dm_del_ok:"Ligne supprimée.", dm_del_err:"Erreur.",
+  dm_replace_ok:"Table remplacée.", dm_replace_err:"Erreur de remplacement.",
+  dm_prev:"← Préc.", dm_next:"Suiv. →", dm_all_rows:"Toutes les lignes",
+  nav_localities:"Localités",
+  loc_lede:"Chaque localité possède ses propres bâtiments, compteurs et données. L'administrateur voit toutes les localités.",
+  loc_list:"Localités disponibles", loc_create_btn:"+ Nouvelle localité",
+  loc_create_title:"Créer une localité", loc_f_name:"Nom affiché", loc_f_slug:"Identifiant (slug, ex : ma-commune, lettres minuscules et tirets)",
+  loc_f_submit:"Créer", loc_f_cancel:"Annuler",
+  loc_h_name:"Nom", loc_h_slug:"Slug", loc_h_data:"Données chargées", loc_h_actions:"Actions",
+  loc_no_data:"Aucun import",
+  loc_created:"Localité créée.", loc_create_err:"Erreur lors de la création.",
+  loc_readings:"{n} relevés", loc_active:"actif", loc_open:"Ouvrir",
+  loc_delete_tip:"Supprimer cette localité et toutes ses données",
+  loc_delete_confirm:"Supprimer la localité « {name} » et TOUTES ses données (bâtiments, compteurs, mesures, sas) ?\n\nTapez le nom pour confirmer :",
+  loc_delete_ok:"Localité supprimée.", loc_delete_err:"Erreur lors de la suppression.",
+  loc_delete_mismatch:"Nom incorrect — suppression annulée.",
   nav_users:"Utilisateurs", login:"Se connecter", logout:"Se déconnecter", login_title:"Connexion", login_user:"Nom d'utilisateur",
   login_pw:"Mot de passe", login_go:"Se connecter", login_err:"Nom ou mot de passe incorrect, ou compte bloqué quelques minutes.",
   login_need:"« {p} » est réservé aux rôles : {r}.", login_demo:"Comptes de démonstration",
@@ -462,10 +582,13 @@ fr:{
   u_demo:"compte de démonstration", u_saved:"Rôle enregistré.", u_err:"Modification refusée.",
   u_note:"Les comptes « demo-… » gardent leur rôle. Un compte de démonstration ne modifie que les comptes fictifs. Les vrais comptes se créent sur le serveur.",
   d_raw:"Relevés bruts", d_raw_locked:"Réservés aux rôles Service technique et Administrateur·rice.",
-  qr_title:"Qualité des données", qr_lede:"Chaque ligne des fichiers Rive-Claire est contrôlée avant d'entrer dans les chiffres. Ce rapport vient du dernier import, fait hors ligne par tools/import_rive_claire.py : ce n'est pas encore un import en direct.",
+  qr_title:"Qualité des données", qr_lede:"Chaque ligne est contrôlée avant d'entrer dans les chiffres. Ce rapport vient du dernier import.",
   qr_k_read:"Relevés lus", qr_k_read_sub:"+ {b} bâtiments, {c} compteurs, {i} installations", qr_k_loaded:"Chargés", qr_k_loaded_sub:"entrent dans les chiffres",
   qr_k_rejected:"Rejetés", qr_k_rejected_sub:"jamais dans les chiffres", qr_k_flagged:"À vérifier", qr_k_flagged_sub:"dont {e} remplacés par une estimation", qr_k_reimport:"Ré-import du même fichier",
-  qr_k_reimport_sub:"{s} identiques, {c} conflit(s)", qr_rows:"lignes", qr_row:"ligne", qr_points:"points",
+  qr_k_reimport_sub:"{s} identiques, {c} conflit(s)", qr_k_coverage:"Couverture", qr_k_coverage_sub:"{p} % · {e} mois actifs, {l} présents, {m} manquants",
+  qr_reimport_btn:"Re-importer les données", qr_reimport_ok:"Import terminé.", qr_reimport_err:"Échec de l'import.",
+  qr_rows:"lignes", qr_row:"ligne", qr_points:"points",
+  qr_upload_btn:"Importer un fichier ZIP", qr_upload_ok:"Fichier importé.", qr_upload_err:"Échec de l'import (fichier).",
   qr_checks:"Les contrôles", qr_checks_sub:"Cliquez sur un contrôle pour le détail, puis sur une ligne pour ouvrir le site.", qr_csv:"Télécharger (CSV)",
   qr_note:"Les valeurs négatives et les pics anormaux sont remplacés dans les totaux par une estimation : la médiane du même mois les autres années. Le site affiche une alerte. Les autres points à vérifier restent dans les chiffres tels quels.",
   qr_ok:"OK", qr_rej:"Rejeté", qr_flag:"À vérifier", qr_excl:"Remplacé par une estimation", qr_x_est:"estimation : {e}", qr_h_meter:"Compteur", qr_h_month:"Mois", qr_h_value:"Valeur", qr_h_detail:"Détail", qr_more:"… et {n} de plus",
@@ -510,7 +633,7 @@ fr:{
   h_meter:"Compteur", h_unit:"Unité", h_level:"Niveau", h_total:"Total {y}", h_flags:"Qualité",
   d_buildings:"Bâtiments", h_bname:"Bâtiment", h_built:"Construit", h_reno:"Rénové", h_levels:"Niveaux", h_label:"Label", h_homes:"Logements",
   d_inst:"Installations", h_inst:"Installation", h_power:"Puissance", h_from:"Mise en service", h_to:"Retrait", h_note:"Remarque",
-  q_missing:"manquant", q_estimated:"estimé", q_duplicate:"doublon", q_replaced:"remplacé par une estimation", d_na:"sans objet", d_back_map:"← Carte", m_open_site:"Toutes les données du site →",
+  q_missing:"manquant", q_estimated:"estimé", q_duplicate:"doublon", q_replaced:"remplacé par une estimation", d_na:"sans objet", d_back_map:"← Carte", d_map_btn:"Voir sur la carte 3D", m_open_site:"Toutes les données du site →",
   fs_title:"Fiche de bâtiment", fs_open_site:"Toutes les données du site →", fs_nodata:"Pas assez de données pour le calculer", fs_year:"Année {y}",
   fs_whole:"Valeurs mesurées pour tout le site ({n} bâtiments) : les compteurs sont posés par site, pas par bâtiment.",
   fs_hi:"Indice de chaleur", fs_hi_note:"Approximatif, sans correction climatique : ce n'est pas l'IDC officiel. Repère : 450 MJ/m² par an.",
@@ -524,7 +647,7 @@ fr:{
   d_events:"Journal du site", d_noevents:"Rien à signaler sur la période.",
   d_onsite:"Électricité réellement consommée sur place ({y})", d_onsite_eq:"soutirage réseau + production solaire − injection = consommation sur place",
   d_history:"Chauffage", unit_kwh:"kWh", unit_mwh:"MWh", unit_m3:"m³",
-    c_kicker:"Rive-Claire · 25 000 habitant·e·s · bâtiments communaux",
+    c_kicker:"{commune} · {n} habitant·e·s · bâtiments communaux",
   c_hero:"En {y}, nos bâtiments publics ont émis <em>{co2} t de CO₂</em> sur place, soit {pc} de moins qu'en {b}.",
   g_co2:"CO₂ : objectif −60 % d'ici 2030", g_energy:"Énergie : objectif −30 % d'ici 2030", g_fossil:"Sortir du chauffage fossile",
   g_done:"{p} du chemin parcouru", g_left:"{n} sites encore au mazout ou au gaz",
@@ -566,11 +689,13 @@ fr:{
   m_p_year:"Construction", m_p_levels:"Niveaux", m_p_height:"Hauteur", m_p_sre:"Surface chauffée (SRE)", m_p_idc:"IDC {y}", m_p_carriers:"Énergies déclarées", m_p_heatkwh:"Chaleur consommée",
   m_p_boiler:"Chaudière active", m_p_pv:"Production possible", m_p_kwp:"Puissance · surface", m_src:"Sources : SITG (OCEN), swisstopo",
   months:"mois", colon:" : ", sites_n:"{n} sites sur {m}",
-  nav_g_ops:"Service de l'énergie", nav_g_pub:"Public", side_commune:"Commune fictive · données des organisateurs",
+  nav_g_mun:"Municipalité de travail", nav_g_ops:"Service de l'énergie", nav_g_pub:"Public", side_commune:"",
   menu:"Menu", theme:"Thème clair ou sombre"
 },
 en:{
-  notice:"Prototype · Rive-Claire, a fictional municipality: organisers' data (Energ-IA Transition, CC BY 4.0)",
+  notice:"openEDM · data: Energ-IA Transition (CC BY 4.0)",
+  notice_demo:"Demo data",
+  notice_server:"{name}",
   tagline:"Citizen-owned, sovereign EDM",
   nav_home:"Welcome",
   h_kicker:"Energ-IACK 2026 · Challenge 2 \"Citizen-owned, sovereign EDM\"", h_title:"openEDM",
@@ -585,7 +710,29 @@ en:{
   h_next:"Next steps",
   next:["Correct the points to check, with a trace","The indicators above, computed on the imported data","A target per building with a green / amber / red light, editable only by an authorised person","Accounts and rights per profile (mock-up on this demo site)"],
   nav_manage:"Manage", nav_citizen:"Citizens", nav_about:"How it works",
-  nav_quality:"Data quality",
+  nav_data:"Data", nav_quality:"Data quality",
+  dm_lede:"Upload a ZIP with your CSV files. The app detects each table from its columns automatically.",
+  dm_upload_title:"Data import", dm_upload_sub:"ZIP of CSV files — tables are identified by their columns, not their name",
+  dm_upload_btn:"Choose a ZIP", dm_preview_title:"Detected files", dm_preview_ready:"Ready to import",
+  dm_preview_missing:"Missing tables:", dm_preview_unknown:"Unrecognised",
+  dm_confirm_btn:"Confirm import", dm_importing:"Importing…", dm_import_ok:"Import complete.",
+  dm_tables_title:"Loaded tables", dm_view_btn:"View", dm_replace_btn:"Replace (CSV)",
+  dm_viewer_rows:"{n} rows", dm_del_row:"Delete", dm_del_ok:"Row deleted.", dm_del_err:"Error.",
+  dm_replace_ok:"Table replaced.", dm_replace_err:"Replace error.",
+  dm_prev:"← Prev", dm_next:"Next →", dm_all_rows:"All rows",
+  nav_localities:"Localities",
+  loc_lede:"Each locality has its own buildings, meters and data. Administrators see all localities.",
+  loc_list:"Available localities", loc_create_btn:"+ New locality",
+  loc_create_title:"Create a locality", loc_f_name:"Display name", loc_f_slug:"Identifier (slug, e.g. my-municipality, lowercase letters and dashes)",
+  loc_f_submit:"Create", loc_f_cancel:"Cancel",
+  loc_h_name:"Name", loc_h_slug:"Slug", loc_h_data:"Loaded data", loc_h_actions:"Actions",
+  loc_no_data:"No import yet",
+  loc_created:"Locality created.", loc_create_err:"Error creating locality.",
+  loc_readings:"{n} readings", loc_active:"active", loc_open:"Open",
+  loc_delete_tip:"Delete this locality and all its data",
+  loc_delete_confirm:"Delete locality « {name} » and ALL its data (buildings, meters, readings, staging)?\n\nType the name to confirm:",
+  loc_delete_ok:"Locality deleted.", loc_delete_err:"Delete failed.",
+  loc_delete_mismatch:"Name mismatch — deletion cancelled.",
   nav_users:"Users", login:"Log in", logout:"Log out", login_title:"Log in", login_user:"Username",
   login_pw:"Password", login_go:"Log in", login_err:"Wrong username or password, or account locked for a few minutes.",
   login_need:"“{p}” is for these roles: {r}.", login_demo:"Demo accounts",
@@ -598,10 +745,13 @@ en:{
   u_demo:"demo account", u_saved:"Role saved.", u_err:"Change refused.",
   u_note:"The “demo-…” accounts keep their role. A demo account only changes the fictional accounts. Real accounts are created on the server.",
   d_raw:"Raw readings", d_raw_locked:"For the Technical staff and Administrator roles.",
-  qr_title:"Data quality", qr_lede:"Every row of the Rive-Claire files is checked before it reaches the figures. This report comes from the last import, run offline by tools/import_rive_claire.py: it is not a live upload yet.",
+  qr_title:"Data quality", qr_lede:"Every row is checked before it reaches the figures. This report comes from the last import.",
   qr_k_read:"Readings read", qr_k_read_sub:"+ {b} buildings, {c} meters, {i} installations", qr_k_loaded:"Loaded", qr_k_loaded_sub:"used in the figures",
   qr_k_rejected:"Rejected", qr_k_rejected_sub:"never in the figures", qr_k_flagged:"To check", qr_k_flagged_sub:"of which {e} replaced by an estimate", qr_k_reimport:"Re-import of the same file",
-  qr_k_reimport_sub:"{s} unchanged, {c} conflict(s)", qr_rows:"rows", qr_row:"row", qr_points:"points",
+  qr_k_reimport_sub:"{s} unchanged, {c} conflict(s)", qr_k_coverage:"Coverage", qr_k_coverage_sub:"{p} % · {e} active months, {l} present, {m} missing",
+  qr_reimport_btn:"Re-import data", qr_reimport_ok:"Import complete.", qr_reimport_err:"Import failed.",
+  qr_rows:"rows", qr_row:"row", qr_points:"points",
+  qr_upload_btn:"Import a ZIP file", qr_upload_ok:"File imported.", qr_upload_err:"Import failed (file).",
   qr_checks:"The checks", qr_checks_sub:"Click a check for the details, then a row to open the site.", qr_csv:"Download (CSV)",
   qr_note:"Negative values and abnormal spikes are replaced in the totals by an estimate: the median of the same month in other years. The site shows an alert. Other points to check stay in the figures as they are.",
   qr_ok:"OK", qr_rej:"Rejected", qr_flag:"To check", qr_excl:"Replaced by an estimate", qr_x_est:"estimate: {e}", qr_h_meter:"Meter", qr_h_month:"Month", qr_h_value:"Value", qr_h_detail:"Detail", qr_more:"… and {n} more",
@@ -646,7 +796,7 @@ en:{
   h_meter:"Meter", h_unit:"Unit", h_level:"Level", h_total:"Total {y}", h_flags:"Quality",
   d_buildings:"Buildings", h_bname:"Building", h_built:"Built", h_reno:"Renovated", h_levels:"Floors", h_label:"Label", h_homes:"Homes",
   d_inst:"Installations", h_inst:"Installation", h_power:"Capacity", h_from:"In service", h_to:"Removed", h_note:"Note",
-  q_missing:"missing", q_estimated:"estimated", q_duplicate:"duplicate", q_replaced:"replaced by an estimate", d_na:"not applicable", d_back_map:"← Map", m_open_site:"All data for this site →",
+  q_missing:"missing", q_estimated:"estimated", q_duplicate:"duplicate", q_replaced:"replaced by an estimate", d_na:"not applicable", d_back_map:"← Map", d_map_btn:"View on 3D map", m_open_site:"All data for this site →",
   fs_title:"Building sheet", fs_open_site:"All data for this site →", fs_nodata:"Not enough data to compute", fs_year:"Year {y}",
   fs_whole:"Measured values are for the whole site ({n} buildings): meters are installed per site, not per building.",
   fs_hi:"Heat index", fs_hi_note:"Approximate, not weather-corrected: this is not the official IDC. Reference: 450 MJ/m² per year.",
@@ -660,7 +810,7 @@ en:{
   d_events:"Site log", d_noevents:"Nothing to report over the period.",
   d_onsite:"Electricity actually used on site ({y})", d_onsite_eq:"grid draw + solar production − feed-in = on-site use",
   d_history:"Heating", unit_kwh:"kWh", unit_mwh:"MWh", unit_m3:"m³",
-    c_kicker:"Rive-Claire · 25,000 residents · municipal buildings",
+    c_kicker:"{commune} · {n} residents · municipal buildings",
   c_hero:"In {y}, our public buildings emitted <em>{co2} t of CO₂</em> on site, {pc} less than in {b}.",
   g_co2:"CO₂: −60% target by 2030", g_energy:"Energy: −30% target by 2030", g_fossil:"Phase out fossil heating",
   g_done:"{p} of the way there", g_left:"{n} sites still on oil or gas",
@@ -702,19 +852,19 @@ en:{
   m_p_year:"Built", m_p_levels:"Floors", m_p_height:"Height", m_p_sre:"Heated area (ERA)", m_p_idc:"IDC {y}", m_p_carriers:"Declared energy", m_p_heatkwh:"Heat consumed",
   m_p_boiler:"Active boiler", m_p_pv:"Possible output", m_p_kwp:"Capacity · area", m_src:"Sources: SITG (OCEN), swisstopo",
   months:"months", colon:": ", sites_n:"{n} of {m} sites",
-  nav_g_ops:"Energy service", nav_g_pub:"Public", side_commune:"Fictional commune · organisers' data",
+  nav_g_mun:"Working municipality", nav_g_ops:"Energy service", nav_g_pub:"Public", side_commune:"",
   menu:"Menu", theme:"Light or dark theme"
 }};
 let LANG = "fr";
 try { LANG = new URLSearchParams(location.search).get("lang") || localStorage.getItem("edm-lang") || (navigator.language||"fr").slice(0,2); } catch(e) {}
 if (!T[LANG]) LANG = "fr";
 const t = (k, v={}) => { let s = T[LANG][k] ?? T.fr[k] ?? k; if (typeof s === "string") for (const [a,b] of Object.entries(v)) s = s.replaceAll("{"+a+"}", b); return s; };
-const LOC = () => LANG === "fr" ? "fr-CH" : "en-GB";
-const nf = (x, d=0) => new Intl.NumberFormat(LOC(), {maximumFractionDigits:d, minimumFractionDigits:d}).format(x);
-const pct = (x, d=0) => new Intl.NumberFormat(LOC(), {style:"percent", maximumFractionDigits:d, signDisplay:"exceptZero"}).format(x);
-const pct0 = (x) => new Intl.NumberFormat(LOC(), {style:"percent", maximumFractionDigits:0}).format(x);
-const monthName = (m) => new Intl.DateTimeFormat(LOC(), {month:"short"}).format(new Date(2021, m, 1));
-const monthYear = (i) => new Intl.DateTimeFormat(LOC(), {month:"short", year:"numeric"}).format(new Date(2021, i, 1));
+const locale = () => LANG === "fr" ? "fr-CH" : "en-GB";
+const nf = (x, d=0) => new Intl.NumberFormat(locale(), {maximumFractionDigits:d, minimumFractionDigits:d}).format(x);
+const pct = (x, d=0) => new Intl.NumberFormat(locale(), {style:"percent", maximumFractionDigits:d, signDisplay:"exceptZero"}).format(x);
+const pct0 = (x) => new Intl.NumberFormat(locale(), {style:"percent", maximumFractionDigits:0}).format(x);
+const monthName = (m) => new Intl.DateTimeFormat(locale(), {month:"short"}).format(new Date(2021, m, 1));
+const monthYear = (i) => new Intl.DateTimeFormat(locale(), {month:"short", year:"numeric"}).format(new Date(2021, i, 1));
 const esc = (s) => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 /* icons: Lucide (ISC licence, see THIRD_PARTY.md), inner SVG only */
 const ICONS = {
@@ -740,6 +890,8 @@ const ICONS = {
   "log-out":'<path d="m16 17 5-5-5-5"/><path d="M21 12H9"/><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>',
   "key-round":'<path d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"/><circle cx="16.5" cy="7.5" r=".5" fill="currentColor"/>',
   "triangle-alert":'<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+  "table-2":'<path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/>',
+  "map-pin":'<path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/>',
 };
 const ic = (n) => `<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n]||""}</svg>`;
 
@@ -835,7 +987,7 @@ function lineChart(el, labels, series, fmt, opts={}){
 const legend = (el, items) => el.innerHTML = items.map(([n,c,dash])=>`<span><i style="background:${dash?'transparent':css(c)};${dash?`border:2px dashed ${css(c)};width:12px;height:2px;border-radius:0;vertical-align:3px;border-width:2px 0 0 0`:''}"></i>${esc(n)}</span>`).join("");
 
 /* ---------------------------------------------------------------- views */
-const NAVKEY = {accueil:"nav_home", gestion:"nav_manage", qualite:"nav_quality", citoyens:"nav_citizen", carte:"nav_map", apropos:"nav_about", utilisateurs:"nav_users"};
+const NAVKEY = {accueil:"nav_home", gestion:"nav_manage", donnees:"nav_data", qualite:"nav_quality", citoyens:"nav_citizen", carte:"nav_map", apropos:"nav_about", localites:"nav_localities", utilisateurs:"nav_users"};
 function applyStatic(){
   document.documentElement.lang = LANG;
   document.querySelectorAll("[data-ic]").forEach(el => el.outerHTML = ic(el.dataset.ic));
@@ -843,7 +995,7 @@ function applyStatic(){
   document.getElementById("theme-ic").innerHTML = ic(isDark() ? "sun" : "moon");
   document.querySelectorAll("[data-t]").forEach(el => el.textContent = t(el.dataset.t));
   document.querySelectorAll("[data-lang]").forEach(b => b.classList.toggle("on", b.dataset.lang === LANG));
-  document.getElementById("q").placeholder = t("q_ph");
+  const qEl = document.getElementById("q"); if (qEl) qEl.placeholder = t("q_ph");
   document.getElementById("foot").textContent = t("foot");
 }
 function deltaHtml(cur, ref, label, goodIfDown=true){
@@ -851,7 +1003,39 @@ function deltaHtml(cur, ref, label, goodIfDown=true){
   const d = cur/ref - 1, good = goodIfDown ? d < 0 : d > 0;
   return `<div class="delta ${Math.abs(d)<0.005?'mut':good?'good':'badc'}">${pct(d,1)} <span class="mut" style="font-weight:500">${esc(label)}</span></div>`;
 }
+function noDataBanner(){
+  const name = LOC?.name || "";
+  return `<div class="card" style="margin-top:14px;text-align:center;padding:2.5rem">
+    <div style="font-size:2rem;margin-bottom:12px">📂</div>
+    <h2>${esc(LANG==="fr"?`Aucune donnée pour ${name}`:`No data for ${name}`)}</h2>
+    <p class="sub" style="margin:8px 0 16px">${esc(LANG==="fr"
+      ?"Chargez des données via le module Données pour commencer."
+      :"Load data via the Data module to get started.")}</p>
+    <a href="#donnees" class="chip" onclick="location.hash='#donnees'">${esc(LANG==="fr"?"Aller aux Données":"Go to Data")}</a>
+  </div>`;
+}
+
 function renderManager(){
+  const banner = document.getElementById("no-data-banner");
+  if (D?.meta?.no_data) {
+    // Show banner, hide existing content — never destroy the DOM structure
+    if (!banner) {
+      const el = document.createElement("div");
+      el.id = "no-data-banner";
+      el.innerHTML = noDataBanner();
+      document.getElementById("v-gestion").prepend(el);
+    }
+    // Hide all section content except the banner
+    Array.from(document.getElementById("v-gestion").children)
+      .forEach(c => { if (c.id !== "no-data-banner") c.style.display = "none"; });
+    return;
+  }
+  // Data now available — remove banner and restore visibility
+  if (banner) {
+    banner.remove();
+    Array.from(document.getElementById("v-gestion").children)
+      .forEach(c => c.style.removeProperty("display"));
+  }
   const Y = M.years[YEAR], P = M.years[YEAR-1], B0 = M.years[D.meta.baseline_year];
   document.getElementById("years").innerHTML = YEARS.map(y=>`<button data-y="${y}" class="${y===YEAR?'on':''}">${y}</button>`).join("");
   const k = [
@@ -915,10 +1099,15 @@ function renderAI(elId, part){
   const txt = R[LANG][part];
   el.innerHTML = `<div class="row"><h2>${esc(t("ai_title",{y:R.year}))}</h2><span class="badge-ai">✦ ${esc(t("ai_badge"))}</span></div>`
     + txt.split(/\n\s*\n/).map(p=>`<p>${esc(p)}</p>`).join("")
-    + `<div class="meta">${esc(t("ai_meta",{d:new Intl.DateTimeFormat(LOC(),{dateStyle:"long"}).format(new Date(R.generated)), m:R.model}))}</div>`;
+    + `<div class="meta">${esc(t("ai_meta",{d:new Intl.DateTimeFormat(locale(),{dateStyle:"long"}).format(new Date(R.generated)), m:R.model}))}</div>`;
 }
 function renderCitizen(){
-  const CY = YEARS[YEARS.length-1], Y = M.years[CY], B0 = M.years[D.meta.baseline_year], inhab = 25000;
+  const CY = YEARS[YEARS.length-1], Y = M.years[CY], B0 = M.years[D.meta.baseline_year];
+  const inhab = D.meta?.inhabitants || 25000;
+  const commune = LOC?.name || D.meta?.commune || "";
+  // set c_kicker dynamically since it uses {commune} and {n} placeholders
+  const kicker = document.querySelector('[data-t="c_kicker"]');
+  if (kicker) kicker.textContent = t("c_kicker", {commune, n: inhab.toLocaleString(LANG)});
   const dco2 = 1 - Y.co2/B0.co2, den = 1 - Y.energy/B0.energy;
   document.getElementById("c-hero").innerHTML = t("c_hero",{y:CY, co2:nf(Y.co2/1000), pc:pct0(dco2), b:D.meta.baseline_year});
   const fos0 = M.years[D.meta.baseline_year].fossilSites;
@@ -956,7 +1145,12 @@ function qrDetail(code, it){
   return x==null ? "" : String(x);
 }
 function renderQuality(){
-  const Q = D.quality, R = Q.reimport.second;
+  if (!D?.quality) {
+    document.getElementById("qr-kpis").innerHTML = "";
+    document.getElementById("qr-list").innerHTML = "";
+    return;
+  }
+  const Q = D.quality, R = Q.reimport.second, COV = Q.coverage || {};
   const rw = (n) => t(n===1 ? "qr_row" : "qr_rows");
   const k = [
     [t("qr_k_read"), nf(Q.read.mesures), rw(Q.read.mesures), t("qr_k_read_sub",{b:Q.read.batiments,c:Q.read.compteurs,i:Q.read.installations})],
@@ -964,9 +1158,54 @@ function renderQuality(){
     [t("qr_k_rejected"), nf(Q.rejected), rw(Q.rejected), t("qr_k_rejected_sub")],
     [t("qr_k_flagged"), nf(Q.flagged + Q.excluded), t("qr_points"), t("qr_k_flagged_sub",{e:Q.excluded})],
     [t("qr_k_reimport"), "+"+nf(R.added), rw(R.added), t("qr_k_reimport_sub",{s:nf(R.same),c:R.conflicts})],
-  ];
-  const KI = ["file-input","database","circle-x","flag","repeat-2"];
+    COV.pct != null ? [t("qr_k_coverage"), COV.pct+" %", "", t("qr_k_coverage_sub",{p:COV.pct,e:nf(COV.expected),l:nf(COV.loaded),m:nf(COV.missing)})] : null,
+  ].filter(Boolean);
+  const KI = ["file-input","database","circle-x","flag","repeat-2","percent"];
   document.getElementById("qr-kpis").innerHTML = k.map(([l,v,u,d],i)=>`<div class="card kpi"><div class="lab">${ic(KI[i])}${esc(l)}</div><div class="val">${v}<small>${esc(u)}</small></div><div class="delta mut">${esc(d)}</div></div>`).join("");
+  // Re-import button — only for technique/admin on the server version
+  const canImport = SERVER && USER && (USER.role==="admin" || USER.role==="technique");
+  let importBtn = document.getElementById("qr-import-btn");
+  if (canImport && !importBtn) {
+    importBtn = document.createElement("button");
+    importBtn.id = "qr-import-btn"; importBtn.className = "chip"; importBtn.textContent = t("qr_reimport_btn");
+    importBtn.onclick = async () => {
+      importBtn.disabled = true; importBtn.textContent = "…";
+      try {
+        const slug = LOC?.slug || "rive-claire";
+        await fetch(`api/localities/${slug}/import`, {method:"POST"});
+        const d2 = await fetch(`api/data.json?locality=${slug}`).then(r=>r.json());
+        D = d2; renderQuality();
+        importBtn.textContent = t("qr_reimport_ok");
+      } catch(e) { importBtn.textContent = t("qr_reimport_err"); }
+      setTimeout(()=>{ if(importBtn){ importBtn.disabled=false; importBtn.textContent=t("qr_reimport_btn"); } }, 3000);
+    };
+    document.getElementById("qr-csv").parentElement.appendChild(importBtn);
+  }
+  // File upload — technique/admin, server mode
+  const uploadDiv = document.getElementById("qr-upload");
+  if (uploadDiv) {
+    if (canImport) {
+      uploadDiv.classList.remove("hide");
+      const inp = document.getElementById("qr-file-input");
+      if (inp && !inp._wired) {
+        inp._wired = true;
+        inp.onchange = async () => {
+          if (!inp.files?.length) return;
+          const fd = new FormData(); fd.append("file", inp.files[0]);
+          const slug = LOC?.slug || "rive-claire";
+          try {
+            const r = await fetch(`api/localities/${slug}/import`, {method:"POST", body:fd});
+            if (!r.ok) throw new Error(await r.text());
+            const d2 = await fetch(`api/data.json?locality=${slug}`).then(r=>r.json());
+            D = d2; renderQuality();
+            inp.value = "";
+          } catch(e) { alert(t("qr_upload_err")+"\n"+e.message); }
+        };
+      }
+    } else {
+      uploadDiv.classList.add("hide");
+    }
+  }
   document.getElementById("qr-list").innerHTML = Q.checks.map(c=>{
     const pill = !c.n ? `<span class="pill p-ren">${esc(t("qr_ok"))}</span>` : c.kind==="rejected" ? `<span class="pill p-fossil">${esc(t("qr_rej"))}</span>` : c.kind==="excluded" ? `<span class="pill p-fossil">${esc(t("qr_excl"))}</span>` : `<span class="pill p-warn">${esc(t("qr_flag"))}</span>`;
     const rows = c.items.map(it=>`<tr ${it.s && D.meters[it.s] ? `data-id="${esc(it.s)}"` : ""}><td>${esc(it.m||"")}</td><td>${esc(qrMonth(it.mo))}</td><td class="num">${it.v==null?"–":nf(it.v)+" "+esc(qrUnit(it))}</td><td>${esc(qrDetail(c.code,it))}</td></tr>`).join("");
@@ -979,7 +1218,7 @@ function qualityCsv(){
   const rows = [["controle","statut","compteur","site","mois","valeur","detail"]];
   for (const c of D.quality.checks) for (const it of c.items) rows.push([t("qc_"+c.code), t(c.kind==="rejected"?"qr_rej":c.kind==="excluded"?"qr_excl":"qr_flag"), it.m||"", it.s||"", it.mo||"", it.v??"", qrDetail(c.code,it).replaceAll(";",",")]);
   const blob = new Blob(["﻿"+rows.map(r=>r.join(";")).join("\n")], {type:"text/csv;charset=utf-8"});
-  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "rive-claire-qualite.csv"; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `${LOC?.slug||"edm"}-qualite.csv`; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
 }
 function renderAbout(){
   document.getElementById("flow").innerHTML = [1,2,3,4].map(i=>`<div class="step"><b>${esc(t("fl"+i))}</b><span>${esc(t("fl"+i+"s"))}</span></div>`).join("");
@@ -1004,7 +1243,10 @@ function switchMap(k){
 function renderMap(){
   if (MAP || MAP_LOADING) return;
   MAP_LOADING = true;
-  import("./map3d.js?v="+V).then(m => m.initMap(document.getElementById("m3"), {t, nf, esc, showTip, hideTip, dark:isDark, lang:()=>LANG, switchMap, heatIndex:(sid, y)=>(M.sites[sid]||{})[y]}, MAPS[MAPKEY]))
+  // Prefer the municipality's declared map; fall back to the current tab selection
+  const mc = LOC?.map_config;
+  const mapCfg = (mc?.key && MAPS[mc.key]) ? {key: mc.key, dir: mc.dir} : MAPS[MAPKEY];
+  import("./map3d.js?v="+V).then(m => m.initMap(document.getElementById("m3"), {t, nf, esc, showTip, hideTip, dark:isDark, lang:()=>LANG, switchMap, heatIndex:(sid, y)=>(M.sites[sid]||{})[y]}, mapCfg))
     .then(x => { MAP = x; MAP_LOADING = false; }).catch(e => { MAP_LOADING = false; document.getElementById("m3").innerHTML = `<div class="m3-loading">${esc(String(e))}</div>`; });
 }
 
@@ -1029,7 +1271,7 @@ function siteCsv(id){
     rows.push([ym, m.id, v??"", m.unit, m.kwh[i]??"", q ? t("q_"+q) : t("q_ok")]);
   }
   const blob = new Blob(["﻿"+rows.map(r=>r.join(";")).join("\n")], {type:"text/csv;charset=utf-8"});
-  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `rive-claire-${id}.csv`; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `${LOC?.slug||"edm"}-${id}.csv`; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
 }
 function openSite(id){
   const s = D.sites.find(x=>x.id===id); if (!s) return;
@@ -1052,7 +1294,9 @@ function openSite(id){
   const deliv = MS.some(m=>["MZ","GR"].includes(mcode(m.id)));
   const tbl = (head, rows) => `<div class="tablewrap"><table class="dtab"><thead><tr>${head.map(([h,c])=>`<th class="${c||""}">${esc(h)}</th>`).join("")}</tr></thead><tbody>${rows.join("")}</tbody></table></div>`;
   document.getElementById("drawer-in").innerHTML = `
-    <div class="row"><div><div class="tsub">${esc(t("type_"+s.type))} · ${esc(s.id)} · ${esc(s.quarter)}</div><h1 style="margin:2px 0 0">${esc(s.name[LANG])}</h1></div><div class="spacer"></div>${VIEW==="carte"?`<button class="chip" id="dback">${esc(t("d_back_map"))}</button>`:""}<button class="x" id="dx" aria-label="close">×</button></div>
+    <div class="row"><div><div class="tsub">${esc(t("type_"+s.type))} · ${esc(s.id)} · ${esc(s.quarter)}</div><h1 style="margin:2px 0 0">${esc(s.name[LANG])}</h1></div><div class="spacer"></div>
+    ${VIEW!=="carte"?`<button class="chip" id="dmap-btn" style="margin-right:4px">${esc(t("d_map_btn"))}</button>`:""}
+    ${VIEW==="carte"?`<button class="chip" id="dback">${esc(t("d_back_map"))}</button>`:""}<button class="x" id="dx" aria-label="close">×</button></div>
     <div class="facts">
       <div class="fact"><div class="lab">${esc(t("d_area"))}</div><div class="v">${s.area_m2?nf(s.area_m2)+" m²":esc(t("d_na"))}</div></div>
       <div class="fact"><div class="lab">${esc(t("d_built"))}</div><div class="v">${s.year_built??"–"}${reno?` <small class="mut">· ${reno}</small>`:""}</div></div>
@@ -1091,6 +1335,7 @@ function openSite(id){
     {labelStep:1, h:220, tipLabel:i=>monthYear(i), ytick:v=>v>=10000?nf(v/1000)+"k":nf(v), markers:ev.map(e=>({i:e.month, color:e.kind==="anomaly"||e.kind==="quality"?"--warn":"--accent"}))});
   document.getElementById("dx").onclick = closeSite;
   const back = document.getElementById("dback"); if (back) back.onclick = closeSite;
+  const mapBtn = document.getElementById("dmap-btn"); if (mapBtn) mapBtn.onclick = () => goToMapSite(id);
   const dcsv = document.getElementById("dcsv"); if (dcsv) dcsv.onclick = () => siteCsv(id);
   document.querySelectorAll("[data-fl]").forEach(b=>b.onclick=()=>{FLUID=b.dataset.fl; openSite(id);});
   document.querySelectorAll("[data-mt]").forEach(r=>r.onclick=()=>{FLUID="m:"+r.dataset.mt; openSite(id); document.getElementById("drawer").scrollTo({top:0, behavior:"smooth"});});
@@ -1162,10 +1407,60 @@ function openSheet(bid){
 }
 const reopen = () => { const h = location.hash; if (h.startsWith("#fiche/")) openSheet(h.slice(7)); else if (h.startsWith("#site/")) openSite(h.slice(6)); };
 function closeSite(){ document.getElementById("drawer").classList.remove("open"); document.getElementById("scrim").classList.remove("open"); if (/^#(site|fiche)\//.test(location.hash)) history.replaceState(null,"","#"+VIEW); }
+function goToMapSite(id){
+  const wasOpen = document.getElementById("drawer").classList.contains("open");
+  if (VIEW !== "carte") { VIEW = "carte"; renderAll(); }
+  const tryFocus = (n) => {
+    if (MAP?.focusSite) { if (wasOpen) openSite(id); MAP.focusSite(id); }
+    else if (n > 0) setTimeout(() => tryFocus(n - 1), 400);
+  };
+  tryFocus(20);
+}
+
+/* ---------------------------------------------------------------- locality switcher */
+function renderLocality() {
+  // Show active municipality at the top of the nav (above service menu)
+  const nav = document.getElementById("side-foot-nav");
+  const name = LOC?.name || (D?.meta?.commune) || "";
+  if (!nav) return;
+
+  if (!SERVER || !USER) {
+    // Static/public: show commune name below the brand only
+    nav.classList.add("hide");
+    return;
+  }
+
+  nav.classList.remove("hide");
+
+  if (LOCALITIES.length <= 1) {
+    nav.innerHTML = `<span class="side-loc-label" data-t="nav_g_mun"></span><b class="side-loc-name">${esc(name)}</b>`;
+    applyT(nav);
+    return;
+  }
+
+  // Multiple municipalities: dropdown selector in nav
+  const opts = LOCALITIES.map(l =>
+    `<option value="${esc(l.slug)}" ${LOC && l.slug === LOC.slug ? "selected" : ""}>${esc(l.name)}</option>`
+  ).join("");
+  nav.innerHTML = `<span class="side-loc-label" data-t="nav_g_mun"></span>
+    <select id="loc-select" class="side-loc-select">${opts}</select>`;
+  applyT(nav);
+  const sel = document.getElementById("loc-select");
+  if (sel) sel.onchange = async () => {
+    LOC = LOCALITIES.find(l => l.slug === sel.value) || LOC;
+    try { localStorage.setItem("edm-locality", LOC.slug); } catch(e) {}
+    if (MAP) { MAP.destroy(); MAP = null; MAP_LOADING = false; }
+    await loadData();
+    route();
+  };
+}
+function applyT(el) {
+  el.querySelectorAll("[data-t]").forEach(e => e.textContent = t(e.dataset.t));
+}
 
 /* ---------------------------------------------------------------- routing & events */
 let VIEW = "accueil";
-const VIEWS = ["accueil","gestion","qualite","citoyens","carte","apropos","utilisateurs"];
+const VIEWS = ["accueil","gestion","donnees","qualite","citoyens","carte","apropos","localites","utilisateurs"];
 function route(){
   const h = location.hash.slice(1) || "accueil";
   if (h.startsWith("fiche/")) { VIEW = "carte"; renderAll(); openSheet(h.slice(6)); return; }
@@ -1178,19 +1473,41 @@ function closeSiteSilently(){ document.getElementById("drawer").classList.remove
 function renderAll(){
   applyStatic();
   for (const v of VIEWS) document.getElementById("v-"+v).classList.toggle("hide", v!==VIEW);
-  document.querySelector(".notice").textContent = t(VIEW==="carte" ? "notice_map" : "notice");
+  // Notice banner: dynamic per server/locality/demo context
+  const noticeEl = document.querySelector(".notice");
+  if (noticeEl) {
+    if (SERVER && LOC) {
+      if (LOC.demo) {
+        noticeEl.textContent = `${LOC.name} · ${t("notice_demo")}`;
+        noticeEl.style.display = "";
+      } else {
+        // Real municipality: no notice needed
+        noticeEl.style.display = "none";
+      }
+    } else {
+      // Static hosting: keep the original notice
+      noticeEl.style.display = "";
+      noticeEl.textContent = t(VIEW==="carte" ? "notice_map" : "notice");
+    }
+  }
   document.querySelectorAll("nav a").forEach(a=>{ a.classList.toggle("on", a.dataset.view===VIEW); a.classList.toggle("hide", !can(a.dataset.view)); });
-  document.getElementById("crumb").textContent = t(NAVKEY[VIEW]); side(false); renderAcct();
-  if (VIEW==="accueil") renderWelcome(); else if (VIEW==="gestion") renderManager(); else if (VIEW==="qualite") renderQuality(); else if (VIEW==="citoyens") renderCitizen(); else if (VIEW==="carte") renderMap(); else if (VIEW==="utilisateurs") renderUsers(); else renderAbout();
+  document.getElementById("crumb").textContent = t(NAVKEY[VIEW]);
+  const cl = document.getElementById("crumb-loc");
+  if (cl) cl.textContent = LOC ? LOC.name : (D?.meta?.commune || "");
+  renderLocality();
+  side(false); renderAcct();
+  if (VIEW==="accueil") renderWelcome(); else if (VIEW==="gestion") renderManager(); else if (VIEW==="donnees") renderData(); else if (VIEW==="qualite") renderQuality(); else if (VIEW==="citoyens") renderCitizen(); else if (VIEW==="carte") renderMap(); else if (VIEW==="localites") renderLocalities(); else if (VIEW==="utilisateurs") renderUsers(); else renderAbout();
   if (MAP) { MAP.relabel(); MAP.theme(); }
 }
 
 /* ---------------------------------------------------------------- accounts and roles (issue #15)
    Mirrors server/auth.py: the server enforces it on the data, this only hides what a role cannot use.
    On a static host (GitHub Pages) api/config.json says {"server": false}: no accounts, every page open. */
-const ACCESS = {gestion:["admin","technique","elu"], qualite:["admin","technique"], utilisateurs:["admin"]};
+const ACCESS = {gestion:["admin","technique","elu"], donnees:["admin","technique"], qualite:["admin","technique"], localites:["admin"], utilisateurs:["admin"]};
 const ROLES = ["admin","technique","elu","public"];
 let SERVER = null, USER = null;
+let LOCALITIES = [];   // [{id, slug, name, country, map_config, role}]
+let LOC = null;        // currently selected locality
 const ROLE = () => USER ? USER.role : "public";
 const can = (v) => SERVER ? !ACCESS[v] || ACCESS[v].includes(ROLE()) : v !== "utilisateurs";
 const full = () => !SERVER || ["admin","technique"].includes(ROLE());       // raw readings, quality report, exports
@@ -1199,9 +1516,50 @@ async function api(path, body, method = "POST"){
   if (!r.ok) throw r;
   return r.json();
 }
-function loadData(){ return fetch("data.json?v="+V+(SERVER ? "&r="+ROLE() : ""), SERVER ? {cache:"no-cache"} : {}).then(r=>r.json()).then(d => { D = d; compute(); }); }
+function emptyData(name){
+  // Minimal valid D so the app doesn't crash — used when a municipality has no data yet
+  return {sites:[], series:{}, meters:{}, quality:null, heating_history:{}, events:[],
+          meta:{commune: name||"", fictional:false, inhabitants:0, months:60,
+                units:{energy:"kWh",water:"m3",co2:"kg",money:"CHF"},
+                co2_kg_per_unit:{}, price_chf:{}, price_assumed:true,
+                fossil_carriers:[], baseline_year:2021, targets:{}, climate:[], climate_normal:[],
+                generated_by:"openEDM", source:"", no_data:true}};
+}
+
+function loadData(){
+  const slug = LOC?.slug;
+  const base = SERVER
+    ? (slug ? `api/data.json?locality=${slug}&v=${V}&r=${ROLE()}` : `api/data.json?v=${V}&r=${ROLE()}`)
+    : `data.json?v=${V}`;
+  return fetch(base, SERVER ? {cache:"no-cache"} : {})
+    .then(r => {
+      if (!r.ok) {
+        if (r.status === 503) {
+          // Municipality has no data yet — stay on this municipality, show empty state
+          D = emptyData(LOC?.name);
+          compute();
+          return;
+        }
+      }
+      return r.json();
+    })
+    .then(d => { if (d) { D = d; compute(); } });
+}
 async function setUser(u, want){
-  USER = u; closeLogin(); await loadData();
+  USER = u;
+  closeLogin();
+  applyStatic();     // update nav immediately with new role before data loads
+  renderAcct();      // show username/role in top bar immediately
+  // Load localities so the nav and data are municipality-aware
+  if (SERVER) {
+    const lr = await fetch("api/localities", {cache:"no-store"});
+    if (lr.ok) LOCALITIES = await lr.json();
+    if (LOCALITIES.length) {
+      const saved = localStorage.getItem("edm-locality");
+      LOC = LOCALITIES.find(l => l.slug === saved) || LOCALITIES[0];
+    }
+  }
+  await loadData();
   if (want && can(want) && location.hash !== "#"+want) location.hash = "#"+want; else route();
 }
 function renderAcct(){
@@ -1230,6 +1588,517 @@ function openLogin(want){
   document.querySelectorAll("[data-demo]").forEach(b => b.onclick = () => api("api/demo-login", {role:b.dataset.demo}).then(u => setUser(u, want)).catch(() => {}));
 }
 function closeLogin(){ document.getElementById("login").classList.remove("open"); }
+function renderLocalities(){
+  const tb = document.getElementById("loc-table");
+  const msg = (s, err=false) => { const el = document.getElementById("loc-msg"); el.textContent = s; el.style.color = err ? "var(--c-fossil,#c00)" : "var(--c-mut,#888)"; };
+  applyT(document.getElementById("v-localites"));
+
+  fetch("api/localities", {cache:"no-store"}).then(r => r.ok ? r.json() : Promise.reject()).then(list => {
+    if (!list.length) { tb.innerHTML = `<p class="sub">${esc(t("loc_no_data"))}</p>`; return; }
+    tb.innerHTML = `<div class="tablewrap"><table><thead><tr>
+      <th>${esc(t("loc_h_name"))}</th><th>${esc(t("loc_h_slug"))}</th>
+      <th>${esc(t("loc_h_data"))}</th><th>${esc(t("loc_h_actions"))}</th>
+    </tr></thead><tbody>${list.map(l => `<tr>
+      <td><b>${esc(l.name)}</b>${LOC?.slug===l.slug ? ` <span class="pill p-ren" style="font-style:normal">${esc(t("loc_active"))}</span>`:""}</td>
+      <td><code>${esc(l.slug)}</code></td>
+      <td id="loc-st-${esc(l.slug)}">${esc(t("loc_no_data"))}</td>
+      <td style="white-space:nowrap">
+        <button class="chip" style="margin-right:4px" onclick="switchToLocality('${esc(l.slug)}')">${esc(t("loc_open"))}</button>
+        ${list.length > 1 ? `<button class="chip" style="color:var(--warn)" onclick="locDelete('${esc(l.slug)}','${esc(l.name)}')" title="${esc(t('loc_delete_tip'))}">✕</button>` : ""}
+      </td>
+    </tr>`).join("")}</tbody></table></div>`;
+
+    list.forEach(l => {
+      fetch(`api/localities/${l.slug}/imports`, {cache:"no-store"})
+        .then(r => r.ok ? r.json() : []).then(runs => {
+          const cell = document.getElementById(`loc-st-${l.slug}`);
+          if (cell && runs.length) cell.textContent = t("loc_readings",{n:nf(runs[0].loaded)}) + " · " + new Date(runs[0].at).toLocaleDateString(LANG==="fr"?"fr-CH":"en-GB");
+        }).catch(()=>{});
+    });
+
+  }).catch(() => { tb.innerHTML=""; msg(t("loc_create_err"), true); });
+
+  const formCard = document.getElementById("loc-form-card");
+  document.getElementById("loc-new-btn").onclick = () => { formCard.classList.remove("hide"); applyT(formCard); };
+  document.getElementById("loc-f-cancel").onclick = () => formCard.classList.add("hide");
+  document.getElementById("loc-form").onsubmit = async (e) => {
+    e.preventDefault();
+    const name = document.getElementById("loc-f-name").value.trim();
+    const slug = document.getElementById("loc-f-slug").value.trim();
+    try {
+      await api("api/localities", {slug, name}, "POST");
+      const lr = await fetch("api/localities",{cache:"no-store"}); if(lr.ok) LOCALITIES = await lr.json();
+      msg(t("loc_created")); formCard.classList.add("hide");
+      document.getElementById("loc-f-name").value = ""; document.getElementById("loc-f-slug").value = "";
+      renderLocality();   // refresh the nav selector with the new municipality
+      renderLocalities();
+    } catch(e) { msg(t("loc_create_err"), true); }
+  };
+}
+
+function locDelete(slug, name) {
+  // Use the existing login modal as a confirmation dialog
+  const modal = document.getElementById("login");
+  document.getElementById("login-in").innerHTML = `
+    <h2 style="margin-bottom:8px;color:var(--warn)">${esc(LANG==="fr"?"Supprimer la localité":"Delete locality")}</h2>
+    <p style="margin-bottom:12px">${esc(LANG==="fr"
+      ? `Supprimer « ${name} » et TOUTES ses données (bâtiments, compteurs, mesures, sas) ?`
+      : `Delete « ${name} » and ALL its data (buildings, meters, readings, staging)?`)}</p>
+    <label style="display:block;margin-bottom:12px;font-size:.9rem">
+      ${esc(LANG==="fr"?"Tapez le nom pour confirmer :":"Type the name to confirm:")}
+      <input id="loc-del-confirm" type="text" style="display:block;width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px;margin-top:4px" placeholder="${esc(name)}">
+    </label>
+    <div class="row" style="gap:8px">
+      <button id="loc-del-ok" class="chip" style="background:var(--warn);color:#fff">${esc(LANG==="fr"?"Supprimer":"Delete")}</button>
+      <button id="loc-del-cancel" class="chip">${esc(LANG==="fr"?"Annuler":"Cancel")}</button>
+    </div>`;
+  modal.classList.add("open");
+
+  document.getElementById("loc-del-cancel").onclick = () => modal.classList.remove("open");
+  document.getElementById("loc-del-ok").onclick = async () => {
+    const answer = document.getElementById("loc-del-confirm")?.value.trim();
+    if (answer !== name) {
+      document.getElementById("loc-del-confirm").style.border = "1px solid var(--warn)";
+      return;
+    }
+    modal.classList.remove("open");
+
+    const r = await fetch(`api/localities/${slug}`, {method: "DELETE"});
+    const msgEl = document.getElementById("loc-msg");
+    if (!r.ok) {
+      const detail = await r.json().catch(()=>({}));
+      if (msgEl) msgEl.textContent = t("loc_delete_err") + (detail.detail ? ` — ${detail.detail}` : "");
+      return;
+    }
+    if (msgEl) msgEl.textContent = t("loc_delete_ok");
+
+    // Refresh LOCALITIES global
+    const remaining = await fetch("api/localities", {cache:"no-store"}).then(r2=>r2.ok?r2.json():[]).catch(()=>[]);
+    LOCALITIES = remaining;
+
+    if (LOC?.slug === slug) {
+      // Active locality was deleted: switch to first remaining
+      LOC = remaining.length ? remaining[0] : null;
+      if (LOC) try { localStorage.setItem("edm-locality", LOC.slug); } catch(e) {}
+      if (MAP) { MAP.destroy(); MAP = null; MAP_LOADING = false; }
+      await loadData();
+      renderAll();          // refreshes sidebar + all views
+    }
+    // Always refresh the localities list (re-render the current page)
+    renderLocalities();
+  };
+}
+
+async function switchToLocality(slug) {
+  const lr = await fetch("api/localities",{cache:"no-store"}); if(lr.ok) LOCALITIES = await lr.json();
+  LOC = LOCALITIES.find(l => l.slug === slug) || LOC;
+  if (!LOC) return;
+  try { localStorage.setItem("edm-locality", LOC.slug); } catch(e) {}
+  await loadData(); renderAll();
+  location.hash = "#gestion";
+}
+
+/* ---------------------------------------------------------------- data manager (staging + production) */
+let DM_TABLE = null, DM_PAGE = 1, DM_PER = 50;
+let DM_STAGING = null;        // current staged_import object
+let DM_STAGING_QUALITY = null;// quality report for current staging
+
+function dmMsg(s, err=false){ const el = document.getElementById("dm-msg"); if(el){el.textContent=s; el.style.color=err?"var(--warn)":"var(--accent)";} }
+
+// Build a lookup {table_name → {row_key → [issue_codes]}} from a quality report
+function dmQualityIndex(quality){
+  if (!quality?.checks) return {};
+  const idx = {mesures:{}, batiments:{}, installations:{}, compteurs:{}};
+  for (const ch of quality.checks) {
+    for (const it of ch.items||[]) {
+      // mesures: keyed by id_compteur+mois
+      if (it.m && it.mo) { const k=it.m+":"+it.mo; idx.mesures[k]=(idx.mesures[k]||[]); idx.mesures[k].push({code:ch.code, kind:ch.kind}); }
+      // reference tables: keyed by site
+      if (it.m && !it.mo) {
+        for (const tbl of ["batiments","compteurs","installations"]){
+          idx[tbl][it.m]=(idx[tbl][it.m]||[]); idx[tbl][it.m].push({code:ch.code, kind:ch.kind});
+        }
+      }
+    }
+  }
+  return idx;
+}
+
+function dmRowKey(tableName, row){
+  if (tableName==="mesures") return `${row.id_compteur}:${row.mois}`;
+  if (tableName==="batiments") return row.id_batiment||row.id_site;
+  if (tableName==="installations") return row.id_installation||row.id_site;
+  if (tableName==="compteurs") return row.id_compteur||row.id_site;
+  return row.pos||"";
+}
+
+function dmIssueStyle(issues){
+  if (!issues?.length) return "";
+  const kinds = issues.map(i=>i.kind);
+  if (kinds.includes("rejected")) return "background:rgba(220,38,38,.12);border-left:3px solid var(--warn)";
+  if (kinds.includes("excluded")) return "background:rgba(234,179,8,.12);border-left:3px solid #ca8a04";
+  return "background:rgba(234,179,8,.06);border-left:3px solid #d97706";
+}
+
+function renderData(){
+  applyT(document.getElementById("v-donnees"));
+  document.getElementById("dm-viewer-card").classList.add("hide");
+
+  // ── Upload → staging (only when a municipality is selected) ───────────────
+  const uploadCard = document.getElementById("dm-upload-card");
+  const inp = document.getElementById("dm-file-input");
+
+  if (!SERVER || !LOC) {
+    // No active municipality: disable upload
+    uploadCard.querySelector(".chip label, label.chip").style.opacity = "0.4";
+    uploadCard.querySelector(".chip label, label.chip").style.pointerEvents = "none";
+    document.getElementById("dm-preview").innerHTML =
+      `<p class="sub" style="color:var(--warn)">⚠️ ${LANG==="fr"
+        ? "Sélectionnez une municipalité pour charger des données."
+        : "Select a municipality before loading data."}</p>`;
+  } else {
+    uploadCard.querySelector("label.chip") && (uploadCard.querySelector("label.chip").style.opacity = "");
+    uploadCard.querySelector("label.chip") && (uploadCard.querySelector("label.chip").style.pointerEvents = "");
+    inp.onchange = async () => {
+      if (!inp.files?.length) return;
+      const preview = document.getElementById("dm-preview");
+      const slug = LOC.slug;
+      preview.innerHTML = `<p class="sub">⏳ ${esc(inp.files[0].name)} → ${esc(LOC.name)}…</p>`;
+      const fd = new FormData(); fd.append("file", inp.files[0]);
+      try {
+        const r = await fetch(`api/localities/${slug}/staging`, {method:"POST", body:fd});
+        if (!r.ok) throw new Error(await r.text());
+        const res = await r.json();
+        preview.innerHTML = "";
+        inp.value = "";
+        await dmLoadStagings(res.staging_id);
+      } catch(e) { preview.innerHTML = `<p style="color:var(--warn)">${esc(String(e))}</p>`; }
+    };
+  }
+
+  dmLoadStagings();
+  dmLoadTables();
+}
+
+async function dmLoadStagings(openId){
+  const slug = LOC?.slug || "rive-claire";
+  const r = await fetch(`api/localities/${slug}/staging`, {cache:"no-store"});
+  if (!r.ok) return;
+  const list = await r.json();
+  const pending = list.filter(s => s.status === "pending");
+  const preview = document.getElementById("dm-preview");
+
+  if (!pending.length) { preview.innerHTML = ""; return; }
+
+  const qBadge = q => {
+    if (!q) return "";
+    const rej = q.rejected||0, flag = q.flagged||0, excl = q.excluded||0;
+    const parts = [];
+    if (rej) parts.push(`<span class="pill p-fossil">${rej} rejet${rej>1?"s":""}</span>`);
+    if (excl) parts.push(`<span class="pill p-warn">${excl} remplac${excl>1?"és":"é"}</span>`);
+    if (flag) parts.push(`<span class="pill p-warn">${flag} ${LANG==="fr"?"à vérifier":"to check"}</span>`);
+    if (!parts.length) parts.push(`<span class="pill p-ren">OK</span>`);
+    return parts.join(" ");
+  };
+
+  preview.innerHTML = `
+    <h3 style="margin:12px 0 8px">${LANG==="fr"?"Sas en attente":"Pending staging"} (${pending.length})</h3>
+    ${pending.map(s=>`
+    <div class="card" style="margin-bottom:8px;padding:12px 16px">
+      <div class="row">
+        <div>
+          <b>${esc(s.source)}</b>
+          <span class="sub" style="margin-left:8px">${new Date(s.uploaded_at).toLocaleString(LANG==="fr"?"fr-CH":"en-GB")} · ${s.files} ${LANG==="fr"?"tables":"tables"}</span>
+        </div>
+        <div class="spacer"></div>
+        ${qBadge(s.quality)}
+        <button class="chip" style="margin-left:8px" onclick="dmOpenStaging(${s.id})">${LANG==="fr"?"Ouvrir le sas":"Open staging"}</button>
+        <button class="chip" style="margin-left:4px;color:var(--warn)" onclick="dmDiscardStaging(${s.id})">${LANG==="fr"?"Annuler":"Discard"}</button>
+      </div>
+    </div>`).join("")}`;
+
+  if (openId) {
+    const found = pending.find(s => s.id === openId);
+    if (found) dmOpenStaging(openId);
+  }
+}
+
+async function dmOpenStaging(stagingId){
+  const slug = LOC?.slug || "rive-claire";
+  const r = await fetch(`api/localities/${slug}/staging/${stagingId}`);
+  if (!r.ok) return;
+  DM_STAGING = await r.json();
+  DM_STAGING_QUALITY = DM_STAGING.quality;
+
+  const vc = document.getElementById("dm-viewer-card");
+  const qi = dmQualityIndex(DM_STAGING_QUALITY);
+
+  // Build quality summary
+  const q = DM_STAGING_QUALITY;
+  const qHtml = q ? `
+    <div class="row" style="gap:8px;flex-wrap:wrap;margin-bottom:8px">
+      ${q.rejected ? `<span class="pill p-fossil">${nf(q.rejected)} ${LANG==="fr"?"rejeté(s)":"rejected"}</span>` : ""}
+      ${q.excluded ? `<span class="pill p-warn">${nf(q.excluded)} ${LANG==="fr"?"remplacé(s)":"replaced"}</span>` : ""}
+      ${q.flagged  ? `<span class="pill p-warn">${nf(q.flagged)} ${LANG==="fr"?"à vérifier":"to check"}</span>` : ""}
+      ${!q.rejected&&!q.excluded&&!q.flagged ? `<span class="pill p-ren">OK</span>` : ""}
+      <button class="chip" onclick="dmRecheck(${stagingId})" style="font-size:.8rem">${LANG==="fr"?"↺ Re-vérifier":"↺ Re-check"}</button>
+    </div>` : "";
+
+  // Files as buttons
+  const filesBtns = DM_STAGING.files.map(f => {
+    const issues = Object.keys(qi[f.table_name]||{}).length;
+    const icon = issues ? `<span class="pill p-warn">${issues}</span> ` : `<span class="pill p-ren">✓</span> `;
+    return `<button class="chip ${DM_TABLE===f.table_name?"on":""}" style="margin:2px" onclick="dmOpenStagingTable(${stagingId},'${esc(f.table_name)}')">${icon}${esc(f.table_name)} (${nf(f.row_count)})</button>`;
+  }).join("");
+
+  document.getElementById("dm-viewer-title").innerHTML = `${LANG==="fr"?"Sas":"Staging"} #${stagingId} <span class="sub" style="font-weight:normal;font-size:.85rem">${esc(DM_STAGING.source)}</span>`;
+  document.getElementById("dm-viewer-info").innerHTML = qHtml + filesBtns;
+  document.getElementById("dm-viewer-close").onclick = () => { vc.classList.add("hide"); DM_STAGING=null; DM_TABLE=null; };
+  document.getElementById("dm-pager").innerHTML = `
+    <button class="chip" onclick="dmCommitStaging(${stagingId})" style="background:var(--accent);color:#fff">${LANG==="fr"?"✓ Commit en production":"✓ Commit to production"}</button>
+    <button class="chip" onclick="dmDiscardStaging(${stagingId})" style="color:var(--warn)">${LANG==="fr"?"✗ Annuler le sas":"✗ Discard"}</button>`;
+  document.getElementById("dm-search").oninput = () => DM_TABLE && dmOpenStagingTable(stagingId, DM_TABLE, 1);
+  document.getElementById("dm-replace-label").style.display = "none";
+
+  vc.classList.remove("hide");
+  vc.scrollIntoView({behavior:"smooth", block:"nearest"});
+
+  // Auto-open the first file with issues, or just the first file
+  const firstIssue = DM_STAGING.files.find(f => Object.keys(qi[f.table_name]||{}).length > 0);
+  const toOpen = firstIssue || DM_STAGING.files[0];
+  if (toOpen) dmOpenStagingTable(stagingId, toOpen.table_name);
+}
+
+let DM_ANOMALIES_ONLY = false;
+
+async function dmOpenStagingTable(stagingId, tableName, page=1, anomaliesOnly=DM_ANOMALIES_ONLY){
+  DM_TABLE = tableName; DM_PAGE = page; DM_ANOMALIES_ONLY = anomaliesOnly;
+  const slug = LOC?.slug || "rive-claire";
+
+  let data;
+  if (anomaliesOnly) {
+    const r = await fetch(`api/localities/${slug}/staging/${stagingId}/files/${tableName}/anomalies`);
+    if (!r.ok) return;
+    const raw = await r.json();
+    // anomalies endpoint returns flat list with _row_idx; wrap to match paged format
+    data = {total: raw.total, page: 1, per_page: raw.total, rows: raw.rows};
+  } else {
+    const r2 = await fetch(`api/localities/${slug}/staging/${stagingId}/files/${tableName}?page=${page}&per_page=${DM_PER}`);
+    if (!r2.ok) return;
+    data = await r2.json();
+  }
+
+  // ── Update header: show current table name prominently ──────────────────────
+  const fileInfo = DM_STAGING?.files?.find(f => f.table_name === tableName);
+  document.getElementById("dm-viewer-title").innerHTML =
+    `<span style="font-size:.8rem;font-weight:400;color:var(--muted);display:block;margin-bottom:2px">`+
+    `${LANG==="fr"?"Sas":"Staging"} #${stagingId} · ${esc(DM_STAGING?.source||"")}</span>`+
+    `<span>${esc(tableName)}</span>`+
+    (fileInfo ? ` <span class="sub" style="font-weight:400;font-size:.85rem">${nf(fileInfo.row_count)} ${LANG==="fr"?"lignes":"rows"}</span>` : "");
+
+  const qi = dmQualityIndex(DM_STAGING_QUALITY);
+  const tableIssues = qi[tableName]||{};
+  const issueCount = Object.keys(tableIssues).length;
+  const isCore = ["batiments","installations","compteurs","mesures"].includes(tableName);
+  const startIdx = anomaliesOnly ? 0 : (page-1)*DM_PER;
+
+  if (!data.rows.length) {
+    document.getElementById("dm-viewer-table").innerHTML =
+      `<p class="sub">${anomaliesOnly ? (LANG==="fr"?"Aucune anomalie dans cette table ✓":"No anomalies in this table ✓") : "–"}</p>`;
+  } else {
+    const allCols = Object.keys(data.rows[0]);
+    const cols = allCols.filter(c => c !== "_row_idx");  // hide the internal index column
+    const thead = `<tr>${cols.map(c=>`<th>${esc(c)}</th>`).join("")}<th></th></tr>`;
+    const tbody = data.rows.map((row, i) => {
+      const rowIdx = anomaliesOnly ? (row._row_idx ?? startIdx + i) : startIdx + i;
+      const key = dmRowKey(tableName, row);
+      const issues = tableIssues[key]||[];
+      const style = dmIssueStyle(issues);
+      const issuePills = issues.map(iss=>`<span class="pill ${iss.kind==="rejected"?"p-fossil":"p-warn"}" style="font-size:.7rem">${esc(iss.code)}</span>`).join(" ");
+      const cells = cols.map(c=>`<td style="white-space:nowrap;max-width:160px;overflow:hidden;text-overflow:ellipsis" title="${esc(String(row[c]??''))}">${esc(String(row[c]??''))}</td>`).join("");
+      const actions = `<td style="white-space:nowrap">${issuePills}
+        <button class="chip" style="font-size:.7rem;margin-left:4px" onclick="dmEditStagingRow(${stagingId},'${esc(tableName)}',${rowIdx})">✏️</button>
+        <button class="chip" style="font-size:.7rem;color:var(--warn)" onclick="dmDeleteStagingRow(${stagingId},'${esc(tableName)}',${rowIdx})">✕</button></td>`;
+      return `<tr style="${style}">${cells}${actions}</tr>`;
+    }).join("");
+    document.getElementById("dm-viewer-table").innerHTML = `<table><thead>${thead}</thead><tbody>${tbody}</tbody></table>`;
+  }
+
+  const totalPages = Math.ceil(data.total / DM_PER);
+  const pagerRow = document.getElementById("dm-pager");
+  const anomBtn = `<button class="chip ${anomaliesOnly?"on":""}" onclick="dmOpenStagingTable(${stagingId},'${esc(tableName)}',1,${!anomaliesOnly})" style="${issueCount&&!anomaliesOnly?"color:var(--warn)":""}">
+    ⚠️ ${issueCount} ${LANG==="fr"?"anomalie(s)":"anomaly(ies)"}${anomaliesOnly?" — "+t("dm_all_rows"):""}</button>`;
+  const commitDiscard = `<button class="chip" onclick="dmCommitStaging(${stagingId})" style="background:var(--accent);color:#fff">✓ Commit</button>
+    <button class="chip" onclick="dmDiscardStaging(${stagingId})" style="color:var(--warn)">✗</button>`;
+  const pageNav = !anomaliesOnly ? `${page>1?`<button class="chip" onclick="dmOpenStagingTable(${stagingId},'${esc(tableName)}',${page-1},false)">${esc(t("dm_prev"))}</button>`:""}
+    <span class="sub" style="line-height:2">${page}/${totalPages}</span>
+    ${page<totalPages?`<button class="chip" onclick="dmOpenStagingTable(${stagingId},'${esc(tableName)}',${page+1},false)">${esc(t("dm_next"))}</button>`:""}` : "";
+  pagerRow.innerHTML = `${anomBtn}${commitDiscard}<div class="spacer"></div>${pageNav}`;
+}
+
+async function dmEditStagingRow(stagingId, tableName, rowIdx){
+  const slug = LOC?.slug || "rive-claire";
+  // Fetch just the one page containing this row
+  const page = Math.floor(rowIdx / DM_PER) + 1;
+  const r = await fetch(`api/localities/${slug}/staging/${stagingId}/files/${tableName}?page=${page}&per_page=${DM_PER}`);
+  if (!r.ok) return;
+  const data = await r.json();
+  const localIdx = rowIdx % DM_PER;
+  const row = data.rows[localIdx];
+  if (!row) return;
+
+  // Build edit form in the login modal (repurposed)
+  const cols = Object.keys(row);
+  const form = `<h2 style="margin-bottom:12px">${LANG==="fr"?"Modifier la ligne":"Edit row"} ${rowIdx}</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;max-height:60vh;overflow-y:auto">
+    ${cols.map(c=>`<label style="display:block"><span style="font-size:.8rem;color:#888">${esc(c)}</span>
+      <input id="edit-${esc(c)}" value="${esc(String(row[c]??''))}" style="display:block;width:100%;padding:4px 6px;border:1px solid #ddd;border-radius:4px;margin-top:2px">
+    </label>`).join("")}
+    </div>
+    <div class="row" style="gap:8px;margin-top:12px">
+      <button class="chip" style="background:var(--accent);color:#fff" id="edit-save">${LANG==="fr"?"Enregistrer":"Save"}</button>
+      <button class="chip" id="edit-cancel">${LANG==="fr"?"Annuler":"Cancel"}</button>
+    </div>`;
+  const modal = document.getElementById("login");
+  document.getElementById("login-in").innerHTML = form;
+  modal.classList.add("open");
+  document.getElementById("edit-cancel").onclick = () => modal.classList.remove("open");
+  document.getElementById("edit-save").onclick = async () => {
+    const updated = {};
+    for (const c of cols) updated[c] = document.getElementById("edit-"+c)?.value ?? row[c];
+    modal.classList.remove("open");
+    const rPut = await fetch(`api/localities/${slug}/staging/${stagingId}/files/${tableName}/${rowIdx}`, {
+      method:"PUT", headers:{"Content-Type":"application/json"}, body:JSON.stringify(updated)});
+    if (rPut.ok) {
+      dmMsg(LANG==="fr"?"Ligne mise à jour.":"Row updated.");
+      dmOpenStagingTable(stagingId, tableName, DM_PAGE);
+    } else { dmMsg(await rPut.text(), true); }
+  };
+}
+
+async function dmDeleteStagingRow(stagingId, tableName, rowIdx){
+  const slug = LOC?.slug || "rive-claire";
+  const r = await fetch(`api/localities/${slug}/staging/${stagingId}/files/${tableName}/${rowIdx}`, {method:"DELETE"});
+  if (r.ok) { dmMsg(t("dm_del_ok")); dmOpenStagingTable(stagingId, tableName, DM_PAGE); }
+  else dmMsg(await r.text(), true);
+}
+
+async function dmRecheck(stagingId){
+  const slug = LOC?.slug || "rive-claire";
+  dmMsg(LANG==="fr"?"Contrôle en cours…":"Running checks…");
+  const r = await fetch(`api/localities/${slug}/staging/${stagingId}/check`, {method:"POST"});
+  if (r.ok) { DM_STAGING_QUALITY = await r.json(); dmMsg(LANG==="fr"?"Contrôle terminé.":"Check complete."); dmOpenStaging(stagingId); }
+  else dmMsg(await r.text(), true);
+}
+
+async function dmCommitStaging(stagingId){
+  const slug = LOC?.slug || "rive-claire";
+  dmMsg(LANG==="fr"?"Commit en cours…":"Committing…");
+  const r = await fetch(`api/localities/${slug}/staging/${stagingId}/commit`, {method:"POST"});
+  if (r.ok) {
+    const res = await r.json();
+    document.getElementById("dm-viewer-card").classList.add("hide");
+    DM_STAGING = null; DM_TABLE = null;
+    // Reload data and refresh all views
+    const d2 = await fetch(`api/data.json?locality=${slug}`).then(r2=>r2.json());
+    D = d2;
+    compute();      // recalculate metrics from new data
+    renderAll();    // refresh Manage, Quality, Citizens, etc.
+    dmLoadStagings();
+    dmLoadTables();
+    dmMsg(`${LANG==="fr"?"Données chargées":"Data loaded"} — +${nf(res.added||0)} ${LANG==="fr"?"ajoutés":"added"}, ${nf(res.unchanged||0)} inchangés`);
+  } else { dmMsg(await r.text(), true); }
+}
+
+async function dmDiscardStaging(stagingId){
+  const slug = LOC?.slug || "rive-claire";
+  const r = await fetch(`api/localities/${slug}/staging/${stagingId}`, {method:"DELETE"});
+  if (r.ok) {
+    dmMsg(LANG==="fr"?"Sas annulé.":"Staging discarded.");
+    document.getElementById("dm-viewer-card").classList.add("hide");
+    DM_STAGING = null; DM_TABLE = null;
+    dmLoadStagings();
+    renderAll();   // refresh nav state
+  } else dmMsg(await r.text(), true);
+}
+
+function dmLoadTables(){
+  const slug = LOC?.slug || "rive-claire";
+  fetch(`api/localities/${slug}/data`, {cache:"no-store"})
+    .then(r => r.ok ? r.json() : [])
+    .then(tables => {
+      const tb = document.getElementById("dm-tables");
+      if (!tables.length) { tb.innerHTML = `<p class="sub">–</p>`; return; }
+      tb.innerHTML = `<div class="tablewrap"><table><thead><tr>
+        <th>Table</th><th class="num">${LANG==="fr"?"Lignes":"Rows"}</th><th></th>
+      </tr></thead><tbody>
+      ${tables.map(tbl => `<tr>
+        <td><b>${esc(tbl.name)}</b></td>
+        <td class="num">${nf(tbl.rows)}</td>
+        <td><button class="chip" onclick="dmOpenProductionTable('${esc(tbl.name)}')">${esc(t("dm_view_btn"))}</button></td>
+      </tr>`).join("")}
+      </tbody></table></div>`;
+    }).catch(() => {});
+}
+
+async function dmOpenProductionTable(tableName, page=1){
+  DM_TABLE = tableName; DM_PAGE = page; DM_STAGING = null;
+  const slug = LOC?.slug || "rive-claire";
+  const r = await fetch(`api/localities/${slug}/data/${tableName}?page=${page}&per_page=${DM_PER}`);
+  if (!r.ok) return;
+  const data = await r.json();
+  const startIdx = (page-1)*DM_PER;
+  const vc = document.getElementById("dm-viewer-card");
+  document.getElementById("dm-viewer-title").textContent = `${tableName} ${LANG==="fr"?"(production)":"(production)"}`;
+  document.getElementById("dm-viewer-info").textContent = t("dm_viewer_rows",{n:nf(data.total)});
+  document.getElementById("dm-viewer-close").onclick = () => vc.classList.add("hide");
+  document.getElementById("dm-search").oninput = () => dmOpenProductionTable(tableName, 1);
+  document.getElementById("dm-replace-label").style.display = "";
+  document.getElementById("dm-replace-label").dataset.table = tableName;
+
+  if (!data.rows.length) { document.getElementById("dm-viewer-table").innerHTML = `<p class="sub">–</p>`; vc.classList.remove("hide"); return; }
+  const cols = Object.keys(data.rows[0]).filter(c => !["locality_id","import_id","pos"].includes(c));
+  const isCore = ["batiments","installations","compteurs","mesures"].includes(tableName);
+  const thead = `<tr>${cols.map(c=>`<th>${esc(c)}</th>`).join("")}${isCore?`<th></th>`:""}</tr>`;
+  const tbody = data.rows.map((row, i) => {
+    const cells = cols.map(c=>`<td style="white-space:nowrap;max-width:180px;overflow:hidden;text-overflow:ellipsis" title="${esc(String(row[c]??''))}">${esc(String(row[c]??''))}</td>`).join("");
+    let key = "";
+    if (tableName==="mesures") key = `${row.id_compteur}:${row.mois}`;
+    else if (row.id_batiment) key = row.id_batiment;
+    else if (row.id_installation) key = row.id_installation;
+    else if (row.id_compteur) key = row.id_compteur;
+    const del = isCore&&key ? `<td><button class="chip" style="font-size:.75rem;color:var(--warn)" onclick="dmDeleteProductionRow('${esc(tableName)}','${esc(key)}')">${esc(t("dm_del_row"))}</button></td>` : (isCore?"<td></td>":"");
+    return `<tr>${cells}${del}</tr>`;
+  }).join("");
+  document.getElementById("dm-viewer-table").innerHTML = `<table><thead>${thead}</thead><tbody>${tbody}</tbody></table>`;
+
+  const totalPages = Math.ceil(data.total / DM_PER);
+  const pager = document.getElementById("dm-pager");
+  pager.innerHTML = `${page>1?`<button class="chip" onclick="dmOpenProductionTable('${esc(tableName)}',${page-1})">${esc(t("dm_prev"))}</button>`:""}
+    <span class="sub" style="line-height:2">${page}/${totalPages}</span>
+    ${page<totalPages?`<button class="chip" onclick="dmOpenProductionTable('${esc(tableName)}',${page+1})">${esc(t("dm_next"))}</button>`:""}`;
+
+  const replaceInp = document.getElementById("dm-replace-input");
+  replaceInp.onchange = async () => {
+    if (!replaceInp.files?.length) return;
+    const fd = new FormData(); fd.append("file", replaceInp.files[0]);
+    const r2 = await fetch(`api/localities/${slug}/data/${tableName}/replace`, {method:"POST", body:fd});
+    if (r2.ok) { dmMsg(t("dm_replace_ok")); dmLoadTables(); dmOpenProductionTable(tableName, 1); }
+    else dmMsg(t("dm_replace_err") + " " + await r2.text(), true);
+    replaceInp.value = "";
+  };
+
+  vc.classList.remove("hide");
+  vc.scrollIntoView({behavior:"smooth", block:"nearest"});
+}
+
+async function dmDeleteProductionRow(tableName, key){
+  const slug = LOC?.slug || "rive-claire";
+  const r = await fetch(`api/localities/${slug}/data/${tableName}/${encodeURIComponent(key)}`, {method:"DELETE"});
+  if (r.ok) { dmMsg(t("dm_del_ok")); dmOpenProductionTable(tableName, DM_PAGE); }
+  else dmMsg(t("dm_del_err"), true);
+}
+
 function renderUsers(){
   const tb = document.getElementById("u-table"), msg = (s) => document.getElementById("u-msg").textContent = s;
   document.getElementById("u-roles").innerHTML = `<thead><tr><th>${esc(t("u_h_role"))}</th><th>${esc(t("u_h_sees"))}</th></tr></thead><tbody>` +
@@ -1269,11 +2138,22 @@ let RZ, LASTW = innerWidth;
 window.addEventListener("resize", () => { clearTimeout(RZ); RZ = setTimeout(() => { if (Math.abs(innerWidth - LASTW) < 40 || !D) return; LASTW = innerWidth; const open = document.getElementById("drawer").classList.contains("open"); renderAll(); if (open) reopen(); }, 200); });
 matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", renderAll);
 
-const V = "18";
+const V = "36";
 (async () => {
   try {
     const c = await fetch("api/config.json?v="+V, {cache:"no-store"}).then(r => r.json());
-    if (c.server) { SERVER = c; const m = await fetch("api/me", {cache:"no-store"}); if (m.ok) USER = await m.json(); }
+    if (c.server) {
+      SERVER = c;
+      const m = await fetch("api/me", {cache:"no-store"});
+      if (m.ok) USER = await m.json();
+      // load localities
+      const lr = await fetch("api/localities", {cache:"no-store"});
+      if (lr.ok) LOCALITIES = await lr.json();
+      if (LOCALITIES.length) {
+        const saved = localStorage.getItem("edm-locality");
+        LOC = LOCALITIES.find(l => l.slug === saved) || LOCALITIES[0];
+      }
+    }
   } catch (e) {}
   await loadData(); route();
 })();

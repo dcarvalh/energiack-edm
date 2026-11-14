@@ -1,0 +1,43 @@
+﻿id_batiment;id_site;nom_site;quartier;typologie;nom_batiment;annee_construction;annee_renovation;sre_m2;niveaux;label;logements;ouverture;x_km;y_km;remarque
+G01-B1;G01;Hôtel municipal;Plainpalais;Administration;Hôtel municipal;1905;2009;1700;4;Patrimoine recensé;;;2.3;1.87;
+G01-B2;G01;Hôtel municipal;Plainpalais;Administration;Annexe administrative;1905;2009;1100;3;Patrimoine recensé;;;2.3;1.87;
+G02-B1;G02;Centre administratif des Eaux-Vives;Eaux-Vives;Administration;Centre administratif des Eaux-Vives;1991;;2200;4;;;;3.74;3.31;
+G03-B1;G03;Service technique de la Servette;Servette;Administration;Service technique de la Servette;2004;;1400;3;;;;2.57;4.12;
+G04-B1;G04;École des Pâquis;Pâquis;École primaire;École des Pâquis;1910;2015;3300;3;Patrimoine recensé;;;2.87;4.01;
+G04-B2;G04;École des Pâquis;Pâquis;École primaire;Pavillon;1910;2015;900;1;Patrimoine recensé;;;2.87;4.01;
+G05-B1;G05;École de la Jonction;Jonction;École primaire;École de la Jonction;1968;;4400;3;;;;0.95;1.47;
+G06-B1;G06;École de Champel;Champel;École primaire;École de Champel;1981;;3800;3;;;;3;1.4;
+G07-B1;G07;École des Charmilles;Charmilles;École primaire;École des Charmilles;2011;;3600;3;Minergie;;;1.07;3.89;
+G08-B1;G08;École des Acacias;Acacias;École primaire;École des Acacias;1959;2019;4500;3;Minergie (rénovation);;;2.9;0.93;
+G09-B1;G09;École de la Servette;Servette;École primaire;École de la Servette;2018;;4200;3;Minergie-P;;;2.2;4.06;
+G10-B1;G10;École et bassin des Eaux-Vives;Eaux-Vives;École avec piscine;École et bassin des Eaux-Vives;1972;2008;6400;3;;;;4.12;3.15;
+G11-B1;G11;EVE de Plainpalais;Plainpalais;Crèche (EVE);EVE de Plainpalais;1932;2006;650;2;;;;2.41;2.34;
+G12-B1;G12;EVE des Pâquis;Pâquis;Crèche (EVE);EVE des Pâquis;1986;;820;2;;;;2.49;4.06;
+G13-B1;G13;EVE de Champel;Champel;Crèche (EVE);EVE de Champel;2008;;900;2;;;;3.52;1.29;
+G14-B1;G14;EVE de la Servette;Servette;Crèche (EVE);EVE de la Servette;2014;;1050;2;Minergie;;;2.11;3.72;
+G15-B1;G15;EVE des Charmilles;Charmilles;Crèche (EVE);EVE des Charmilles;2023;;1100;2;Minergie-P;;;1.64;4.17;
+G16-B1;G16;Maison de quartier des Pâquis;Pâquis;Maison de quartier;Maison de quartier des Pâquis;1960;1998;520;2;;;;2.81;4.46;
+G17-B1;G17;Maison de quartier de la Jonction;Jonction;Maison de quartier;Maison de quartier de la Jonction;1979;;780;2;;;;1.03;2.13;
+G18-B1;G18;Salle communale de Plainpalais;Plainpalais;Salle communale;Salle communale de Plainpalais;1967;2003;2300;2;;;;2.11;2.24;
+G19-B1;G19;Salle des fêtes de Champel;Champel;Salle communale;Salle des fêtes de Champel;1986;;1400;2;;;;3.43;1.48;
+G20-B1;G20;Bibliothèque municipale;Plainpalais;Bibliothèque;Bibliothèque municipale;2006;;1500;3;;;;2.45;2.25;
+G21-B1;G21;Théâtre des Eaux-Vives;Eaux-Vives;Salle de spectacle;Théâtre des Eaux-Vives;1990;;3600;3;;;;4.04;3.18;
+G22-B1;G22;Centre sportif des Charmilles;Charmilles;Installation sportive;Centre sportif des Charmilles;1983;;2900;2;;;;1.21;3.95;
+G23-B1;G23;Vestiaires du stade des Acacias;Acacias;Installation sportive;Vestiaires du stade des Acacias;1975;2013;650;1;;;;2.51;0.71;
+G24-B1;G24;Club-house du tennis de Champel;Champel;Installation sportive;Club-house du tennis de Champel;1988;;260;1;;;;2.92;1.24;
+G25-B1;G25;Piscine couverte de la Servette;Servette;Piscine couverte;Piscine couverte de la Servette;1976;2010;4600;2;;;;2.49;3.91;
+G26-B1;G26;Patinoire des Acacias;Acacias;Patinoire;Patinoire des Acacias;1994;;3800;1;;;;2.71;0.7;Exploitation saisonnière : septembre à mars.
+G27-B1;G27;Voirie et ateliers municipaux;Acacias;Voirie et ateliers;Voirie et ateliers municipaux;1979;;3100;2;;;;2.64;1.21;
+G28-B1;G28;Caserne des pompiers;Jonction;Caserne de pompiers;Caserne des pompiers;2001;;1250;2;;;;1.1;1.88;
+G29-B1;G29;Immeuble Rue de Berne 12;Pâquis;Logements communaux;Immeuble Rue de Berne 12;1958;2012;2600;5;;32;;2.37;4.46;
+G30-B1;G30;Immeuble Avenue Wendt 24;Servette;Logements communaux;Immeuble Avenue Wendt 24;1963;;3400;7;;44;;2.16;3.92;
+G31-B1;G31;Immeuble Rue de Lyon 68;Charmilles;Logements communaux;Immeuble Rue de Lyon 68;1969;;4200;8;;56;;1.74;4.2;
+G32-B1;G32;Immeuble Rue des Eaux-Vives 11;Eaux-Vives;Logements communaux;Immeuble Rue des Eaux-Vives 11;1974;;2900;6;;38;;3.94;3.63;
+G33-B1;G33;Immeuble Boulevard du Pont-d'Arve 30;Plainpalais;Logements communaux;Immeuble Boulevard du Pont-d'Arve 30;1985;;2100;5;;26;;2.44;2.39;
+G34-B1;G34;Immeuble Route des Acacias 40;Acacias;Logements communaux;Immeuble Route des Acacias 40;1992;;1900;4;;24;;2.61;0.57;
+G35-B1;G35;Immeuble Avenue de Champel 50;Champel;Logements communaux;Immeuble Avenue de Champel 50;2016;;3000;6;Minergie;40;;3.07;1.24;
+G36-B1;G36;Abri PC de Plainpalais;Plainpalais;Abri PC;Abri PC de Plainpalais;1982;;;1;;;;2;2.51;
+G37-B1;G37;Abri PC de Champel;Champel;Abri PC;Abri PC de Champel;1974;;;1;;;;3.46;1.27;
+G38-B1;G38;Cimetière de Saint-Georges;Saint-Jean;Cimetière;Cimetière de Saint-Georges;1968;;;1;;;;1.21;3.03;
+G39-B1;G39;Parking souterrain de Plainpalais;Plainpalais;Parking souterrain;Parking souterrain de Plainpalais;1996;;;2;;;;2.49;2.17;Non chauffé : pas de surface de référence énergétique.
+G40-B1;G40;Éclairage public;Tous;Éclairage public;Éclairage public;;;;;;;;2.11;1.96;Réseau, pas un bâtiment. Points lumineux LED.

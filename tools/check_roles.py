@@ -15,8 +15,8 @@ SEES = {  # role -> menu items that must show (others must not)
     None: {"accueil", "carte", "citoyens", "apropos"},
     "public": {"accueil", "carte", "citoyens", "apropos"},
     "elu": {"accueil", "gestion", "carte", "citoyens", "apropos"},
-    "technique": {"accueil", "gestion", "qualite", "carte", "citoyens", "apropos"},
-    "admin": {"accueil", "gestion", "qualite", "carte", "utilisateurs", "citoyens", "apropos"},
+    "technique": {"accueil", "gestion", "donnees", "qualite", "carte", "citoyens", "apropos"},
+    "admin": {"accueil", "gestion", "donnees", "qualite", "carte", "localites", "utilisateurs", "citoyens", "apropos"},
 }
 problems = []
 
