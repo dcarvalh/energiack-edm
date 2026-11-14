@@ -17,7 +17,7 @@ from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parent.parent
 FFMPEG = imageio_ffmpeg.get_ffmpeg_exe()
-W, H = 1920, 1080
+FULL_W, FULL_H = 1920, 1080
 
 # A visible pointer: headless recordings have no mouse cursor.
 CURSOR_JS = """
@@ -39,7 +39,8 @@ class Cam:
 
     def __init__(self, page, base, lang, start):
         self.page, self.base, self.lang, self.start = page, base, lang, start
-        self.x, self.y = 960, 600
+        vp = page.viewport_size
+        self.x, self.y = vp["width"] * 0.5, vp["height"] * 0.55
 
     def open(self, view):
         self.page.goto(f"{self.base}?lang={self.lang}#{view}")
@@ -69,6 +70,7 @@ class Cam:
 
     def scroll(self, pixels, seconds=1.5):
         n = max(2, int(seconds * 30))
+        self.page.mouse.move(self.x, self.y)   # the pointer must be over the page, or it shows at the corner
         for _ in range(n):
             self.page.mouse.wheel(0, pixels / n)
             self.page.wait_for_timeout(1000 // 30)
@@ -134,7 +136,9 @@ def main():
     ap.add_argument("--audio", help="narration or music file to put on the joined video")
     ap.add_argument("--scheme", default="light", choices=["light", "dark"])
     ap.add_argument("--zoom", type=float, default=1.5, help="page zoom, so text is readable on a projector")
+    ap.add_argument("--size", default=f"{FULL_W}x{FULL_H}", help="clip size in pixels, e.g. 1200x900 for a panel beside slide text")
     a = ap.parse_args()
+    W, H = (int(v) for v in a.size.split("x"))
 
     by_name = {f.__name__: f for f in SHOTS}
     shots = [by_name[n] for n in a.shots.split(",")] if a.shots else SHOTS
