@@ -28,7 +28,10 @@ What it does and how to run it: `README.md`. Team plan, decisions and next steps
   short text (summarise, cut minor bullets); app clips only where the storyboard asks for one; slide 1's animations
   play once, clips loop. The folder must stay self-contained (own `fonts/`, `clips/`, no `../` URL) so it opens from
   disk offline: test with the network off. Clips (16:9 when two are stacked, 4:3 alone) are the only media committed;
-  record `access` on the server version with `--url` and the demo logins. Headless Chromium cannot play H.264: a
+  record `access` on the server version with `--url` and the demo logins. The Geneva map renders at about 3 fps on a machine
+  without a GPU, so its raw recording stops and starts: the clip was repaired with ffmpeg, not re-recorded (drop
+  repeated frames, `minterpolate` to a high rate from a numbered image sequence, pick frames at even distance,
+  forward then backward for the loop). Headless Chromium cannot play H.264: a
   screenshot shows the poster frame, so say clips were not seen playing. "Energo" and the team's first names are
   allowed on the deck (David, 14 Nov).
 - The site is served under `/energiack-edm/`: keep every URL in the app relative (no leading `/`).

@@ -48,7 +48,7 @@ class Cam:
         if record:
             self.start()   # recording begins once the shot's first view is on screen
 
-    def open_map(self, min_buildings=1):
+    def open_map(self, min_buildings=1, record=True):
         """Open the 3D tab and start recording only once the map is drawn."""
         self.open("carte", record=False)
         self.page.wait_for_selector("#m3 canvas", timeout=90000)
@@ -56,7 +56,24 @@ class Cam:
         # In a small clip the legend card covers half the map: hide it and the key hints, keep tools and credits.
         self.page.add_style_tag(content=".m3-card,.m3-hint{display:none!important}")
         self.wait(2.5)
-        self.start()
+        if record:
+            self.start()
+
+    def orbit_frames(self, dx, dy, n=180, button="right", there_and_back=True):
+        """Turn the 3D map one small step per frame and take a picture of each step: smooth at 30 fps however
+        slowly the machine renders. Use instead of start()/drag() (open the map with record=False)."""
+        rendered = "() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))"
+        self.page.mouse.move(self.x, self.y); self.page.mouse.down(button=button)
+        files = []
+        for i in range(n + 1):
+            k = i / n; k = k * k * (3 - 2 * k)   # ease in and out
+            self.page.mouse.move(self.x + dx * k, self.y + dy * k)
+            self.page.evaluate(rendered)
+            files.append(self.snap())
+        self.page.mouse.up(button=button)
+        if there_and_back:                       # replay the same pictures backwards: the clip loops without a jump
+            for f in reversed(files[:-1]):
+                self.snap(file=f)
 
     def wait(self, seconds):
         self.page.wait_for_timeout(int(seconds * 1000))
@@ -129,8 +146,10 @@ def map_rc(c):
 
 def map_ge(c):
     c.page.evaluate("localStorage.setItem('energiack-map', 'ge')"); c.page.reload()   # the choice is read on load
-    c.open_map(min_buildings=1000); c.wait(1)
-    c.move("#m3 canvas"); c.drag(220, -20, 4.0, "right"); c.wait(1.2)
+    c.open_map(min_buildings=1000, record=False); c.wait(1)
+    b = c.page.locator("#m3 canvas").bounding_box()
+    c.x, c.y = b["x"] + b["width"] * 0.5, b["y"] + b["height"] * 0.5
+    c.orbit_frames(300, -20, n=210)              # 7 s one way, 7 s back
 
 def sheet(c):
     c.open_map(); c.wait(0.8)
@@ -211,14 +230,22 @@ def main():
                 if not started:
                     started.append(1)
                     cdp.send("Page.startScreencast", {"format": "jpeg", "quality": 95, "maxWidth": W, "maxHeight": H})
-            shot(Cam(page, base, a.lang, start))
+            clock = [0.0]
+            def snap(hold=1 / 30, file=None):   # one still picture as one video frame (frame-by-frame shots)
+                if file is None:
+                    file = fdir / f"{len(frames):06d}.jpg"
+                    page.screenshot(path=str(file), type="jpeg", quality=95)
+                frames.append((file, clock[0])); clock[0] += hold
+                return file
+            cam = Cam(page, base, a.lang, start); cam.snap = snap
+            shot(cam)
             page.wait_for_timeout(300)
             cdp.send("Page.stopScreencast")
             ctx.close()
             # Frames only arrive when the picture changes: give each one its real duration.
             lst = fdir / "frames.txt"
             lines = []
-            for (f, ts), nxt in zip(frames, frames[1:] + [(None, frames[-1][1] + 0.3)]):
+            for (f, ts), nxt in zip(frames, frames[1:] + [(None, clock[0] or frames[-1][1] + 0.3)]):
                 lines.append(f"file '{f}'\nduration {max(nxt[1] - ts, 0.001):.4f}\n")
             lst.write_text("".join(lines) + f"file '{frames[-1][0]}'\n")
             clip = out / f"{i:02d}-{shot.__name__}-{a.lang}.mp4"
