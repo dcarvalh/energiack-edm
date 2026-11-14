@@ -139,6 +139,20 @@ th .ar{opacity:.5;margin-left:3px}
 .acct{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted)} .acct b{color:var(--text);font-weight:600}
 .acct .chip{display:inline-flex;align-items:center;gap:6px}
 .x{border:1px solid var(--line);background:var(--surface);width:32px;height:32px;border-radius:6px;cursor:pointer;font-size:18px;line-height:1;color:var(--text)}
+.fs-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px} .fs-grid .wide{grid-column:1/-1}
+.fs-lab{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.fs-big{font-size:34px;font-weight:650;letter-spacing:-.03em;line-height:1.15;font-variant-numeric:tabular-nums;margin-top:6px}
+.fs-big small{font-size:13px;font-weight:500;color:var(--muted);letter-spacing:0;margin-left:5px}
+.fs-mid{font-size:20px;font-weight:650;margin-top:6px;letter-spacing:-.01em}
+.fs-note{font-size:12px;color:var(--muted);margin-top:8px} .fs-na{color:var(--muted);font-size:14px;font-weight:500;letter-spacing:0}
+.fs-scale{position:relative;height:8px;border-radius:4px;margin:16px 0 4px;background:linear-gradient(90deg,var(--accent) 0 45%,var(--warn) 45% 80%,var(--bad) 80%)}
+.fs-scale i{position:absolute;top:-5px;width:4px;height:18px;border-radius:2px;background:var(--text);outline:2px solid var(--surface);transform:translateX(-2px)}
+.fs-ticks{position:relative;height:14px;font-size:11px;color:var(--muted)} .fs-ticks span{position:absolute;transform:translateX(-50%)}
+.fs-solar{display:flex;gap:20px;flex-wrap:wrap} .fs-solar>div{display:flex;gap:12px;align-items:center;flex:1;min-width:220px} .fs-solar svg{width:76px;height:76px;flex:none}
+.fs-leg{display:flex;gap:14px;font-size:12px;color:var(--muted);margin:6px 0 2px} .fs-leg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px}
+.fs-rows>div{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-top:1px solid var(--line);font-size:13.5px} .fs-rows>div:first-child{border-top:0}
+.m3-acts{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 2px} .m3-acts a{text-decoration:none;display:inline-block} .btn.alt{background:var(--surface);color:var(--text)}
+@media(max-width:640px){.fs-grid{grid-template-columns:1fr}}
 .facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:16px 0}
 .fact{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:10px 12px}
 .fact .lab{font-size:12px;color:var(--muted)}
@@ -497,6 +511,15 @@ fr:{
   d_buildings:"Bâtiments", h_bname:"Bâtiment", h_built:"Construit", h_reno:"Rénové", h_levels:"Niveaux", h_label:"Label", h_homes:"Logements",
   d_inst:"Installations", h_inst:"Installation", h_power:"Puissance", h_from:"Mise en service", h_to:"Retrait", h_note:"Remarque",
   q_missing:"manquant", q_estimated:"estimé", q_duplicate:"doublon", q_replaced:"remplacé par une estimation", d_na:"sans objet", d_back_map:"← Carte", m_open_site:"Toutes les données du site →",
+  fs_title:"Fiche de bâtiment", fs_open_site:"Toutes les données du site →", fs_nodata:"Pas assez de données pour le calculer", fs_year:"Année {y}",
+  fs_whole:"Valeurs mesurées pour tout le site ({n} bâtiments) : les compteurs sont posés par site, pas par bâtiment.",
+  fs_hi:"Indice de chaleur", fs_hi_note:"Approximatif, sans correction climatique : ce n'est pas l'IDC officiel. Repère : 450 MJ/m² par an.",
+  fs_vs:"{d} % par rapport à la moyenne des {n} autres sites du même type", fs_heating:"Production de chaleur", fs_since:"depuis {d}", fs_fossil:"fossile sur place", fs_nofossil:"sans combustible fossile sur place",
+  fs_iee:"Électricité par m²", fs_iee_note:"Réseau + solaire consommé sur place, par m² de SRE.", fs_co2:"Bilan carbone", fs_co2_unit:"kg CO₂ / an",
+  fs_co2_note:"Émissions directes sur place (gaz, mazout). Électricité, chauffage à distance et bois comptent 0.",
+  fs_monthly:"Consommation par mois", fs_solar:"Solaire", fs_selfc:"Autoconsommation", fs_selfc_note:"part de la production solaire utilisée sur place",
+  fs_selfs:"Autosuffisance", fs_selfs_note:"part de l'électricité du site couverte par le solaire", fs_nopv:"Pas d'installation solaire sur ce site.",
+  fs_more:"Autres indicateurs", fs_enr:"Part de chaleur renouvelable", fs_cop:"Performance de la pompe à chaleur (COP)", fs_night:"Consommation de veille (nuit)", fs_equip:"Équipements",
   d_deliv:"Mazout et granulés : relevés = livraisons, pas consommation mesurée.",
   d_events:"Journal du site", d_noevents:"Rien à signaler sur la période.",
   d_onsite:"Électricité réellement consommée sur place ({y})", d_onsite_eq:"soutirage réseau + production solaire − injection = consommation sur place",
@@ -624,6 +647,15 @@ en:{
   d_buildings:"Buildings", h_bname:"Building", h_built:"Built", h_reno:"Renovated", h_levels:"Floors", h_label:"Label", h_homes:"Homes",
   d_inst:"Installations", h_inst:"Installation", h_power:"Capacity", h_from:"In service", h_to:"Removed", h_note:"Note",
   q_missing:"missing", q_estimated:"estimated", q_duplicate:"duplicate", q_replaced:"replaced by an estimate", d_na:"not applicable", d_back_map:"← Map", m_open_site:"All data for this site →",
+  fs_title:"Building sheet", fs_open_site:"All data for this site →", fs_nodata:"Not enough data to compute", fs_year:"Year {y}",
+  fs_whole:"Measured values are for the whole site ({n} buildings): meters are installed per site, not per building.",
+  fs_hi:"Heat index", fs_hi_note:"Approximate, not weather-corrected: this is not the official IDC. Reference: 450 MJ/m² per year.",
+  fs_vs:"{d} % against the average of the {n} other sites of the same type", fs_heating:"Heat production", fs_since:"since {d}", fs_fossil:"fossil fuel on site", fs_nofossil:"no fossil fuel burned on site",
+  fs_iee:"Electricity per m²", fs_iee_note:"Grid + solar used on site, per m² of floor area (ERA).", fs_co2:"Carbon footprint", fs_co2_unit:"kg CO₂ / year",
+  fs_co2_note:"Direct on-site emissions (gas, heating oil). Electricity, district heating and wood count 0.",
+  fs_monthly:"Consumption per month", fs_solar:"Solar", fs_selfc:"Self-consumption", fs_selfc_note:"share of solar production used on site",
+  fs_selfs:"Self-sufficiency", fs_selfs_note:"share of the site's electricity covered by solar", fs_nopv:"No solar installation on this site.",
+  fs_more:"Other indicators", fs_enr:"Renewable share of heat", fs_cop:"Heat pump performance (COP)", fs_night:"Night base load", fs_equip:"Equipment",
   d_deliv:"Oil and pellets: readings are deliveries, not measured use.",
   d_events:"Site log", d_noevents:"Nothing to report over the period.",
   d_onsite:"Electricity actually used on site ({y})", d_onsite_eq:"grid draw + solar production − feed-in = on-site use",
@@ -1065,13 +1097,78 @@ function openSite(id){
   document.getElementById("drawer").classList.add("open"); document.getElementById("scrim").classList.add("open");
   if (location.hash !== "#site/"+id) history.replaceState(null,"","#site/"+id);
 }
-function closeSite(){ document.getElementById("drawer").classList.remove("open"); document.getElementById("scrim").classList.remove("open"); if (location.hash.startsWith("#site/")) history.replaceState(null,"","#"+VIEW); }
+/* Building sheet (fiche de bâtiment). Uses only sites, series and heating_history: every role receives those,
+   so the sheet is open to everyone. Meters are per site: per-m² values use the site area, totals are the site's. */
+function openSheet(bid){
+  const s = D.sites.find(x=>x.buildings.some(b=>b.id===bid)); if (!s) return;
+  const b = s.buildings.find(x=>x.id===bid), S = D.series[s.id], cur = M.sites[s.id][YEAR], a0 = (YEAR-2021)*12, nb = s.buildings.length;
+  const na = `<span class="fs-na">${esc(t("fs_nodata"))}</span>`, car = carrierAt(s.id, a0+11), fos = isFossil(car);
+  const peers = D.sites.filter(x=>x.type===s.type && x.id!==s.id).map(x=>M.sites[x.id][YEAR].hi).filter(v=>v!=null);
+  const avg = peers.length > 1 ? peers.reduce((x,y)=>x+y,0)/peers.length : null, d = cur.hi!=null && avg ? Math.round((cur.hi/avg-1)*100) : null;
+  const use = cur.elec + cur.pvself, iee = s.area_m2 && use > 0 ? use/s.area_m2 : null;
+  const selfc = cur.pv > 0 ? cur.pvself/cur.pv*100 : null, selfs = cur.pv > 0 && use > 0 ? cur.pvself/use*100 : null;
+  const last = D.heating_history[s.id].filter(h=>h.from_month<=a0+11).pop();
+  const equip = s.installations.filter(x=>!x.to || x.to.slice(0,4) > String(YEAR)).filter(x=>!x.from || x.from.slice(0,4) <= String(YEAR));
+  const heat = Array.from({length:12},(_,i)=>(S.heat[a0+i]||0)+(S.heat_hp?S.heat_hp[a0+i]||0:0)), elec = S.elec_grid.slice(a0,a0+12).map(v=>v||0);
+  const hcol = fos ? "--heat-fossil" : "--heat-ren";
+  const bars = () => { const W = 640, H = 190, L = 44, B = 22, T = 8, mx = niceMax(Math.max(1,...heat,...elec)), gw = (W-L)/12, bw = gw*0.32, y = v => T+(H-T-B)*(1-v/mx);
+    const mon = i => new Intl.DateTimeFormat(LOC(), {month:"narrow"}).format(new Date(2021, i, 1)), full = i => new Intl.DateTimeFormat(LOC(), {month:"long"}).format(new Date(2021, i, 1));
+    let g = [0,.5,1].map(k=>`<line x1="${L}" x2="${W}" y1="${y(mx*k)}" y2="${y(mx*k)}" stroke="var(--line)"/><text x="${L-6}" y="${y(mx*k)+4}" text-anchor="end" font-size="11" fill="var(--muted)">${mx*k>=10000?nf(mx*k/1000)+"k":nf(mx*k)}</text>`).join("");
+    for (let i=0;i<12;i++){ const x = L+gw*i+gw/2;
+      g += `<rect x="${x-bw-1}" y="${y(heat[i])}" width="${bw}" height="${H-B-y(heat[i])}" rx="2" fill="var(${hcol})"><title>${esc(full(i))} · ${esc(t("fl_heat"))} ${nf(heat[i])} kWh</title></rect>`
+         + `<rect x="${x+1}" y="${y(elec[i])}" width="${bw}" height="${H-B-y(elec[i])}" rx="2" fill="var(--elec)"><title>${esc(full(i))} · ${esc(t("fl_elec_grid"))} ${nf(elec[i])} kWh</title></rect>`
+         + `<text x="${x}" y="${H-6}" text-anchor="middle" font-size="11" fill="var(--muted)">${esc(mon(i))}</text>`; }
+    return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img">${g}</svg>`; };
+  const donut = (p, col) => { const c = 2*Math.PI*30, q = Math.max(0, Math.min(100, p));
+    return `<svg viewBox="0 0 76 76" aria-hidden="true"><circle cx="38" cy="38" r="30" fill="none" stroke="var(--surface-2)" stroke-width="9"/><circle cx="38" cy="38" r="30" fill="none" stroke="var(${col})" stroke-width="9" stroke-linecap="round" stroke-dasharray="${c*q/100} ${c}" transform="rotate(-90 38 38)"/></svg>`; };
+  const sol = (p, col, lab, note) => `<div>${donut(p, col)}<div><div class="fs-mid" style="margin:0">${nf(p)} %</div><div><b>${esc(t(lab))}</b></div><div class="tsub">${esc(t(note))}</div></div></div>`;
+  const built = b.built ? Math.round(b.built) + (b.renovated ? ` <small class="mut">· ${esc(t("h_reno").toLowerCase())} ${Math.round(b.renovated)}</small>` : "") : "–";
+  document.getElementById("drawer-in").innerHTML = `
+    <div class="row" style="flex-wrap:nowrap;align-items:flex-start"><div style="min-width:0"><div class="tsub">${esc(t("fs_title"))} · ${esc(t("type_"+s.type))} · ${esc(b.id)} · ${esc(s.quarter)}</div><h1 style="margin:2px 0 0">${esc(s.name[LANG])}</h1>${nb>1||b.name!==s.name.fr?`<div class="mut">${esc(b.name)}</div>`:""}</div><div class="spacer"></div><button class="x" id="dx" aria-label="close">×</button></div>
+    <div class="facts">
+      <div class="fact"><div class="lab">${esc(t("d_area"))}</div><div class="v">${b.sre_m2?nf(b.sre_m2)+" m²":"–"}</div></div>
+      <div class="fact"><div class="lab">${esc(t("d_built"))}</div><div class="v">${built}</div></div>
+      <div class="fact"><div class="lab">${esc(t("h_levels"))}</div><div class="v">${b.levels?nf(b.levels):"–"}</div></div>
+      <div class="fact"><div class="lab">${esc(t("d_pv"))}</div><div class="v">${s.pv_kwp?nf(s.pv_kwp)+(LANG==="fr"?" kWc":" kWp"):"–"}</div></div>
+    </div>
+    <p class="sub" style="margin:0"><b>${esc(t("fs_year",{y:YEAR}))}</b>${nb>1?" · "+esc(t("fs_whole",{n:nb})):""}</p>
+    <div class="fs-grid">
+      <div class="card"><div class="fs-lab">${esc(t("fs_hi"))}</div>
+        <div class="fs-big">${cur.hi==null?na:`${nf(cur.hi)}<small>MJ/m²</small>`}</div>
+        ${cur.hi==null?"":`<div class="fs-scale"><i style="left:${Math.min(100,cur.hi/10)}%"></i></div><div class="fs-ticks"><span style="left:45%">450</span><span style="left:80%">800</span></div>`}
+        ${d==null?"":`<div style="margin-top:8px"><span class="pill ${d>0?"p-warn":"p-ren"}" style="white-space:normal">${esc(t("fs_vs",{d:(d>0?"+":d<0?"−":"")+Math.abs(d), n:peers.length}))}</span></div>`}
+        <div class="fs-note">${esc(t("fs_hi_note"))}${cur.hiEst?" · "+esc(t("q_estimated")):""}</div></div>
+      <div class="card"><div class="fs-lab">${esc(t("fs_heating"))}</div>
+        <div class="fs-mid">${esc(t("car_"+car))}</div>
+        <div class="tsub">${last&&last.from_month?esc(t("fs_since",{d:monthYear(last.from_month)})):""}</div>
+        ${car==="none"?"":`<div style="margin-top:8px"><span class="pill ${fos?"p-fossil":"p-ren"}">${esc(t(fos?"fs_fossil":"fs_nofossil"))}</span></div>`}
+        ${equip.length?`<div class="fs-note"><b>${esc(t("fs_equip"))}</b>${esc(t("colon"))}${equip.map(x=>esc(loc(x.label))).join(" · ")}</div>`:""}</div>
+      <div class="card"><div class="fs-lab">${esc(t("fs_iee"))}</div>
+        <div class="fs-big">${iee==null?na:`${nf(iee,1)}<small>kWh/m²</small>`}</div><div class="fs-note">${esc(t("fs_iee_note"))}</div></div>
+      <div class="card"><div class="fs-lab">${esc(t("fs_co2"))}</div>
+        <div class="fs-big">${nf(cur.co2)}<small>${esc(t("fs_co2_unit"))}</small></div><div class="fs-note">${esc(t("fs_co2_note"))}</div></div>
+      <div class="card wide"><div class="fs-lab">${esc(t("fs_monthly"))} · kWh</div>
+        <div class="fs-leg"><span><i style="background:var(${hcol})"></i>${esc(t("fl_heat"))}</span><span><i style="background:var(--elec)"></i>${esc(t("fl_elec_grid"))}</span></div>${bars()}</div>
+      <div class="card wide"><div class="fs-lab" style="margin-bottom:10px">${esc(t("fs_solar"))}</div>
+        ${selfc==null?`<div class="mut">${s.pv_kwp?na:esc(t("fs_nopv"))}</div>`:`<div class="fs-solar">${sol(selfc,"--solar","fs_selfc","fs_selfc_note")}${selfs==null?"":sol(selfs,"--accent","fs_selfs","fs_selfs_note")}</div>`}</div>
+      <div class="card wide"><div class="fs-lab" style="margin-bottom:4px">${esc(t("fs_more"))}</div>
+        <div class="fs-rows">${["fs_enr","fs_cop","fs_night"].map(k=>`<div><span>${esc(t(k))}</span>${na}</div>`).join("")}</div></div>
+    </div>
+    <div class="m3-acts"><a class="btn alt" href="#site/${esc(s.id)}">${esc(t("fs_open_site"))}</a></div>
+    <p class="sub" style="margin-top:14px">${esc(D.meta.source)}</p>`;
+  document.getElementById("dx").onclick = closeSite;
+  document.getElementById("drawer").classList.add("open"); document.getElementById("scrim").classList.add("open"); document.getElementById("drawer").scrollTop = 0;
+  if (location.hash !== "#fiche/"+bid) history.replaceState(null,"","#fiche/"+bid);
+}
+const reopen = () => { const h = location.hash; if (h.startsWith("#fiche/")) openSheet(h.slice(7)); else if (h.startsWith("#site/")) openSite(h.slice(6)); };
+function closeSite(){ document.getElementById("drawer").classList.remove("open"); document.getElementById("scrim").classList.remove("open"); if (/^#(site|fiche)\//.test(location.hash)) history.replaceState(null,"","#"+VIEW); }
 
 /* ---------------------------------------------------------------- routing & events */
 let VIEW = "accueil";
 const VIEWS = ["accueil","gestion","qualite","citoyens","carte","apropos","utilisateurs"];
 function route(){
   const h = location.hash.slice(1) || "accueil";
+  if (h.startsWith("fiche/")) { VIEW = "carte"; renderAll(); openSheet(h.slice(6)); return; }
   if (h.startsWith("site/")) { if (VIEW !== "carte" && VIEW !== "qualite") VIEW = can("gestion") ? "gestion" : "carte"; renderAll(); openSite(h.slice(5)); return; }
   VIEW = VIEWS.includes(h) ? h : "accueil";
   if (!can(VIEW)) { const want = VIEW; VIEW = "accueil"; history.replaceState(null, "", "#accueil"); closeSiteSilently(); renderAll(); if (SERVER) openLogin(want); return; }
@@ -1149,7 +1246,7 @@ function renderUsers(){
 }
 document.addEventListener("click", ev => {
   const el = ev.target.closest("[data-lang],[data-y],[data-f],th[data-k],tbody tr[data-id]"); if (!el) return;
-  if (el.dataset.lang){ LANG = el.dataset.lang; try{localStorage.setItem("edm-lang",LANG);}catch(e){} const open = document.getElementById("drawer").classList.contains("open"); renderAll(); if (open) openSite(location.hash.slice(6)); }
+  if (el.dataset.lang){ LANG = el.dataset.lang; try{localStorage.setItem("edm-lang",LANG);}catch(e){} const open = document.getElementById("drawer").classList.contains("open"); renderAll(); if (open) reopen(); }
   else if (el.dataset.y){ YEAR = +el.dataset.y; renderManager(); }
   else if (el.dataset.f){ FILTER = el.dataset.f; renderTable(); }
   else if (el.dataset.k){ SORT = {k:el.dataset.k, dir: SORT.k===el.dataset.k ? -SORT.dir : (el.dataset.k==="name"||el.dataset.k==="c"?1:-1)}; renderTable(); }
@@ -1161,7 +1258,7 @@ document.getElementById("menu-btn").onclick = () => side(true);
 document.getElementById("side-scrim").onclick = () => side(false);
 document.getElementById("theme-btn").onclick = () => {
   const th = isDark() ? "light" : "dark"; document.documentElement.dataset.theme = th; try{localStorage.setItem("edm-theme",th);}catch(e){}
-  const open = document.getElementById("drawer").classList.contains("open"); renderAll(); if (open) openSite(location.hash.slice(6));
+  const open = document.getElementById("drawer").classList.contains("open"); renderAll(); if (open) reopen();
 };
 document.getElementById("q").addEventListener("input", e => { QUERY = e.target.value; renderTable(); });
 document.getElementById("scrim").onclick = closeSite;
@@ -1169,10 +1266,10 @@ document.addEventListener("keydown", e => { if (e.key==="Escape") { closeSite();
 document.getElementById("login").addEventListener("click", e => { if (e.target.id === "login") closeLogin(); });
 window.addEventListener("hashchange", route);
 let RZ, LASTW = innerWidth;
-window.addEventListener("resize", () => { clearTimeout(RZ); RZ = setTimeout(() => { if (Math.abs(innerWidth - LASTW) < 40 || !D) return; LASTW = innerWidth; const open = document.getElementById("drawer").classList.contains("open"); renderAll(); if (open) openSite(location.hash.slice(6)); }, 200); });
+window.addEventListener("resize", () => { clearTimeout(RZ); RZ = setTimeout(() => { if (Math.abs(innerWidth - LASTW) < 40 || !D) return; LASTW = innerWidth; const open = document.getElementById("drawer").classList.contains("open"); renderAll(); if (open) reopen(); }, 200); });
 matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", renderAll);
 
-const V = "17";
+const V = "18";
 (async () => {
   try {
     const c = await fetch("api/config.json?v="+V, {cache:"no-store"}).then(r => r.json());
