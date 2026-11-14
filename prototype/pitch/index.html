@@ -32,6 +32,39 @@ h1{margin:0;font-size:3.7cqw;line-height:1.08;font-weight:700;letter-spacing:-.0
 .bad{background:var(--bad-soft);color:var(--bad)} .warn{background:var(--warn-soft);color:var(--warn)} .ok{background:var(--accent-soft);color:var(--accent)}
 .panel{min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:1.1cqw;overflow:hidden;box-shadow:0 1px 2px rgba(16,20,24,.06),0 10px 34px rgba(16,20,24,.12)}
 .panel video{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;background:var(--surface)}
+.lead{font-size:1.55cqw}
+.copy .lead + .lead{margin-top:-.9cqw}
+/* Diagram panel: an animation built in HTML instead of a clip */
+.viz{padding:2.4cqw 2.6cqw 2.6cqw;display:flex;flex-direction:column;gap:1.5cqw}
+.viz-head{display:flex;justify-content:space-between;align-items:baseline;font-size:1.35cqw;font-weight:600}
+.viz-head small{font-size:1.05cqw;font-weight:500;color:var(--muted)}
+.srcs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1.2cqw}
+.src{border:1px solid var(--line);border-radius:.8cqw;padding:1.2cqw 1.2cqw 1.3cqw;display:flex;flex-direction:column;gap:.9cqw;background:var(--bg)}
+.src-name{font-size:1.2cqw;font-weight:600;line-height:1.25;min-height:2.5em}
+.src dl{margin:0;display:flex;flex-direction:column;gap:.25cqw}
+.src dt{font-size:.95cqw;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.src dd{margin:0;font-size:1.25cqw;font-weight:600;font-variant-numeric:tabular-nums}
+.src dd.id{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:1.1cqw;font-weight:500}
+.src dd small{font-size:1cqw;font-weight:600;color:var(--bad)}
+.join{display:block;width:100%;height:3cqw}
+.join path{fill:none;stroke:var(--muted);stroke-width:1.5;vector-effect:non-scaling-stroke}
+.report{border:1px solid var(--line);border-radius:.8cqw;padding:1.3cqw 1.6cqw;display:flex;justify-content:space-between;align-items:center;gap:2cqw}
+.r-title{font-size:1.45cqw;font-weight:700}
+.r-sub{font-size:1.1cqw;color:var(--muted);margin-top:.3cqw}
+.timer{font-size:3cqw;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;white-space:nowrap}
+.timer small{display:block;font-size:1cqw;font-weight:500;letter-spacing:0;color:var(--muted);text-align:right}
+.issues{display:flex;gap:.8cqw;flex-wrap:wrap}
+@media (prefers-reduced-motion:no-preference){
+  .slide.on .viz > *, .slide.on .src{animation:rise .55s cubic-bezier(.2,.7,.2,1) both}
+  .slide.on .viz-head{animation-delay:.5s}
+  .slide.on .srcs{animation:none}
+  .slide.on .src:nth-child(1){animation-delay:.9s} .slide.on .src:nth-child(2){animation-delay:1.5s} .slide.on .src:nth-child(3){animation-delay:2.1s}
+  .slide.on .join{animation-delay:2.7s}
+  .slide.on .report{animation-delay:3.2s}
+  .slide.on .issues{animation:none}
+  .slide.on .issues .pill{animation:rise .5s cubic-bezier(.2,.7,.2,1) both}
+  .slide.on .issues .pill:nth-child(1){animation-delay:7.9s} .slide.on .issues .pill:nth-child(2){animation-delay:8.2s} .slide.on .issues .pill:nth-child(3){animation-delay:8.5s}
+}
 .foot{position:absolute;left:5cqw;right:4cqw;bottom:2.2cqw;display:flex;justify-content:space-between;font-size:1.1cqw;color:var(--muted);font-variant-numeric:tabular-nums;pointer-events:none}
 .foot strong{color:var(--text);font-weight:600}
 @media (prefers-reduced-motion:no-preference){
@@ -45,24 +78,46 @@ h1{margin:0;font-size:3.7cqw;line-height:1.08;font-weight:700;letter-spacing:-.0
 <body>
 <main class="stage" id="stage">
 
+  <!-- 1. Problématique · Eric -->
   <section class="slide">
     <div class="copy">
-      <div class="eyebrow">Qualité des données</div>
-      <h1>Chaque relevé est vérifié avant d'entrer dans les chiffres.</h1>
-      <p class="lead">17 contrôles à l'import. Rien n'est caché&nbsp;: chaque anomalie est signalée, estimée ou rejetée.</p>
-      <ul class="facts">
-        <li><b>9&#8239;437</b> lignes lues</li>
-        <li><b>1</b> <span class="pill bad">Rejeté</span> doublon écarté</li>
-        <li><b>12</b> <span class="pill warn">À vérifier</span> points signalés</li>
-      </ul>
+      <div class="eyebrow">Problématique · Eric</div>
+      <h1>Deux heures pour un rapport</h1>
+      <p class="lead">Eric, maître d'ouvrage au service Énergie de Meyrin, compile depuis deux heures les données de son outil de suivi énergétique, les factures SIG et ses fichiers Excel.</p>
+      <p class="lead">Trois sources, trois identifiants pour un même bâtiment, des unités qui ne concordent pas.</p>
+      <p class="lead">Il passe plus de temps à rassembler les chiffres qu'à les analyser.</p>
     </div>
-    <div class="panel">
-      <video src="clips/quality.mp4" poster="clips/quality.jpg" muted loop playsinline preload="auto"
-             aria-label="Extrait de l'application : la page Qualité défile sur la liste des contrôles"></video>
+    <div class="panel viz" role="img" aria-label="Schéma : un même bâtiment apparaît dans trois sources avec trois identifiants et trois unités ; le rapport prend deux heures">
+      <div class="viz-head"><span>Un seul bâtiment, une année de chauffage</span><small>exemple illustratif</small></div>
+      <div class="srcs">
+        <div class="src">
+          <div class="src-name">Outil de suivi énergétique</div>
+          <dl><dt>Identifiant</dt><dd class="id">BAT-0412</dd></dl>
+          <dl><dt>Valeur</dt><dd>1&#8239;284 <small>GJ</small></dd></dl>
+        </div>
+        <div class="src">
+          <div class="src-name">Factures SIG</div>
+          <dl><dt>Identifiant</dt><dd class="id">30-118-7</dd></dl>
+          <dl><dt>Valeur</dt><dd>356&#8239;700 <small>kWh</small></dd></dl>
+        </div>
+        <div class="src">
+          <div class="src-name">Fichiers Excel</div>
+          <dl><dt>Identifiant</dt><dd class="id">École (onglet 3)</dd></dl>
+          <dl><dt>Valeur</dt><dd>34&#8239;600 <small>m³</small></dd></dl>
+        </div>
+      </div>
+      <svg class="join" viewBox="0 0 300 30" preserveAspectRatio="none" aria-hidden="true">
+        <path d="M50 0 V14 H250 V0 M150 0 V30"/>
+      </svg>
+      <div class="report">
+        <div><div class="r-title">Rapport annuel</div><div class="r-sub">recopié à la main, ligne par ligne</div></div>
+        <div class="timer"><span data-timer="120" data-delay="3600" data-ms="4000">2 h 00</span><small>de compilation</small></div>
+      </div>
+      <div class="issues"><span class="pill bad">3 sources</span><span class="pill bad">3 identifiants</span><span class="pill bad">3 unités</span></div>
     </div>
   </section>
 
-  <div class="foot"><span><strong>openEDM</strong> · Rive-Claire, commune fictive</span><span id="count"></span></div>
+  <div class="foot"><span><strong>openEDM</strong> · Energ-IACK 2026</span><span id="count"></span></div>
 </main>
 <script>
 const slides = [...document.querySelectorAll(".slide")];
@@ -73,6 +128,18 @@ function show(n){
     s.classList.toggle("on", k === i);
     s.querySelectorAll("video").forEach(v => { if (k === i){ v.currentTime = 0; v.play().catch(() => {}); } else v.pause(); });
   });
+  clearTimeout(show.t); cancelAnimationFrame(show.r);
+  const tm = slides[i].querySelector("[data-timer]");
+  if (tm){
+    const end = +tm.dataset.timer, fmt = m => Math.floor(m / 60) + " h " + String(Math.floor(m % 60)).padStart(2, "0");
+    if (matchMedia("(prefers-reduced-motion:reduce)").matches) tm.textContent = fmt(end);
+    else {
+      tm.textContent = fmt(0);
+      show.t = setTimeout(() => { const t0 = performance.now(), ms = +tm.dataset.ms;
+        const step = now => { const k = Math.min(1, (now - t0) / ms); tm.textContent = fmt(end * k); if (k < 1) show.r = requestAnimationFrame(step); };
+        show.r = requestAnimationFrame(step); }, +tm.dataset.delay);
+    }
+  }
   document.getElementById("count").textContent = (i + 1) + " / " + slides.length;
   history.replaceState(null, "", "#" + (i + 1));
 }
