@@ -139,7 +139,7 @@ th .ar{opacity:.5;margin-left:3px}
 .acct{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted)} .acct b{color:var(--text);font-weight:600}
 .acct .chip{display:inline-flex;align-items:center;gap:6px}
 .x{border:1px solid var(--line);background:var(--surface);width:32px;height:32px;border-radius:6px;cursor:pointer;font-size:18px;line-height:1;color:var(--text)}
-.facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:16px 0}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:16px 0}
 .fact{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:10px 12px}
 .fact .lab{font-size:12px;color:var(--muted)}
 .fact .v{font-weight:650;font-variant-numeric:tabular-nums}
@@ -343,6 +343,7 @@ footer{color:var(--muted);font-size:12px;border-top:1px solid var(--line);margin
       </div>
       <div class="tablewrap scroll"><table id="sites"></table></div>
       <div class="count" id="sites-n"></div>
+      <p class="sub" id="sites-note" style="margin:8px 0 0"></p>
     </div>
   </section>
 
@@ -427,7 +428,7 @@ fr:{
   h_defi:"L'idée",
   defi:[["Le problème","Les données d'énergie sont dispersées entre plusieurs systèmes, et chaque commune paie ses propres licences."],["Notre réponse","Un seul code ouvert pour toutes les communes, qui rassemble les données par bâtiment, par énergie et par mois."],["Souverain","À terme : hébergement mutualisé et chiffré, ou installation sur le serveur de la commune. Les données restent à elle."]],
   h_who:"Pour qui",
-  who:[["Élu·e·s et gestion du patrimoine","Suivre le plan directeur de l'énergie.","Prévu : indice de dépense de chaleur (IDC), électricité par m², part de chaleur renouvelable (le CO₂ est déjà dans Gestion)"],["Citoyen·ne·s","Voir les progrès sans exposer la consommation de chaque bâtiment.","Prévu : étiquette A–G comparée aux bâtiments du même type, part du solaire consommée sur place, autonomie électrique"],["Responsable énergie","Repérer les dérives et vérifier les données.","En ligne : rapport de qualité à l'import. Prévu : COP des pompes à chaleur"]],
+  who:[["Élu·e·s et gestion du patrimoine","Suivre le plan directeur de l'énergie.","Indice de chaleur approximatif en MJ/m² par site et CO₂ dans Gestion. Prévu : correction climatique, électricité par m², part de chaleur renouvelable"],["Citoyen·ne·s","Voir les progrès sans exposer la consommation de chaque bâtiment.","Prévu : étiquette A–G comparée aux bâtiments du même type, part du solaire consommée sur place, autonomie électrique"],["Responsable énergie","Repérer les dérives et vérifier les données.","En ligne : rapport de qualité à l'import. Prévu : COP des pompes à chaleur"]],
   h_now:"Déjà en ligne",
   now:[["#gestion","Gestion","48 sites, 172 compteurs, 2021–2025 : consommation, CO₂, coûts estimés.","fake"],["#qualite","Qualité des données","17 contrôles à l'import : doublons, trous, formats, unités, valeurs anormales.","fake"],["#citoyens","Citoyen·ne·s","Page publique : objectifs et changements, en mots simples.","fake"],["#carte","Carte 3D","Rive-Claire (plan des organisateurs) et Genève centre (10 574 bâtiments réels).",""]],
   h_fake:"Commune fictive", h_real:"Données publiques réelles",
@@ -482,12 +483,15 @@ fr:{
   s_elec:"Électricité (réseau)", s_hfossil:"Chaleur fossile", s_hren:"Chauffage à distance et bois", s_target:"Objectif 2030", s_actual:"Réel",
   t_sites:"Sites", t_sites_sub:"Classés par émissions. Les alertes signalent ce qui mérite une visite.",
   q_ph:"Rechercher un site…", q_ok:"mesuré", f_all:"Tous", f_fossil:"Fossile", f_alert:"Alertes",
-  h_site:"Site", h_heat:"Chauffage", h_area:"Surface", h_int:"kWh/m²", h_co2:"CO₂ t", h_delta:"vs N−1", h_flag:"",
+  h_site:"Site", h_heat:"Chauffage", h_area:"Surface", h_int:"Énergie kWh/m²", h_hi:"Chaleur MJ/m²", h_co2:"CO₂ t", h_delta:"vs N−1",
+  hi_note:"Chaleur MJ/m² : indice de chaleur approximatif par an (chaleur achetée ou produite par la pompe à chaleur ÷ surface SRE), non corrigé du climat. Ce n'est pas l'IDC officiel. Mazout et granulés : livraisons de l'année, l'indice peut varier d'une année à l'autre. Énergie kWh/m² : chaleur et électricité achetées.",
+  hi_est:"* Chaleur de la pompe à chaleur estimée (électricité de la pompe × COP mesuré sur les sites équipés d'un compteur de chaleur).",
+  d_hi:"Indice de chaleur {y}", d_hi_sub:"approximatif · non corrigé du climat", d_hi_deliv:"livraisons de l'année", h_flag:"",
   alert:"Alerte", up:"hausse",
   type_administration:"Administration", type_ecole:"École primaire", type_ecole_piscine:"École avec piscine", type_creche:"Crèche", type_maison_quartier:"Maison de quartier", type_salle_communale:"Salle communale", type_bibliotheque:"Bibliothèque", type_salle_spectacle:"Salle de spectacle", type_installation_sportive:"Installation sportive", type_piscine:"Piscine couverte", type_patinoire:"Patinoire", type_voirie:"Voirie et ateliers", type_caserne:"Caserne de pompiers", type_logements:"Logements communaux", type_abri_pc:"Abri PC", type_cimetiere:"Cimetière", type_parking:"Parking souterrain", type_eclairage_public:"Éclairage public",
   car_oil:"Mazout", car_gas:"Gaz", car_district:"Chauffage à distance", car_heat_pump:"Pompe à chaleur", car_wood:"Bois (granulés)", car_electric:"Électrique direct", car_none:"Non chauffé",
-  d_area:"Surface (SRE)", d_built:"Construction", d_pv:"Solaire", d_quarter:"Quartier", d_int:"Intensité {y}",
-  d_series:"Historique mensuel 2021–2025", fl_elec_grid:"Électricité réseau", fl_heat:"Chaleur", fl_pv_prod:"Solaire produit", fl_water:"Eau", fl_co2:"CO₂ (kg)",
+  d_area:"Surface (SRE)", d_built:"Construction", d_pv:"Solaire", d_quarter:"Quartier", d_int:"Énergie par m² {y}",
+  d_series:"Historique mensuel 2021–2025", fl_elec_grid:"Électricité réseau", fl_heat:"Chaleur", fl_heat_est:"pompe à chaleur : estimée", fl_pv_prod:"Solaire produit", fl_water:"Eau", fl_co2:"CO₂ (kg)",
   d_meters:"Compteurs ({n})", d_meters_sub:"Cliquez un compteur pour voir ses relevés bruts. Totaux de l'année {y}.", d_csv:"Télécharger les relevés (CSV)",
   h_meter:"Compteur", h_unit:"Unité", h_level:"Niveau", h_total:"Total {y}", h_flags:"Qualité",
   d_buildings:"Bâtiments", h_bname:"Bâtiment", h_built:"Construit", h_reno:"Rénové", h_levels:"Niveaux", h_label:"Label", h_homes:"Logements",
@@ -515,7 +519,7 @@ fr:{
   ge:["Le Service de l'énergie gère environ 800 bâtiments et immeubles.","Objectifs 2030 de la Stratégie climat : −30 % d'énergie et −60 % de CO₂ sur les bâtiments de la Ville.","En 2023, 9 % de la chaleur du patrimoine municipal était renouvelable.","Le rapport d'activité public du service paraît une fois par an, en PDF.","Ailleurs en Suisse, plus de 500 communes utilisent EnerCoach (SuisseEnergie) pour leur comptabilité énergétique."],
   a_model:"Le modèle de données", a_model_sub:"Ce que contient data.json. N'importe quelle commune peut le remplir depuis ses factures et compteurs.",
   mh_field:"Champ", mh_what:"Contenu",
-  model:[["sites[]","Identifiant, nom, typologie, quartier, SRE (m²), bâtiments (toutes les colonnes), installations (dates, puissance), solaire (kWc)"],["meters[site][]","Les 172 compteurs : fluide, unité, niveau, parent, relève, 60 valeurs brutes et en kWh, qualité (estimé, manquant, doublon)"],["series[site][fluide]","60 valeurs mensuelles calculées : électricité soutirée, solaire produit et injecté, chaleur (kWh, gaz en PCI), eau (m³), CO₂ (kg), coût (CHF estimé)"],["heating_history","Agent de chauffage et date de changement, déduits des installations"],["events[]","Mises en service, retraits, ouvertures, défauts de données"],["quality","Rapport d'import : lignes lues, chargées, rejetées, test de ré-import, et chaque contrôle avec ses constats"],["meta","Source et licence, règles de calcul, facteurs CO₂ du jeu, prix supposés, objectifs, climat mensuel"]],
+  model:[["sites[]","Identifiant, nom, typologie, quartier, SRE (m²), bâtiments (toutes les colonnes), installations (dates, puissance), solaire (kWc)"],["meters[site][]","Les 172 compteurs : fluide, unité, niveau, parent, relève, 60 valeurs brutes et en kWh, qualité (estimé, manquant, doublon)"],["series[site][fluide]","60 valeurs mensuelles calculées : électricité soutirée, solaire produit et injecté, chaleur (kWh, gaz en PCI), chaleur de la pompe à chaleur (mesurée ou estimée), eau (m³), CO₂ (kg), coût (CHF estimé)"],["heating_history","Agent de chauffage et date de changement, déduits des installations"],["events[]","Mises en service, retraits, ouvertures, défauts de données"],["quality","Rapport d'import : lignes lues, chargées, rejetées, test de ré-import, et chaque contrôle avec ses constats"],["meta","Source et licence, règles de calcul, facteurs CO₂ du jeu, prix supposés, objectifs, climat mensuel"]],
   a_next:"La suite (pistes pour le hackathon)",
   road:[["Objectifs par site","Cibles kWh/m² et feu tricolore par bâtiment"],["Rapports IA mensuels","Un rapport par service, en langage métier"],["Questions en langage naturel","« Quelle école consomme le plus de chaleur ? »"],["Import CSV","Glisser ses fichiers : une autre commune démarre en une heure"],["Anticipation","Prévision des besoins, flexibilités, stockage thermique"],["Mutualisation","Plusieurs communes, un même format, des comparaisons équitables"]],
   foot:"openEDM · prototype Energ-IACK 2026 · Défi 2 « EDM citoyen et souverain » · Rive-Claire est une commune fictive ; données : Energ-IA Transition, Energ-IACK 2026 (CC BY 4.0). Prix estimés. CO₂ : émissions directes sur site. Valeurs négatives et pics anormaux remplacés par une estimation (voir Qualité). Carte de Genève : bâtiments et indices réels (SITG, swisstopo), électricité et eau simulées.",
@@ -530,8 +534,8 @@ fr:{
   m_map_rc:"Rive-Claire", m_map_ge:"Genève", m_map_title_rc:"Rive-Claire · patrimoine communal",
   m_sub_rc:"{n} bâtiments · {s} sites · relevés {y} · plan fictif, volumes schématiques", m_search_rc:"Rechercher un site…",
   m_attr_rc:"Données : Energ-IA Transition, Energ-IACK 2026 (CC BY 4.0) · volumes déduits de la SRE et des niveaux, agrandis ×{k} · lac, routes et arbres inventés",
-  m_src_rc:"Source : Energ-IA Transition, Energ-IACK 2026 (CC BY 4.0)", m_l_int:"Énergie / m²",
-  m_lg_rc_idc:"Énergie achetée par m² (gaz en PCI)", m_lg_rc_heat:"Chauffage en service", m_lg_rc_solar:"Production solaire mesurée",
+  m_src_rc:"Source : Energ-IA Transition, Energ-IACK 2026 (CC BY 4.0)", m_l_int:"Énergie / m²", m_l_hi:"Indice de chaleur", m_p_hi:"Indice de chaleur", m_n_hi:"Approximatif, non corrigé du climat : pas l'IDC officiel.", m_n_hi_est:"Approximatif, non corrigé du climat : pas l'IDC officiel. Chaleur de la pompe à chaleur estimée.",
+  m_lg_rc_idc:"Indice de chaleur approximatif, non corrigé du climat", m_lg_rc_heat:"Chauffage en service", m_lg_rc_solar:"Production solaire mesurée",
   m_lg_rc_elec:"Électricité consommée sur site", m_lg_rc_water:"Consommation d'eau",
   m_p_reno:"Rénovation", m_p_label:"Label", m_p_homes:"Logements", m_p_open:"Ouverture", m_p_under:"souterrain", m_na:"sans objet",
   m_p_since:"depuis {d}", m_p_measured:"Mesuré en {y}", m_p_site:"valeurs du site ({n} bâtiments)", m_p_pvprod:"Solaire produit",
@@ -551,7 +555,7 @@ en:{
   h_defi:"The idea",
   defi:[["The problem","Energy data is scattered across several systems, and every municipality pays for its own licences."],["Our answer","One open codebase for every municipality, bringing data together by building, energy source and month."],["Sovereign","The goal: shared, encrypted hosting or an install on the municipality's own server. The data stays theirs."]],
   h_who:"Who it's for",
-  who:[["Elected officials and portfolio managers","Track the energy master plan.","Planned: heat index (IDC), electricity per m², renewable share of heat (CO₂ is already in Manage)"],["Citizens","See progress without exposing each building's consumption.","Planned: A–G label against similar buildings, share of solar used on site, electricity self-sufficiency"],["Energy manager","Spot drifts and check the data.","Online: quality report on import. Planned: heat-pump COP"]],
+  who:[["Elected officials and portfolio managers","Track the energy master plan.","Approximate heat index in MJ/m² per site and CO₂ in Manage. Planned: weather correction, electricity per m², renewable share of heat"],["Citizens","See progress without exposing each building's consumption.","Planned: A–G label against similar buildings, share of solar used on site, electricity self-sufficiency"],["Energy manager","Spot drifts and check the data.","Online: quality report on import. Planned: heat-pump COP"]],
   h_now:"Already online",
   now:[["#gestion","Manage","48 sites, 172 meters, 2021–2025: use, CO₂, estimated costs.","fake"],["#qualite","Data quality","17 checks on import: duplicates, gaps, formats, units, abnormal values.","fake"],["#citoyens","Citizens","Public page: goals and changes, in plain words.","fake"],["#carte","3D map","Rive-Claire (organisers' plan) and central Geneva (10,574 real buildings).",""]],
   h_fake:"Fictional municipality", h_real:"Real public data",
@@ -606,12 +610,15 @@ en:{
   s_elec:"Electricity (grid)", s_hfossil:"Fossil heat", s_hren:"District heat and wood", s_target:"2030 target", s_actual:"Actual",
   t_sites:"Sites", t_sites_sub:"Ranked by emissions. Alerts flag what is worth a visit.",
   q_ph:"Search a site…", q_ok:"measured", f_all:"All", f_fossil:"Fossil", f_alert:"Alerts",
-  h_site:"Site", h_heat:"Heating", h_area:"Area", h_int:"kWh/m²", h_co2:"CO₂ t", h_delta:"vs Y−1", h_flag:"",
+  h_site:"Site", h_heat:"Heating", h_area:"Area", h_int:"Energy kWh/m²", h_hi:"Heat MJ/m²", h_co2:"CO₂ t", h_delta:"vs Y−1",
+  hi_note:"Heat MJ/m²: approximate heat index per year (heat purchased or produced by the heat pump ÷ energy reference area), not weather-corrected. It is not the official IDC. Oil and pellets: the year's deliveries, so the index can swing from year to year. Energy kWh/m²: heat and electricity purchased.",
+  hi_est:"* Heat-pump heat estimated (pump electricity × the COP measured at the sites with a heat meter).",
+  d_hi:"Heat index {y}", d_hi_sub:"approximate · not weather-corrected", d_hi_deliv:"year's deliveries", h_flag:"",
   alert:"Alert", up:"up",
   type_administration:"Administration", type_ecole:"Primary school", type_ecole_piscine:"School with pool", type_creche:"Nursery", type_maison_quartier:"Community centre", type_salle_communale:"Community hall", type_bibliotheque:"Library", type_salle_spectacle:"Theatre", type_installation_sportive:"Sports facility", type_piscine:"Indoor pool", type_patinoire:"Ice rink", type_voirie:"Works depot", type_caserne:"Fire station", type_logements:"Municipal housing", type_abri_pc:"Civil-defence shelter", type_cimetiere:"Cemetery", type_parking:"Underground car park", type_eclairage_public:"Street lighting",
   car_oil:"Heating oil", car_gas:"Gas", car_district:"District heating", car_heat_pump:"Heat pump", car_wood:"Wood pellets", car_electric:"Direct electric", car_none:"Unheated",
-  d_area:"Floor area (ERA)", d_built:"Built", d_pv:"Solar", d_quarter:"District", d_int:"Intensity {y}",
-  d_series:"Monthly history 2021–2025", fl_elec_grid:"Grid electricity", fl_heat:"Heat", fl_pv_prod:"Solar produced", fl_water:"Water", fl_co2:"CO₂ (kg)",
+  d_area:"Floor area (ERA)", d_built:"Built", d_pv:"Solar", d_quarter:"District", d_int:"Energy per m² {y}",
+  d_series:"Monthly history 2021–2025", fl_elec_grid:"Grid electricity", fl_heat:"Heat", fl_heat_est:"heat pump: estimated", fl_pv_prod:"Solar produced", fl_water:"Water", fl_co2:"CO₂ (kg)",
   d_meters:"Meters ({n})", d_meters_sub:"Click a meter to see its raw readings. Totals for {y}.", d_csv:"Download readings (CSV)",
   h_meter:"Meter", h_unit:"Unit", h_level:"Level", h_total:"Total {y}", h_flags:"Quality",
   d_buildings:"Buildings", h_bname:"Building", h_built:"Built", h_reno:"Renovated", h_levels:"Floors", h_label:"Label", h_homes:"Homes",
@@ -639,7 +646,7 @@ en:{
   ge:["The City's energy service manages about 800 buildings.","Climate Strategy 2030 targets: −30% energy and −60% CO₂ on City-owned buildings.","In 2023, 9% of the heat for municipal buildings was renewable.","The service's public activity report comes out once a year, as a PDF.","Elsewhere in Switzerland, 500+ municipalities use EnerCoach (SwissEnergy) for energy accounting."],
   a_model:"The data model", a_model_sub:"What data.json holds. Any municipality can fill it from its bills and meters.",
   mh_field:"Field", mh_what:"Content",
-  model:[["sites[]","ID, name, typology, district, energy reference area (m²), buildings (every column), installations (dates, capacity), solar (kWp)"],["meters[site][]","All 172 meters: utility, unit, level, parent, reading method, 60 raw and kWh values, quality (estimated, missing, duplicate)"],["series[site][utility]","60 computed monthly values: grid electricity, solar produced and fed in, heat (kWh, gas at net value), water (m³), CO₂ (kg), cost (estimated CHF)"],["heating_history","Heating carrier and when it changed, derived from the installations"],["events[]","Commissioning, removals, openings, data defects"],["quality","Import report: rows read, loaded, rejected, re-import test, and every check with its findings"],["meta","Source and licence, calculation rules, the dataset's CO₂ factors, assumed prices, targets, monthly climate"]],
+  model:[["sites[]","ID, name, typology, district, energy reference area (m²), buildings (every column), installations (dates, capacity), solar (kWp)"],["meters[site][]","All 172 meters: utility, unit, level, parent, reading method, 60 raw and kWh values, quality (estimated, missing, duplicate)"],["series[site][utility]","60 computed monthly values: grid electricity, solar produced and fed in, heat (kWh, gas at net value), heat-pump heat (measured or estimated), water (m³), CO₂ (kg), cost (estimated CHF)"],["heating_history","Heating carrier and when it changed, derived from the installations"],["events[]","Commissioning, removals, openings, data defects"],["quality","Import report: rows read, loaded, rejected, re-import test, and every check with its findings"],["meta","Source and licence, calculation rules, the dataset's CO₂ factors, assumed prices, targets, monthly climate"]],
   a_next:"Next steps (ideas for the hackathon)",
   road:[["Targets per site","kWh/m² targets and a traffic light per building"],["Monthly AI reports","One report per department, in plain operational language"],["Ask in plain language","\"Which school uses the most heat?\""],["CSV import","Drop your files in: another municipality starts in an hour"],["Anticipation","Demand forecasting, flexibility, thermal storage"],["Pooling","Several municipalities, one format, fair comparisons"]],
   foot:"openEDM · Energ-IACK 2026 prototype · Challenge 2 \"Citizen-owned, sovereign EDM\" · Rive-Claire is a fictional municipality; data: Energ-IA Transition, Energ-IACK 2026 (CC BY 4.0). Prices estimated. CO₂: direct on-site emissions. Negative values and abnormal spikes replaced by an estimate (see Data quality). Geneva map: real buildings and indices (SITG, swisstopo), electricity and water simulated.",
@@ -654,8 +661,8 @@ en:{
   m_map_rc:"Rive-Claire", m_map_ge:"Geneva", m_map_title_rc:"Rive-Claire · municipal buildings",
   m_sub_rc:"{n} buildings · {s} sites · {y} readings · fictional plan, schematic volumes", m_search_rc:"Search a site…",
   m_attr_rc:"Data: Energ-IA Transition, Energ-IACK 2026 (CC BY 4.0) · volumes from floor area and levels, enlarged ×{k} · lake, roads and trees invented",
-  m_src_rc:"Source: Energ-IA Transition, Energ-IACK 2026 (CC BY 4.0)", m_l_int:"Energy / m²",
-  m_lg_rc_idc:"Energy purchased per m² (gas at net value)", m_lg_rc_heat:"Heating in service", m_lg_rc_solar:"Measured solar output",
+  m_src_rc:"Source: Energ-IA Transition, Energ-IACK 2026 (CC BY 4.0)", m_l_int:"Energy / m²", m_l_hi:"Heat index", m_p_hi:"Heat index", m_n_hi:"Approximate, not weather-corrected: not the official IDC.", m_n_hi_est:"Approximate, not weather-corrected: not the official IDC. Heat-pump heat estimated.",
+  m_lg_rc_idc:"Approximate heat index, not weather-corrected", m_lg_rc_heat:"Heating in service", m_lg_rc_solar:"Measured solar output",
   m_lg_rc_elec:"Electricity used on site", m_lg_rc_water:"Water use",
   m_p_reno:"Renovated", m_p_label:"Label", m_p_homes:"Homes", m_p_open:"Opened", m_p_under:"underground", m_na:"not applicable",
   m_p_since:"since {d}", m_p_measured:"Measured in {y}", m_p_site:"site values ({n} buildings)", m_p_pvprod:"Solar produced",
@@ -731,11 +738,16 @@ function compute(){
     for (const y of YEARS){
       if (isFossil(carrierAt(s.id, (y-2021)*12+11))) years[y].fossilSites++;
       per[y].int = s.area_m2 ? per[y].energy / s.area_m2 : null;
+      // approximate heat index, MJ/m² per year: (heat purchased + heat from the heat pump) / SRE. Not weather-corrected.
+      const hp = S.heat_hp ? S.heat_hp.slice((y-2021)*12, (y-2020)*12).reduce((a,b)=>a+b, 0) : 0, ht = per[y].heat + hp;
+      per[y].hi = s.area_m2 && ht > 0 ? ht * 3.6 / s.area_m2 : null;
+      per[y].hiEst = hp > 0 && s.heat_hp === "estimated";
     }
     sites[s.id] = per;
   }
   M = {sites, years};
 }
+const hiClass = (v) => v >= 800 ? "p-fossil" : v >= 450 ? "p-warn" : "p-ren";   // same classes as the Geneva map (450 and 800 MJ/m²)
 function alertsFor(sid, y){
   const out = [];
   for (const e of D.events) if (e.site === sid && (e.kind === "anomaly" || e.kind === "quality") && (e.months || [e.month]).some(m => Math.floor(m/12) === y-2021)) out.push(e);
@@ -843,14 +855,14 @@ function siteRows(){
   const q = QUERY.trim().toLowerCase();
   return D.sites.map(s=>{
     const cur = M.sites[s.id][YEAR], prev = M.sites[s.id][YEAR-1], c = carrierAt(s.id, (YEAR-2021)*12+11);
-    return {s, c, co2:cur.co2/1000, int:cur.int, area:s.area_m2, delta: prev ? cur.energy/prev.energy-1 : null, alerts: alertsFor(s.id, YEAR), name:s.name[LANG]};
+    return {s, c, co2:cur.co2/1000, int:cur.int, hi:cur.hi, hiEst:cur.hiEst, area:s.area_m2, delta: prev ? cur.energy/prev.energy-1 : null, alerts: alertsFor(s.id, YEAR), name:s.name[LANG]};
   }).filter(r => (!q || r.name.toLowerCase().includes(q) || t("type_"+r.s.type).toLowerCase().includes(q))
               && (FILTER==="all" || (FILTER==="fossil" && isFossil(r.c)) || (FILTER==="alert" && (r.alerts.length || (r.delta!=null && r.delta>0.12)))))
-    .sort((a,b)=>{ const k = SORT.k; const va = k==="name"?a.name:a[k], vb = k==="name"?b.name:b[k]; return (va>vb?1:va<vb?-1:0)*SORT.dir; });
+    .sort((a,b)=>{ const k = SORT.k; const va = k==="name"?a.name:(a[k]??-1), vb = k==="name"?b.name:(b[k]??-1); return (va>vb?1:va<vb?-1:0)*SORT.dir; });
 }
 function renderTable(){
   document.getElementById("fchips").innerHTML = ["all","fossil","alert"].map(f=>`<button class="chip ${FILTER===f?'on':''}" data-f="${f}">${esc(t("f_"+f))}</button>`).join("");
-  const cols = [["name","h_site",""],["c","h_heat","hide-m"],["area","h_area","num hide-m"],["int","h_int","num"],["co2","h_co2","num"],["delta","h_delta","num"]];
+  const cols = [["name","h_site",""],["c","h_heat","hide-m"],["area","h_area","num hide-m"],["hi","h_hi","num"],["int","h_int","num hide-m"],["co2","h_co2","num"],["delta","h_delta","num"]];
   const ar = (k) => SORT.k===k ? `<span class="ar">${SORT.dir>0?"↑":"↓"}</span>` : "";
   let h = `<thead><tr>${cols.map(([k,l,c])=>`<th class="${c}" data-k="${k}">${esc(t(l))}${ar(k)}</th>`).join("")}</tr></thead><tbody>`;
   const rows = siteRows();
@@ -858,10 +870,11 @@ function renderTable(){
     const fos = isFossil(r.c), flag = r.alerts.length ? `<span class="pill p-warn">${ic("triangle-alert")}${esc(t("alert"))}</span>` : (r.delta!=null && r.delta>0.12 ? `<span class="pill p-warn">↑ ${esc(t("up"))}</span>` : "");
     h += `<tr data-id="${r.s.id}"><td><div class="tname">${esc(r.name)} ${flag}</div><div class="tsub">${esc(t("type_"+r.s.type))} · ${esc(r.s.quarter)}</div></td>
       <td class="hide-m"><span class="pill ${fos?'p-fossil':'p-ren'}">${esc(t("car_"+r.c))}</span></td>
-      <td class="num hide-m">${r.area ? nf(r.area) + " m²" : "–"}</td><td class="num ${r.int==null?'mut':''}">${r.int==null?"–":nf(r.int)}</td><td class="num">${nf(r.co2,1)}</td>
+      <td class="num hide-m">${r.area ? nf(r.area) + " m²" : "–"}</td><td class="num ${r.hi==null?'mut':''}">${r.hi==null?"–":nf(r.hi)+(r.hiEst?"*":"")}</td><td class="num hide-m ${r.int==null?'mut':''}">${r.int==null?"–":nf(r.int)}</td><td class="num">${nf(r.co2,1)}</td>
       <td class="num ${r.delta==null?'mut':r.delta<0?'good':'badc'}">${r.delta==null?"–":pct(r.delta)}</td></tr>`;
   }
   document.getElementById("sites").innerHTML = h + "</tbody>";
+  document.getElementById("sites-note").textContent = t("hi_note") + (rows.some(r=>r.hiEst) ? " " + t("hi_est") : "");
   document.getElementById("sites-n").textContent = t("sites_n",{n:rows.length, m:D.sites.length});
 }
 function renderAI(elId, part){
@@ -959,7 +972,7 @@ function switchMap(k){
 function renderMap(){
   if (MAP || MAP_LOADING) return;
   MAP_LOADING = true;
-  import("./map3d.js?v="+V).then(m => m.initMap(document.getElementById("m3"), {t, nf, esc, showTip, hideTip, dark:isDark, lang:()=>LANG, switchMap}, MAPS[MAPKEY]))
+  import("./map3d.js?v="+V).then(m => m.initMap(document.getElementById("m3"), {t, nf, esc, showTip, hideTip, dark:isDark, lang:()=>LANG, switchMap, heatIndex:(sid, y)=>(M.sites[sid]||{})[y]}, MAPS[MAPKEY]))
     .then(x => { MAP = x; MAP_LOADING = false; }).catch(e => { MAP_LOADING = false; document.getElementById("m3").innerHTML = `<div class="m3-loading">${esc(String(e))}</div>`; });
 }
 
@@ -1011,6 +1024,7 @@ function openSite(id){
     <div class="facts">
       <div class="fact"><div class="lab">${esc(t("d_area"))}</div><div class="v">${s.area_m2?nf(s.area_m2)+" m²":esc(t("d_na"))}</div></div>
       <div class="fact"><div class="lab">${esc(t("d_built"))}</div><div class="v">${s.year_built??"–"}${reno?` <small class="mut">· ${reno}</small>`:""}</div></div>
+      <div class="fact"><div class="lab">${esc(t("d_hi",{y:YEAR}))}</div><div class="v">${cur.hi==null?esc(t("d_na")):`<span class="pill ${hiClass(cur.hi)}">${nf(cur.hi)} MJ/m²</span> <small class="mut">≈ ${nf(cur.hi/3.6)} kWh/m²</small>`}</div>${cur.hi==null?"":`<div class="lab">${esc(t("d_hi_sub"))}${cur.hiEst?" · "+esc(t("q_estimated")):""}${deliv?" · "+esc(t("d_hi_deliv")):""}</div>`}</div>
       <div class="fact"><div class="lab">${esc(t("d_int",{y:YEAR}))}</div><div class="v">${cur.int==null?esc(t("d_na")):nf(cur.int)+" kWh/m²"}</div></div>
       <div class="fact"><div class="lab">${esc(t("d_pv"))}</div><div class="v">${s.pv_kwp?nf(s.pv_kwp)+(LANG==="fr"?" kWc":" kWp"):"–"}</div></div>
     </div>
@@ -1040,7 +1054,7 @@ function openSite(id){
   const labels = Array.from({length:60},(_,i)=>i%12===0?String(2021+i/12):"");
   let values, unit, color, name;
   if (FLUID.startsWith("m:")) { const m = MS.find(x=>"m:"+x.id===FLUID); values = m.v; unit = " "+unitOf(m.unit); color = {"eau":"--water","électricité solaire":"--solar"}[m.fluid] || (m.fluid.startsWith("électricité")?"--elec":"--heat-fossil"); name = m.id; }
-  else { values = S[FLUID]; unit = FLUID==="water" ? " m³" : FLUID==="co2" ? " kg" : " kWh"; color = {heat:"--heat-fossil", elec_grid:"--elec", pv_prod:"--solar", water:"--water", co2:"--muted"}[FLUID]; name = t("fl_"+FLUID); }
+  else { values = FLUID==="heat" && S.heat_hp ? S.heat.map((v,i)=>v+S.heat_hp[i]) : S[FLUID]; unit = FLUID==="water" ? " m³" : FLUID==="co2" ? " kg" : " kWh"; color = {heat:"--heat-fossil", elec_grid:"--elec", pv_prod:"--solar", water:"--water", co2:"--muted"}[FLUID]; name = t("fl_"+FLUID) + (FLUID==="heat" && s.heat_hp==="estimated" ? " · " + t("fl_heat_est") : ""); }
   lineChart(document.getElementById("ch-site"), labels, [{name, color, values}], v=>nf(v)+unit,
     {labelStep:1, h:220, tipLabel:i=>monthYear(i), ytick:v=>v>=10000?nf(v/1000)+"k":nf(v), markers:ev.map(e=>({i:e.month, color:e.kind==="anomaly"||e.kind==="quality"?"--warn":"--accent"}))});
   document.getElementById("dx").onclick = closeSite;
@@ -1158,7 +1172,7 @@ let RZ, LASTW = innerWidth;
 window.addEventListener("resize", () => { clearTimeout(RZ); RZ = setTimeout(() => { if (Math.abs(innerWidth - LASTW) < 40 || !D) return; LASTW = innerWidth; const open = document.getElementById("drawer").classList.contains("open"); renderAll(); if (open) openSite(location.hash.slice(6)); }, 200); });
 matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", renderAll);
 
-const V = "16";
+const V = "17";
 (async () => {
   try {
     const c = await fetch("api/config.json?v="+V, {cache:"no-store"}).then(r => r.json());

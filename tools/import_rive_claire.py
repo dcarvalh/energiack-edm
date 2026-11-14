@@ -11,6 +11,7 @@ data.json (open, documented in the app's "How it works" page):
   heating_history   site -> [{from_month, carrier}]  (month index from 2021-01; carriers gas/oil/district/heat_pump/wood/electric/none)
   series            site -> 60 monthly values: elec_grid, pv_prod, pv_inject (kWh), heat (kWh, gas at net value = x0.90),
                     water (m3), co2 (kg, dataset factors: direct on-site emissions), cost (CHF, assumed prices)
+                    heat_hp (kWh, heat-pump sites only): heat delivered by the pump, measured or estimated (site.heat_hp)
   meters            site -> every meter: id, label, fluid, unit, level, measure, parent, reading, supplier, start, end,
                     v[60] raw values, kwh[60] (as given), q{month: quality} (estimated, missing, duplicate, replaced)
   events[]          installation changes, openings, data-quality findings (site, month, kind, text fr/en)
@@ -132,6 +133,15 @@ def build(T, QUALITY, REJ):
     for i in INST:
         inst[i["id_site"]].append(i)
 
+    # COP measured each month where a heat pump has both an electricity and a heat meter (S09, S12), pooled. It is used
+    # to estimate the heat delivered at the heat-pump sites without a heat meter (David, 13 Nov). Kept apart from "heat"
+    # (energy purchased): the pump's electricity is already in the site's electricity.
+    ref = [ms for ms in meters.values() if any(k.endswith("-CH-PAC") for k in ms)]
+    hp = lambda code, i: sum(next((m["kwh"][i] or 0 for k, m in ms.items() if k.endswith(code)), 0) for ms in ref)
+    el_all, ch_all = sum(hp("-PAC", i) for i in range(MONTHS)), sum(hp("-CH-PAC", i) for i in range(MONTHS))
+    cop_mean = ch_all / el_all if el_all else 0
+    cop = [round(hp("-CH-PAC", i) / hp("-PAC", i), 2) if hp("-PAC", i) and hp("-CH-PAC", i) else round(cop_mean, 2) for i in range(MONTHS)]
+
     sites, history, series = [], {}, {}
     for sid in sorted(by_site):
         rows = by_site[sid]
@@ -170,6 +180,9 @@ def build(T, QUALITY, REJ):
                            + sum(PRICE[HEAT_PRICE[c]] * (0.9 if c == "GZ" else 1) * z(c)[i] for c in HEAT_PRICE)) for i in range(MONTHS)]
         if not any(s["pv_prod"]):
             del s["pv_prod"], s["pv_inject"]
+        if "PAC" in M:                                    # heat delivered by the heat pump: its heat meter if there is one,
+            s["heat_hp"] = z("CH-PAC") if "CH-PAC" in M else [z("PAC")[i] * cop[i] for i in range(MONTHS)]   # else electricity x COP
+            sites[-1]["heat_hp"] = "measured" if "CH-PAC" in M else "estimated"
         series[sid] = {k: [round(x) for x in v] for k, v in s.items()}
 
     # ---------------------------------------------------------------- events: installation changes, openings, data quality
@@ -237,6 +250,8 @@ def build(T, QUALITY, REJ):
             "rules": ["on-site electricity = EL + PV - EL-INJ", "heat = gas x 0.90 (gross -> net) + district heat + oil + pellets",
                       "oil and pellets: deliveries, not measured use", "duplicate readings: first kept",
                       "negative values and abnormal spikes found by the import checks: replaced by the median of the same month in other years", "SRE 0: per-m2 ratio not applicable",
+                      "heat-pump heat (heat_hp) = heat meter where there is one, else pump electricity x the COP measured that month at the sites with a heat meter (estimated)",
+                      "heat index = (heat + heat_hp) / SRE, in MJ/m2 per year (kWh x 3.6): approximate, not weather-corrected, not the official IDC",
                       "municipal housing: electricity covers common areas only"],
             "co2_kg_per_unit": {"gas_m3": 2.086, "oil_l": 2.65, "pellets_kg": 0, "elec_kwh": 0, "district_kwh": 0},
             "co2_scope": "direct on-site emissions (dataset convention)",
@@ -244,6 +259,7 @@ def build(T, QUALITY, REJ):
             "fossil_carriers": ["gas", "oil"], "baseline_year": 2021,
             "targets": {"2030": {"energy": -0.30, "co2": -0.60}, "2050": {"energy": -0.50, "co2": -1.0}}, "targets_source": "City of Geneva climate strategy (our choice)",
             "climate": clim, "climate_normal": norm,
+            "hp_cop": cop, "hp_cop_sites": sorted(sid for sid, ms in meters.items() if any(k.endswith("-CH-PAC") for k in ms)),
         },
         "sites": sites, "heating_history": history, "series": series,
         "meters": {sid: list(ms.values()) for sid, ms in sorted(meters.items())}, "events": events, "quality": QUALITY,

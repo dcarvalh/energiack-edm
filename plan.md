@@ -74,6 +74,7 @@ hosting, and it **complements** existing tools as an aggregator instead of repla
 | Site page with every meter, quality flags, CSV | done |
 | 3D map · Rive-Claire (default) and Geneva (real SITG/swisstopo) | done; checked headless, not on a real phone GPU |
 | Data quality report on import (17 checks, re-import test, CSV) | done (13 Nov); negative values and spikes replaced by an estimate |
+| Heat index per site in MJ/m²·yr (#7): Manage table, site page, Rive-Claire map layer with the Geneva IDC classes | done 14 Nov. Approximate, **not weather-corrected**, never called the IDC. Heat-pump heat: heat meter at S09/S12, elsewhere pump electricity × the COP measured that month at S09/S12, marked estimated. No index where heating is direct electric (not metered apart) |
 | Server stack: PostgreSQL + API + Caddy (`compose.yaml`, `server/`, `docs/deploy.md`) | merged 13 Nov night (#23); live since 13 Nov night on one small cloud server (EU), with its own domain and HTTPS since 14 Nov. `data.json` comes from the database, identical to the static build |
 | Logins and roles (#15): admin, technique, élu·e, public; menus filtered, data filtered by the server, Users page, one-click demo accounts | done 14 Nov (#25), live on the server version with demo accounts on; GitHub Pages stays open without login |
 
@@ -114,7 +115,7 @@ SITG/swisstopo attribution wording; real-phone performance of the 3D map.
 ## Next steps (keep the UI minimal; FR and EN for every string)
 1. Corrections: negative values and spikes are replaced by the median of the same month in other years (David, 13 Nov).
    Later: let an authorised person correct a value with a trace (who, when, why).
-2. Indicators: energy per m², CO₂, dynamic COP for heat-pump sites (check the dataset has what COP needs).
+2. Indicators: weather-corrected heat index (the raw one is done), dynamic COP shown for heat-pump sites (the monthly COP is in `meta.hp_cop`, used but not displayed).
 3. Targets per site with a traffic light (kWh/m² vs target).
 4. Videos for the pitch (QR code done: it points to the Pages site).
 5. Ideas, not started: consumption breaks after renovations, synergies between buildings, price scenarios; place the
