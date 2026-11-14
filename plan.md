@@ -1,6 +1,6 @@
 # Team plan · openEDM (Défi 2 « EDM citoyen et souverain »)
 
-Updated 13 Nov 2026, evening. What exists and how to run it: `README.md`.
+Updated 14 Nov 2026, 10:00. What exists and how to run it: `README.md`. What is still missing: see "What's missing" below.
 
 ## Deadlines
 - All deliverables before **14:00 on Sat 14 Nov**.
@@ -74,19 +74,49 @@ hosting, and it **complements** existing tools as an aggregator instead of repla
 | Site page with every meter, quality flags, CSV | done |
 | 3D map · Rive-Claire (default) and Geneva (real SITG/swisstopo) | done; checked headless, not on a real phone GPU |
 | Data quality report on import (17 checks, re-import test, CSV) | done (13 Nov); negative values and spikes replaced by an estimate |
-| Server stack: PostgreSQL + API + Caddy (`compose.yaml`, `server/`, `docs/deploy.md`) | built on branch `feat/server-stack` (13 Nov night), checked locally by `tools/check_stack.sh`; not hosted yet. The app runs unchanged on it (`data.json` comes from the database, identical to the static build) |
+| Server stack: PostgreSQL + API + Caddy (`compose.yaml`, `server/`, `docs/deploy.md`) | merged 13 Nov night (#23); live since 13 Nov night on one small cloud server (EU), with its own domain and HTTPS since 14 Nov. `data.json` comes from the database, identical to the static build |
+| Logins and roles (#15): admin, technique, élu·e, public; menus filtered, data filtered by the server, Users page, one-click demo accounts | done 14 Nov (#25), live on the server version with demo accounts on; GitHub Pages stays open without login |
 
-**Open decisions for the hosted version:** which host (recommended: one small server running `compose.yaml`, deployed
-by the Stack workflow on merge; see `docs/deploy.md`); which pages need a login (today nothing is gated: accounts work,
-but the public `data.json` holds all raw readings and the app has no login screen); built-in accounts now, an OpenID Connect server (Keycloak,
-Authentik, Zitadel) only when a commune wants its own single sign-on.
+**Two live copies.** GitHub Pages (static, open, no login; the pitch QR code points there) and the server version
+(database, logins, roles, one-click demo accounts): https://openedm.davidcarvalho.work/ (both links in `README.md`).
+Server access and its cost are with David.
+
+**Hosted version, decided (14 Nov):** one small server running `compose.yaml` (see `docs/deploy.md`); built-in
+accounts, an OpenID Connect server (Keycloak, Authentik, Zitadel) only when a commune wants its own single sign-on.
+Roles per #15. Still open: accounts per commune (several communes on one install), deploys on merge (the server is
+updated by hand), creating accounts from the app.
+
+## What's missing (14 Nov, 10:00)
+
+**For 14:00 today (deliverables):**
+1. Slides, the one-page project sheet, the 2-minute video. Not in this repo; nothing about them was checked here.
+2. Which link the pitch shows: Pages (QR code, open) or the server version (logins, demo roles). Both work.
+3. Optional quick wins, not started: weather-corrected heat (the climate data is in `data.json`, unused) and a traffic
+   light per site against its typology (Buyer review below, items 1 and 2).
+
+**Server version, not done:**
+- An admin account for David (real accounts are created on the server: `docs/deploy.md` › Accounts).
+- A budget alert on the cloud account; deploys on merge (the server is updated by hand; the Stack workflow's deploy job
+  is ready but needs SSH secrets).
+- Accounts per commune (today one commune per install), creating accounts and resetting passwords in the app,
+  importing a file from the app (today a server command), corrections with a trace (who, when, why).
+
+**Team user stories still open** (GitHub issues): #5 load the challenge data (largely done: import + quality report),
+#6 quality of results, #7 consistent indicators, #8 explore the portfolio and a site, #9 compare without hiding limits,
+#10 political summary, #11 export and hand-over, #12 costs vs a target, #13 AI summary (AI report is off for now),
+#14 heating change review, #16 internal vs publishable indicator, #17 normal-year heat forecast, #18 alert when a month
+leaves the expected range, #19 boiler replacement simulation, #20 combine levers, #26–#29 views per audience
+(decision-maker, citizen, energy manager, analyst). Close the ones the app already covers after checking them.
+
+**Not verified:** three-mesh-bvh / OrbitControls and server-stack licence lines in `THIRD_PARTY.md` (from memory);
+SITG/swisstopo attribution wording; real-phone performance of the 3D map.
 
 ## Next steps (keep the UI minimal; FR and EN for every string)
 1. Corrections: negative values and spikes are replaced by the median of the same month in other years (David, 13 Nov).
    Later: let an authorised person correct a value with a trace (who, when, why).
 2. Indicators: energy per m², CO₂, dynamic COP for heat-pump sites (check the dataset has what COP needs).
 3. Targets per site with a traffic light (kWh/m² vs target).
-4. Videos and QR code for the pitch.
+4. Videos for the pitch (QR code done: it points to the Pages site).
 5. Ideas, not started: consumption breaks after renovations, synergies between buildings, price scenarios; place the
    fictional commune in a recognisable Geneva neighbourhood on the map.
 

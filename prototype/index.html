@@ -124,6 +124,20 @@ th .ar{opacity:.5;margin-left:3px}
 .drawer{position:fixed;top:0;right:0;bottom:0;width:min(720px,100%);background:var(--bg);z-index:31;transform:translateX(100%);transition:transform .25s ease;overflow-y:auto;border-left:1px solid var(--line)}
 .drawer.open{transform:none}
 .drawer .in{padding:20px}
+.modal{position:fixed;inset:0;z-index:40;display:none;place-items:center;padding:16px;background:rgba(10,12,14,.45)}
+.modal.open{display:grid}
+.modal>.card{width:min(440px,100%);max-height:calc(100vh - 32px);overflow-y:auto}
+.field{display:block;margin:10px 0 0;font-size:12.5px;color:var(--muted);font-weight:550}
+.field input,.urole{display:block;width:100%;margin-top:4px;border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:6px;padding:7px 10px;font-size:14px}
+.urole{width:auto;margin:0;padding:4px 8px;font-size:13px}
+.btn{border:1px solid var(--text);background:var(--text);color:var(--bg);border-radius:6px;padding:7px 14px;font-weight:600;cursor:pointer;font-size:13.5px}
+.err{color:var(--bad);font-size:12.5px;min-height:1.2em;margin:8px 0}
+.demo-roles{display:grid;gap:8px;margin-top:4px}
+.demo-roles button{text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:9px 12px;cursor:pointer;color:var(--text)}
+.demo-roles button:hover{border-color:var(--muted)}
+.demo-roles b{display:block;font-size:13.5px;font-weight:600} .demo-roles span{font-size:12.5px;color:var(--muted)}
+.acct{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted)} .acct b{color:var(--text);font-weight:600}
+.acct .chip{display:inline-flex;align-items:center;gap:6px}
 .x{border:1px solid var(--line);background:var(--surface);width:32px;height:32px;border-radius:6px;cursor:pointer;font-size:18px;line-height:1;color:var(--text)}
 .facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:16px 0}
 .fact{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:10px 12px}
@@ -260,6 +274,7 @@ footer{color:var(--muted);font-size:12px;border-top:1px solid var(--line);margin
     <a href="#gestion" data-view="gestion"><i data-ic="layout-dashboard"></i><span data-t="nav_manage"></span></a>
     <a href="#qualite" data-view="qualite"><i data-ic="clipboard-check"></i><span data-t="nav_quality"></span></a>
     <a href="#carte" data-view="carte"><i data-ic="box"></i><span data-t="nav_map"></span></a>
+    <a href="#utilisateurs" data-view="utilisateurs" class="hide"><i data-ic="key-round"></i><span data-t="nav_users"></span></a>
     <div class="ng" data-t="nav_g_pub"></div>
     <a href="#citoyens" data-view="citoyens"><i data-ic="users"></i><span data-t="nav_citizen"></span></a>
     <a href="#apropos" data-view="apropos"><i data-ic="book-open"></i><span data-t="nav_about"></span></a>
@@ -272,6 +287,7 @@ footer{color:var(--muted);font-size:12px;border-top:1px solid var(--line);margin
   <button class="ib menu-btn" id="menu-btn" data-ta="menu"><i data-ic="menu"></i></button>
   <div class="crumb"><span>Rive-Claire</span><span aria-hidden="true">/</span><b id="crumb"></b></div>
   <div class="spacer"></div>
+  <span class="acct" id="acct"></span>
   <button class="ib" id="theme-btn" data-ta="theme"><i id="theme-ic"></i></button>
   <div class="seg" role="group" aria-label="Language">
     <button data-lang="fr">FR</button><button data-lang="en">EN</button>
@@ -378,6 +394,15 @@ footer{color:var(--muted);font-size:12px;border-top:1px solid var(--line);margin
     <h2 style="margin:28px 0 12px" data-t="a_next"></h2>
     <div class="grid roadmap" id="roadmap"></div>
   </section>
+  <!-- ================= USERS (admin, server only) ================= -->
+  <section id="v-utilisateurs" class="hide">
+    <h1 data-t="u_title"></h1>
+    <p class="lede" data-t="u_lede"></p>
+    <div class="grid two">
+      <div class="card"><h2 style="margin-bottom:8px" data-t="u_accounts"></h2><div class="tablewrap"><table id="u-table"></table></div><p class="err" id="u-msg"></p><p class="sub" data-t="u_note"></p></div>
+      <div class="card"><h2 style="margin-bottom:8px" data-t="u_roles"></h2><div class="tablewrap"><table id="u-roles"></table></div></div>
+    </div>
+  </section>
 </main>
 
 <footer id="foot"></footer>
@@ -386,6 +411,7 @@ footer{color:var(--muted);font-size:12px;border-top:1px solid var(--line);margin
 
 <div class="scrim" id="scrim"></div>
 <aside class="drawer" id="drawer" aria-modal="true" role="dialog"><div class="in" id="drawer-in"></div></aside>
+<div class="modal" id="login" aria-modal="true" role="dialog"><div class="card" id="login-in"></div></div>
 <div class="tip" id="tip"></div>
 
 <script>
@@ -409,6 +435,18 @@ fr:{
   next:["Corriger les points à vérifier de façon traçable","Les indicateurs ci-dessus, calculés sur les données importées","Un objectif par bâtiment avec un feu vert / orange / rouge, modifiable seulement par une personne autorisée","Comptes et droits par profil (maquette sur ce site de démonstration)"],
   nav_manage:"Gestion", nav_citizen:"Citoyen·ne·s", nav_about:"Comment ça marche",
   nav_quality:"Qualité",
+  nav_users:"Utilisateurs", login:"Se connecter", logout:"Se déconnecter", login_title:"Connexion", login_user:"Nom d'utilisateur",
+  login_pw:"Mot de passe", login_go:"Se connecter", login_err:"Nom ou mot de passe incorrect, ou compte bloqué quelques minutes.",
+  login_need:"« {p} » est réservé aux rôles : {r}.", login_demo:"Comptes de démonstration",
+  login_demo_sub:"Un clic, sans mot de passe : essayez chaque rôle sur la commune fictive.",
+  role_admin:"Administrateur·rice", role_technique:"Service technique", role_elu:"Élu·e", role_public:"Public",
+  rd_admin:"Tout, plus l'attribution des rôles", rd_technique:"Gestion, qualité des données, relevés bruts et exports CSV",
+  rd_elu:"Gestion et indicateurs, sans relevés bruts ni exports", rd_public:"Pages publiques seulement",
+  u_title:"Utilisateurs et rôles", u_lede:"Chacun voit seulement ce dont il a besoin. Le serveur applique ces droits sur les données, pas seulement à l'écran.",
+  u_accounts:"Comptes", u_roles:"Ce que voit chaque rôle", u_h_user:"Utilisateur", u_h_role:"Rôle", u_h_sees:"Accès",
+  u_demo:"compte de démonstration", u_saved:"Rôle enregistré.", u_err:"Modification refusée.",
+  u_note:"Les comptes « demo-… » gardent leur rôle. Un compte de démonstration ne modifie que les comptes fictifs. Les vrais comptes se créent sur le serveur.",
+  d_raw:"Relevés bruts", d_raw_locked:"Réservés aux rôles Service technique et Administrateur·rice.",
   qr_title:"Qualité des données", qr_lede:"Chaque ligne des fichiers Rive-Claire est contrôlée avant d'entrer dans les chiffres. Ce rapport vient du dernier import, fait hors ligne par tools/import_rive_claire.py : ce n'est pas encore un import en direct.",
   qr_k_read:"Relevés lus", qr_k_read_sub:"+ {b} bâtiments, {c} compteurs, {i} installations", qr_k_loaded:"Chargés", qr_k_loaded_sub:"entrent dans les chiffres",
   qr_k_rejected:"Rejetés", qr_k_rejected_sub:"jamais dans les chiffres", qr_k_flagged:"À vérifier", qr_k_flagged_sub:"dont {e} remplacés par une estimation", qr_k_reimport:"Ré-import du même fichier",
@@ -521,6 +559,18 @@ en:{
   next:["Correct the points to check, with a trace","The indicators above, computed on the imported data","A target per building with a green / amber / red light, editable only by an authorised person","Accounts and rights per profile (mock-up on this demo site)"],
   nav_manage:"Manage", nav_citizen:"Citizens", nav_about:"How it works",
   nav_quality:"Data quality",
+  nav_users:"Users", login:"Log in", logout:"Log out", login_title:"Log in", login_user:"Username",
+  login_pw:"Password", login_go:"Log in", login_err:"Wrong username or password, or account locked for a few minutes.",
+  login_need:"“{p}” is for these roles: {r}.", login_demo:"Demo accounts",
+  login_demo_sub:"One click, no password: try each role on the fictional municipality.",
+  role_admin:"Administrator", role_technique:"Technical staff", role_elu:"Elected official", role_public:"Public",
+  rd_admin:"Everything, plus assigning roles", rd_technique:"Manage, data quality, raw readings and CSV exports",
+  rd_elu:"Manage and indicators, no raw readings or exports", rd_public:"Public pages only",
+  u_title:"Users and roles", u_lede:"Everyone sees only what they need. The server enforces these rights on the data, not just on screen.",
+  u_accounts:"Accounts", u_roles:"What each role sees", u_h_user:"User", u_h_role:"Role", u_h_sees:"Access",
+  u_demo:"demo account", u_saved:"Role saved.", u_err:"Change refused.",
+  u_note:"The “demo-…” accounts keep their role. A demo account only changes the fictional accounts. Real accounts are created on the server.",
+  d_raw:"Raw readings", d_raw_locked:"For the Technical staff and Administrator roles.",
   qr_title:"Data quality", qr_lede:"Every row of the Rive-Claire files is checked before it reaches the figures. This report comes from the last import, run offline by tools/import_rive_claire.py: it is not a live upload yet.",
   qr_k_read:"Readings read", qr_k_read_sub:"+ {b} buildings, {c} meters, {i} installations", qr_k_loaded:"Loaded", qr_k_loaded_sub:"used in the figures",
   qr_k_rejected:"Rejected", qr_k_rejected_sub:"never in the figures", qr_k_flagged:"To check", qr_k_flagged_sub:"of which {e} replaced by an estimate", qr_k_reimport:"Re-import of the same file",
@@ -647,6 +697,9 @@ const ICONS = {
   "circle-x":'<circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/>',
   "flag":'<path d="M4 22V4a1 1 0 0 1 .4-.8A6 6 0 0 1 8 2c3 0 5 2 7.333 2q2 0 3.067-.8A1 1 0 0 1 20 4v10a1 1 0 0 1-.4.8A6 6 0 0 1 16 16c-3 0-5-2-8-2a6 6 0 0 0-4 1.528"/>',
   "repeat-2":'<path d="m2 9 3-3 3 3"/><path d="M13 18H7a2 2 0 0 1-2-2V6"/><path d="m22 15-3 3-3-3"/><path d="M11 6h6a2 2 0 0 1 2 2v10"/>',
+  "log-in":'<path d="m10 17 5-5-5-5"/><path d="M15 12H3"/><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>',
+  "log-out":'<path d="m16 17 5-5-5-5"/><path d="M21 12H9"/><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>',
+  "key-round":'<path d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"/><circle cx="16.5" cy="7.5" r=".5" fill="currentColor"/>',
   "triangle-alert":'<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
 };
 const ic = (n) => `<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n]||""}</svg>`;
@@ -738,7 +791,7 @@ function lineChart(el, labels, series, fmt, opts={}){
 const legend = (el, items) => el.innerHTML = items.map(([n,c,dash])=>`<span><i style="background:${dash?'transparent':css(c)};${dash?`border:2px dashed ${css(c)};width:12px;height:2px;border-radius:0;vertical-align:3px;border-width:2px 0 0 0`:''}"></i>${esc(n)}</span>`).join("");
 
 /* ---------------------------------------------------------------- views */
-const NAVKEY = {accueil:"nav_home", gestion:"nav_manage", qualite:"nav_quality", citoyens:"nav_citizen", carte:"nav_map", apropos:"nav_about"};
+const NAVKEY = {accueil:"nav_home", gestion:"nav_manage", qualite:"nav_quality", citoyens:"nav_citizen", carte:"nav_map", apropos:"nav_about", utilisateurs:"nav_users"};
 function applyStatic(){
   document.documentElement.lang = LANG;
   document.querySelectorAll("[data-ic]").forEach(el => el.outerHTML = ic(el.dataset.ic));
@@ -968,10 +1021,10 @@ function openSite(id){
       ${deliv?`<p class="sub" style="margin:4px 0 0">${esc(t("d_deliv"))}</p>`:""}
     </div>
     ${onsite}
-    <div class="card" style="margin-top:14px"><div class="row" style="margin-bottom:6px"><div><h2>${esc(t("d_meters",{n:MS.length}))}</h2><p class="sub" style="margin:0">${esc(t("d_meters_sub",{y:YEAR}))}</p></div><div class="spacer"></div><button class="chip" id="dcsv">${esc(t("d_csv"))}</button></div>
+    ${full() ? `<div class="card" style="margin-top:14px"><div class="row" style="margin-bottom:6px"><div><h2>${esc(t("d_meters",{n:MS.length}))}</h2><p class="sub" style="margin:0">${esc(t("d_meters_sub",{y:YEAR}))}</p></div><div class="spacer"></div><button class="chip" id="dcsv">${esc(t("d_csv"))}</button></div>
       ${tbl([[t("h_meter")],[t("h_unit"),"hide-m"],[t("h_level"),"hide-m"],[t("h_total",{y:YEAR}),"num"],[t("h_flags")]],
         MS.map(m=>`<tr data-mt="${esc(m.id)}" class="${"m:"+m.id===FLUID?"sel":""}"><td><div class="tname">${esc(m.id)}</div><div class="tsub">${esc(mlabel(m))}</div></td><td class="hide-m">${esc(unitOf(m.unit))}</td><td class="hide-m">${esc(lvl(m.level))}${m.parent?` <span class="mut">⊂ ${esc(m.parent)}</span>`:""}</td><td class="num">${total(m)}</td><td>${flags(m)}</td></tr>`))}
-    </div>
+    </div>` : `<div class="card" style="margin-top:14px"><h2>${esc(t("d_raw"))}</h2><p class="sub" style="margin:4px 0 0">${esc(t("d_raw_locked"))}</p></div>`}
     <div class="card" style="margin-top:14px"><h2 style="margin-bottom:8px">${esc(t("d_buildings"))}</h2>
       ${tbl([[t("h_bname")],[t("h_built"),"num"],[t("h_reno"),"num hide-m"],["SRE m²","num"],[t("h_levels"),"num hide-m"],[t("h_label"),"hide-m"]],
         s.buildings.map(b=>`<tr><td><div class="tname">${esc(b.name)}</div>${b.homes?`<div class="tsub">${nf(b.homes)} ${esc(t("h_homes").toLowerCase())}</div>`:""}${b.note?`<div class="tsub">${esc(loc(b.note))}</div>`:""}</td><td class="num">${b.built??"–"}</td><td class="num hide-m">${b.renovated??"–"}</td><td class="num">${b.sre_m2?nf(b.sre_m2):"–"}</td><td class="num hide-m">${b.levels??"–"}</td><td class="hide-m">${esc(b.label||"–")}</td></tr>`))}
@@ -992,7 +1045,7 @@ function openSite(id){
     {labelStep:1, h:220, tipLabel:i=>monthYear(i), ytick:v=>v>=10000?nf(v/1000)+"k":nf(v), markers:ev.map(e=>({i:e.month, color:e.kind==="anomaly"||e.kind==="quality"?"--warn":"--accent"}))});
   document.getElementById("dx").onclick = closeSite;
   const back = document.getElementById("dback"); if (back) back.onclick = closeSite;
-  document.getElementById("dcsv").onclick = () => siteCsv(id);
+  const dcsv = document.getElementById("dcsv"); if (dcsv) dcsv.onclick = () => siteCsv(id);
   document.querySelectorAll("[data-fl]").forEach(b=>b.onclick=()=>{FLUID=b.dataset.fl; openSite(id);});
   document.querySelectorAll("[data-mt]").forEach(r=>r.onclick=()=>{FLUID="m:"+r.dataset.mt; openSite(id); document.getElementById("drawer").scrollTo({top:0, behavior:"smooth"});});
   document.getElementById("drawer").classList.add("open"); document.getElementById("scrim").classList.add("open");
@@ -1002,21 +1055,83 @@ function closeSite(){ document.getElementById("drawer").classList.remove("open")
 
 /* ---------------------------------------------------------------- routing & events */
 let VIEW = "accueil";
+const VIEWS = ["accueil","gestion","qualite","citoyens","carte","apropos","utilisateurs"];
 function route(){
   const h = location.hash.slice(1) || "accueil";
-  if (h.startsWith("site/")) { if (VIEW !== "carte" && VIEW !== "qualite") VIEW = "gestion"; renderAll(); openSite(h.slice(5)); return; }
-  VIEW = ["accueil","gestion","qualite","citoyens","carte","apropos"].includes(h) ? h : "accueil";
+  if (h.startsWith("site/")) { if (VIEW !== "carte" && VIEW !== "qualite") VIEW = can("gestion") ? "gestion" : "carte"; renderAll(); openSite(h.slice(5)); return; }
+  VIEW = VIEWS.includes(h) ? h : "accueil";
+  if (!can(VIEW)) { const want = VIEW; VIEW = "accueil"; history.replaceState(null, "", "#accueil"); closeSiteSilently(); renderAll(); if (SERVER) openLogin(want); return; }
   closeSiteSilently(); renderAll();
 }
 function closeSiteSilently(){ document.getElementById("drawer").classList.remove("open"); document.getElementById("scrim").classList.remove("open"); }
 function renderAll(){
   applyStatic();
-  for (const v of ["accueil","gestion","qualite","citoyens","carte","apropos"]) document.getElementById("v-"+v).classList.toggle("hide", v!==VIEW);
+  for (const v of VIEWS) document.getElementById("v-"+v).classList.toggle("hide", v!==VIEW);
   document.querySelector(".notice").textContent = t(VIEW==="carte" ? "notice_map" : "notice");
-  document.querySelectorAll("nav a").forEach(a=>a.classList.toggle("on", a.dataset.view===VIEW));
-  document.getElementById("crumb").textContent = t(NAVKEY[VIEW]); side(false);
-  if (VIEW==="accueil") renderWelcome(); else if (VIEW==="gestion") renderManager(); else if (VIEW==="qualite") renderQuality(); else if (VIEW==="citoyens") renderCitizen(); else if (VIEW==="carte") renderMap(); else renderAbout();
+  document.querySelectorAll("nav a").forEach(a=>{ a.classList.toggle("on", a.dataset.view===VIEW); a.classList.toggle("hide", !can(a.dataset.view)); });
+  document.getElementById("crumb").textContent = t(NAVKEY[VIEW]); side(false); renderAcct();
+  if (VIEW==="accueil") renderWelcome(); else if (VIEW==="gestion") renderManager(); else if (VIEW==="qualite") renderQuality(); else if (VIEW==="citoyens") renderCitizen(); else if (VIEW==="carte") renderMap(); else if (VIEW==="utilisateurs") renderUsers(); else renderAbout();
   if (MAP) { MAP.relabel(); MAP.theme(); }
+}
+
+/* ---------------------------------------------------------------- accounts and roles (issue #15)
+   Mirrors server/auth.py: the server enforces it on the data, this only hides what a role cannot use.
+   On a static host (GitHub Pages) api/config.json says {"server": false}: no accounts, every page open. */
+const ACCESS = {gestion:["admin","technique","elu"], qualite:["admin","technique"], utilisateurs:["admin"]};
+const ROLES = ["admin","technique","elu","public"];
+let SERVER = null, USER = null;
+const ROLE = () => USER ? USER.role : "public";
+const can = (v) => SERVER ? !ACCESS[v] || ACCESS[v].includes(ROLE()) : v !== "utilisateurs";
+const full = () => !SERVER || ["admin","technique"].includes(ROLE());       // raw readings, quality report, exports
+async function api(path, body, method = "POST"){
+  const r = await fetch(path, {method, headers:{"content-type":"application/json"}, body: body ? JSON.stringify(body) : undefined, cache:"no-store"});
+  if (!r.ok) throw r;
+  return r.json();
+}
+function loadData(){ return fetch("data.json?v="+V+(SERVER ? "&r="+ROLE() : ""), SERVER ? {cache:"no-cache"} : {}).then(r=>r.json()).then(d => { D = d; compute(); }); }
+async function setUser(u, want){
+  USER = u; closeLogin(); await loadData();
+  if (want && can(want) && location.hash !== "#"+want) location.hash = "#"+want; else route();
+}
+function renderAcct(){
+  const el = document.getElementById("acct");
+  if (!SERVER) { el.innerHTML = ""; return; }
+  el.innerHTML = USER
+    ? `<span><span class="hide-m">${esc(USER.username)} · </span><b>${esc(t("role_"+USER.role))}</b></span><button class="ib" id="logout-btn" aria-label="${esc(t("logout"))}" title="${esc(t("logout"))}">${ic("log-out")}</button>`
+    : `<button class="chip" id="login-btn" aria-label="${esc(t("login"))}" title="${esc(t("login"))}">${ic("log-in")}<span class="hide-m">${esc(t("login"))}</span></button>`;
+  const a = document.getElementById("login-btn"); if (a) a.onclick = () => openLogin();
+  const b = document.getElementById("logout-btn"); if (b) b.onclick = () => api("api/logout").catch(()=>{}).then(() => setUser(null));
+}
+function openLogin(want){
+  const need = want && ACCESS[want] ? t("login_need", {p:t(NAVKEY[want]), r:ACCESS[want].map(r=>t("role_"+r)).join(", ")}) : "";
+  document.getElementById("login-in").innerHTML = `
+    <div class="row"><h2>${esc(t("login_title"))}</h2><div class="spacer"></div><button class="x" id="lx" aria-label="close">×</button></div>
+    ${need ? `<p class="sub" style="margin-top:8px">${esc(need)}</p>` : ""}
+    <form id="lf"><label class="field">${esc(t("login_user"))}<input name="u" autocomplete="username" required></label>
+      <label class="field">${esc(t("login_pw"))}<input name="p" type="password" autocomplete="current-password" required></label>
+      <p class="err" id="lerr"></p><button class="btn" type="submit">${esc(t("login_go"))}</button></form>
+    ${SERVER.demo ? `<h2 style="margin-top:20px">${esc(t("login_demo"))}</h2><p class="sub">${esc(t("login_demo_sub"))}</p>
+      <div class="demo-roles">${ROLES.map(r=>`<button data-demo="${r}"><b>${esc(t("role_"+r))}</b><span>${esc(t("rd_"+r))}</span></button>`).join("")}</div>` : ""}`;
+  document.getElementById("login").classList.add("open");
+  document.getElementById("lx").onclick = closeLogin;
+  document.getElementById("lf").onsubmit = (e) => { e.preventDefault(); const f = e.target;
+    api("api/login", {username:f.u.value, password:f.p.value}).then(u => setUser(u, want)).catch(() => { document.getElementById("lerr").textContent = t("login_err"); }); };
+  document.querySelectorAll("[data-demo]").forEach(b => b.onclick = () => api("api/demo-login", {role:b.dataset.demo}).then(u => setUser(u, want)).catch(() => {}));
+}
+function closeLogin(){ document.getElementById("login").classList.remove("open"); }
+function renderUsers(){
+  const tb = document.getElementById("u-table"), msg = (s) => document.getElementById("u-msg").textContent = s;
+  document.getElementById("u-roles").innerHTML = `<thead><tr><th>${esc(t("u_h_role"))}</th><th>${esc(t("u_h_sees"))}</th></tr></thead><tbody>` +
+    ROLES.map(r=>`<tr style="cursor:default"><td><b>${esc(t("role_"+r))}</b></td><td>${esc(t("rd_"+r))}</td></tr>`).join("") + `</tbody>`;
+  fetch("api/users", {cache:"no-store"}).then(r => r.ok ? r.json() : Promise.reject(r)).then(list => {
+    tb.innerHTML = `<thead><tr><th>${esc(t("u_h_user"))}</th><th>${esc(t("u_h_role"))}</th></tr></thead><tbody>` + list.map(u => {
+      const fixed = u.username === USER.username || u.username.startsWith("demo-") || (USER.demo && !u.demo);
+      const cell = fixed ? esc(t("role_"+u.role)) : `<select class="urole" data-u="${esc(u.username)}" aria-label="${esc(t("u_h_role"))}">${ROLES.map(r=>`<option value="${r}"${r===u.role?" selected":""}>${esc(t("role_"+r))}</option>`).join("")}</select>`;
+      return `<tr style="cursor:default"><td><div class="tname">${esc(u.username)}</div>${u.demo?`<div class="tsub">${esc(t("u_demo"))}</div>`:""}</td><td>${cell}</td></tr>`;
+    }).join("") + `</tbody>`;
+    tb.querySelectorAll("select").forEach(s => s.onchange = () => api("api/users/"+encodeURIComponent(s.dataset.u), {role:s.value}, "PUT")
+      .then(() => msg(t("u_saved"))).catch(() => { msg(t("u_err")); renderUsers(); }));
+  }).catch(() => { tb.innerHTML = ""; msg(t("u_err")); });
 }
 document.addEventListener("click", ev => {
   const el = ev.target.closest("[data-lang],[data-y],[data-f],th[data-k],tbody tr[data-id]"); if (!el) return;
@@ -1036,14 +1151,21 @@ document.getElementById("theme-btn").onclick = () => {
 };
 document.getElementById("q").addEventListener("input", e => { QUERY = e.target.value; renderTable(); });
 document.getElementById("scrim").onclick = closeSite;
-document.addEventListener("keydown", e => { if (e.key==="Escape") closeSite(); });
+document.addEventListener("keydown", e => { if (e.key==="Escape") { closeSite(); closeLogin(); } });
+document.getElementById("login").addEventListener("click", e => { if (e.target.id === "login") closeLogin(); });
 window.addEventListener("hashchange", route);
 let RZ, LASTW = innerWidth;
 window.addEventListener("resize", () => { clearTimeout(RZ); RZ = setTimeout(() => { if (Math.abs(innerWidth - LASTW) < 40 || !D) return; LASTW = innerWidth; const open = document.getElementById("drawer").classList.contains("open"); renderAll(); if (open) openSite(location.hash.slice(6)); }, 200); });
 matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", renderAll);
 
-const V = "15";
-fetch("data.json?v="+V).then(r=>r.json()).then(d => { D = d; compute(); route(); });
+const V = "16";
+(async () => {
+  try {
+    const c = await fetch("api/config.json?v="+V, {cache:"no-store"}).then(r => r.json());
+    if (c.server) { SERVER = c; const m = await fetch("api/me", {cache:"no-store"}); if (m.ok) USER = await m.json(); }
+  } catch (e) {}
+  await loadData(); route();
+})();
 </script>
 </body>
 </html>

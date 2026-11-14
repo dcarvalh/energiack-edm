@@ -73,15 +73,23 @@ CREATE TABLE IF NOT EXISTS reference (
 );
 
 -- Accounts. Passwords are stored as salted scrypt hashes, sessions as the SHA-256 of a random token.
+-- Roles (issue #15): admin, technique (energy service), elu (elected official), public. What each one sees: server/auth.py.
+-- demo = one of the four demo accounts (one-click login when DEMO_LOGIN=1, no usable password).
 CREATE TABLE IF NOT EXISTS app_user (
     id           integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     username     text NOT NULL UNIQUE,
     pw_hash      text NOT NULL,
-    role         text NOT NULL CHECK (role IN ('admin', 'manager')),
+    role         text NOT NULL,
+    demo         boolean NOT NULL DEFAULT false,
     failed       integer NOT NULL DEFAULT 0,
     locked_until timestamptz,
     created_at   timestamptz NOT NULL DEFAULT now()
 );
+-- Upgrade from the first version (roles admin/manager, no demo column).
+ALTER TABLE app_user ADD COLUMN IF NOT EXISTS demo boolean NOT NULL DEFAULT false;
+ALTER TABLE app_user DROP CONSTRAINT IF EXISTS app_user_role_check;
+UPDATE app_user SET role = 'technique' WHERE role = 'manager';
+ALTER TABLE app_user ADD CONSTRAINT app_user_role_check CHECK (role IN ('admin', 'technique', 'elu', 'public'));
 
 CREATE TABLE IF NOT EXISTS session (
     token_hash text PRIMARY KEY,

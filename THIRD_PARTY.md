@@ -26,7 +26,7 @@ Costs in CHF are **assumed prices**, not in the dataset, and labelled "estimated
 
 | What | Version | Licence |
 |---|---|---|
-| Lucide icons (path data of 19 icons, `ICONS` in `index.html`, from the `lucide-static` npm package) | 1.72.0 | ISC, © Lucide Icons and Contributors |
+| Lucide icons (path data of 22 icons, `ICONS` in `index.html`, from the `lucide-static` npm package) | 1.72.0 | ISC, © Lucide Icons and Contributors |
 
 ## Server stack (`compose.yaml`, `server/`; not part of the static site)
 
