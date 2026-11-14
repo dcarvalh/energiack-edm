@@ -40,6 +40,7 @@ Installed or pulled at build time, nothing vendored in the repo.
 | FastAPI | 0.162.7 | MIT |
 | Uvicorn | 0.54.0 | BSD-3-Clause |
 | psycopg (with `psycopg-binary`) | 3.3.9 | LGPL-3.0 (used as an unmodified library) |
+| python-multipart (file uploads) | 0.0.20 | Apache-2.0 |
 
 Python tools use only the standard library plus `requirements.txt` (Playwright for the headless check; numpy, Pillow,
 rasterio for the Geneva map build; imageio-ffmpeg, BSD-2-Clause, for the pitch video: its package ships an FFmpeg binary

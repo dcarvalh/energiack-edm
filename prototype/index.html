@@ -1232,20 +1232,21 @@ function renderAbout(){
 let MAP = null, MAP_LOADING = false;
 const isDark = () => { const a = document.documentElement.dataset.theme; return a ? a === "dark" : matchMedia("(prefers-color-scheme: dark)").matches; };
 const MAPS = {rc:{key:"rc", dir:"map-rc/"}, ge:{key:"ge", dir:"map/"}};
-let MAPKEY = "rc";
+let MAPKEY = "rc", MAP_PICKED = false;   // MAP_PICKED: the user chose a map with the switch since the municipality changed
 try { if (MAPS[localStorage.getItem("energiack-map")]) MAPKEY = localStorage.getItem("energiack-map"); } catch(e) {}
 function switchMap(k){
   if (MAP_LOADING || !MAPS[k] || k===MAPKEY) return;
-  MAPKEY = k; try { localStorage.setItem("energiack-map", k); } catch(e) {}
+  MAPKEY = k; MAP_PICKED = true; try { localStorage.setItem("energiack-map", k); } catch(e) {}
   if (MAP) { MAP.destroy(); MAP = null; }
   renderMap();
 }
 function renderMap(){
   if (MAP || MAP_LOADING) return;
   MAP_LOADING = true;
-  // Prefer the municipality's declared map; fall back to the current tab selection
+  // The municipality's declared map is the default; the switch on the map still changes it
   const mc = LOC?.map_config;
-  const mapCfg = (mc?.key && MAPS[mc.key]) ? {key: mc.key, dir: mc.dir} : MAPS[MAPKEY];
+  if (!MAP_PICKED && mc?.key && MAPS[mc.key]) MAPKEY = mc.key;
+  const mapCfg = MAPS[MAPKEY];
   import("./map3d.js?v="+V).then(m => m.initMap(document.getElementById("m3"), {t, nf, esc, showTip, hideTip, dark:isDark, lang:()=>LANG, switchMap, heatIndex:(sid, y)=>(M.sites[sid]||{})[y]}, mapCfg))
     .then(x => { MAP = x; MAP_LOADING = false; }).catch(e => { MAP_LOADING = false; document.getElementById("m3").innerHTML = `<div class="m3-loading">${esc(String(e))}</div>`; });
 }
@@ -1449,7 +1450,7 @@ function renderLocality() {
   if (sel) sel.onchange = async () => {
     LOC = LOCALITIES.find(l => l.slug === sel.value) || LOC;
     try { localStorage.setItem("edm-locality", LOC.slug); } catch(e) {}
-    if (MAP) { MAP.destroy(); MAP = null; MAP_LOADING = false; }
+    MAP_PICKED = false; if (MAP) { MAP.destroy(); MAP = null; MAP_LOADING = false; }
     await loadData();
     route();
   };
@@ -1680,7 +1681,7 @@ function locDelete(slug, name) {
       // Active locality was deleted: switch to first remaining
       LOC = remaining.length ? remaining[0] : null;
       if (LOC) try { localStorage.setItem("edm-locality", LOC.slug); } catch(e) {}
-      if (MAP) { MAP.destroy(); MAP = null; MAP_LOADING = false; }
+      MAP_PICKED = false; if (MAP) { MAP.destroy(); MAP = null; MAP_LOADING = false; }
       await loadData();
       renderAll();          // refreshes sidebar + all views
     }
@@ -2138,7 +2139,7 @@ let RZ, LASTW = innerWidth;
 window.addEventListener("resize", () => { clearTimeout(RZ); RZ = setTimeout(() => { if (Math.abs(innerWidth - LASTW) < 40 || !D) return; LASTW = innerWidth; const open = document.getElementById("drawer").classList.contains("open"); renderAll(); if (open) reopen(); }, 200); });
 matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", renderAll);
 
-const V = "36";
+const V = "37";
 (async () => {
   try {
     const c = await fetch("api/config.json?v="+V, {cache:"no-store"}).then(r => r.json());

@@ -1,4 +1,8 @@
-# Checks the database stack on every pull request, and deploys it to the team's server after a merge into main.
+# Checks every pull request, and deploys the database stack to the team's server after a merge into main.
+#   check: the database stack from an empty database (tools/check_stack.sh), then the upgrade of a database created by
+#          the base branch (tools/check_upgrade.sh): the server keeps its database between deploys.
+#   page:  the app in a headless browser (tools/check_page.py: JS errors, FR/EN keys, phone width), on the static site
+#          and logged in on the stack, and what each role sees (tools/check_roles.py).
 # The deploy job is skipped until the repository variable DEPLOY_HOST is set (Settings › Secrets and variables › Actions).
 # Setup: docs/deploy.md
 name: Stack
@@ -17,10 +21,39 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }                       # the upgrade check needs the base branch's files
       - name: Self-test of the quality checks
         run: python3 tools/rc_quality.py --selftest
       - name: Start the stack, compare data.json with the static build, re-import, login
         run: tools/check_stack.sh
+      - name: Upgrade a database created by the base branch, nothing lost
+        env:
+          BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || 'HEAD~1' }}
+        run: tools/check_upgrade.sh "$BASE"
+
+  page:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.13" }
+      - name: Install the headless browser
+        run: |
+          pip install -q "$(grep '^playwright==' requirements.txt | cut -d' ' -f1)"
+          playwright install --with-deps chromium
+      - name: Static site (as on GitHub Pages)
+        run: |
+          python3 -m http.server 8000 -d prototype >/dev/null 2>&1 &
+          sleep 1
+          python3 tools/check_page.py http://127.0.0.1:8000/ shots/static
+      - name: Server version, what each role sees and the pages as technical staff
+        run: |
+          tools/check_stack.sh --keep
+          python3 tools/check_roles.py http://127.0.0.1:18088/
+          CHECK_ROLE=technique python3 tools/check_page.py http://127.0.0.1:18088/ shots/server
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: screenshots, path: shots, if-no-files-found: ignore, retention-days: 7 }
 
   deploy:
     needs: check
