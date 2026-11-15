@@ -1,11 +1,11 @@
 # Team plan · openEDM (Défi 2 « EDM citoyen et souverain »)
 
-Updated 15 Nov 2026. What exists and how to run it: `README.md`. What is left: see "To do for 1 Dec" below.
+Updated 15 Nov 2026. What exists and how to run it: `README.md`. What is left: see "To do" below.
 
 ## Deadlines
 - Hackathon pitch: done, Sat 14 Nov (deliverables in by 14:00: prototype, code with `THIRD_PARTY.md`, slides, project sheet).
-- **The project goes on. Next presentation: Tue 1 Dec 2026.** Aim: more polished and easier to use (what that means
-  exactly is still to decide, see "To do for 1 Dec" › Decide first).
+- **The project goes on. Next presentation: Tue 1 Dec 2026.** Aim: a stable, presentable demo and a repo others
+  can pick up (see "To do").
 - Pitch format so far: about 5 minutes, **tell a story**, don't list features.
 
 ## The pitch in one line
@@ -91,43 +91,53 @@ accounts, an OpenID Connect server (Keycloak, Authentik, Zitadel) only when a co
 Roles per #15. Several communes on one install: done (#43). Still open: deploys on merge (the server is updated by
 hand), resetting passwords from the app.
 
-## To do for 1 Dec (15 Nov; one branch + PR each, one session per item)
+## To do (priorities set by David, 15 Nov; one branch + PR each, one session per item)
 
-**Decide first** (team): what "more polished and easier to use" means. Suggested starting points: a guided first
-visit (what to look at, in what order), fewer controls per screen, plain-language labels, one obvious story path for the
-demo (energy manager → council → citizen). The demo link is the server version (decided 15 Nov).
+**Goal until 1 Dec** (David, 15 Nov): a stable demo he can link from his portfolio and talk about; a repo teammates can
+join and understand quickly (what is done, what is not, what is next); a state anyone, David included, can pick up
+again after weeks away. Not a "polish" pass: no redesign. Effort: S = under an hour, M = about one session, L = several.
+Items 15–19 keep their numbers: their details are under "Public base layer" below.
 
-**Pitch and docs**
-1. Done 15 Nov: English deck `prototype/pitch/en.html`. David chose to reuse the French clips (French app text).
-2. Done 15 Nov: `README.md` updated (project goes on, 1 Dec, server = main link, Pages = open copy, current
-   features). QR codes checked: the deck's points to the server version, `docs/qr` to Pages.
-3. Pitch clips: the two clips stacked on slides 2 and 3 are small on a projector.
+**Now, in this order**
+- **Step 1.** Licences and attribution (S): check the `THIRD_PARTY.md` lines written from memory (three-mesh-bvh,
+   OrbitControls, server stack) and the SITG/swisstopo credit wording against the real sources.
+- **Step 2.** "Start here" doc (S, new): what openEDM is, what is done and not done, run it in 5 minutes, where each part of the
+   code lives, next steps (points here). Today that is spread across `README.md`, `plan.md`, `CLAUDE.md` and `docs/`.
+   Refresh it at step 7.
+- **Step 3.** Geneva as a built-in municipality (S–M, item 15).
+- **Step 4.** Correct Geneva addresses (M, item 19). Before step 6, because Genève (démo) shows real addresses.
+- **Step 5.** EGID link (M–L, item 16). Needed by step 6.
+- **Step 6.** Genève (démo) (L, item 18). Until item 17 exists, it is what the Geneva map shows with readings.
+- **Step 7.** Last: stability pass on the server version (S, new): every page and role on https://openedm.davidcarvalho.work/,
+   FR and EN, phone width; fix what is broken or confusing (empty states, errors). Then a project entry on the
+   portfolio site (`portfolio/`, separate repo) linking the server version.
 
-**P0 user stories, still open** (status comment on each issue, 15 Nov; #5 closed as done)
-4. #6 quality: coverage, estimated and excluded readings shown in Manage for the chosen year; a visible note on an
-   incomplete total; a person decides between two different values for the same meter and month.
-5. #8 explore: choose the fluid, a perimeter (quarter, building type) and months at portfolio level.
-6. #9 compare: a month vs the same month a year before; show the absolute difference next to the %; coverage of the
-   compared periods; alert wording asks a question, never claims a fault.
-7. #10 council summary: choose the year, printable page, quality and limits in the summary; same numbers as Manage.
-8. #11 hand-over: CSV of the filtered Manage view; a guide and a formula dictionary; one config file per commune
-   (assumed prices are still in `tools/import_rive_claire.py`).
+**Before 1 Dec, after "Now"**
+- #10 council summary (S–M): choose the year, printable page, quality and limits in it; same numbers as Manage.
+- #11 hand-over (M): CSV of the filtered Manage view; a guide and a formula dictionary; one config file per commune
+  (assumed prices are still in `tools/import_rive_claire.py`).
+- Weather-corrected heat (S–M): degree-days are in `meta.climate`, unused; the +12 % alert on the corrected figure.
+  Show the monthly heat-pump COP (`meta.hp_cop`, used but not displayed).
+- Corrections by an authorised person with a trace (L): who, when, why; median replacements today are automatic.
+- Public-data view for a municipality with no readings (M, item 17).
+- Server: deploys on merge (S–M; the Stack workflow's deploy job needs SSH secrets, David adds them); David's admin
+  account (S). Budget alert (S): likely before 1 Dec, but David may move the server off the cloud account to his own
+  machine (to decide, maybe after 1 Dec).
 
-**Indicators** (from the Buyer review below)
-9. Weather-corrected heat (degree-days are in `meta.climate`, unused); dynamic COP shown for heat-pump sites
-   (`meta.hp_cop`, used but not displayed).
-10. Traffic light per site: heat kWh/m² vs its typology average, labelled "approximate".
-11. Corrections by an authorised person with a trace (who, when, why); median replacements today are automatic.
+**Later / ideas**
+- #6 quality in Manage (M, L with the part where a person decides between two values for the same meter and month):
+  coverage, estimated and excluded readings for the chosen year; a visible note on an incomplete total.
+- #8 explore (M): choose the fluid, a perimeter (quarter, building type) and months at portfolio level.
+- #9 compare (M): a month vs the same month a year before; absolute difference next to the %; coverage of both periods;
+  alert wording asks a question, never claims a fault.
+- Traffic light per site (M): heat kWh/m² vs its typology average, labelled "approximate".
+- Reset passwords in the app (M): only useful once real users exist.
+- Issue triage (S–M): P0 issues got a status comment on 15 Nov; P1/P2 (#12–#20) and the audience views (#26–#29) not
+  gone through.
 
-**Server version**
-12. Live server runs #43 (municipalities API answers, checked 15 Nov). Still open: deploys on merge (the Stack workflow's deploy job
-    needs SSH secrets); a budget alert on the cloud account; David's admin account; reset passwords in the app.
-
-**Housekeeping**
-13. Go through P1/P2 issues (#12–#20) and the audience views (#26–#29),
-    close what is covered.
-14. Check the licence lines in `THIRD_PARTY.md` (three-mesh-bvh, OrbitControls, server stack: written from memory) and
-    the SITG/swisstopo attribution wording; test the 3D map on a real phone.
+**Done or dropped on 15 Nov:** English deck `prototype/pitch/en.html` (reuses the French clips); `README.md` updated
+(project goes on, server = main link); QR codes checked. Dropped: the small stacked pitch clips (the hackathon pitch
+is over; David may make a new deck for 1 Dec) and the real-phone test (David checked it: fine).
 
 **Public base layer, Switzerland-wide, Geneva first** (David, 15 Nov). Idea: public building data is the starting point
 every municipality reuses without copying it; what a municipality imports stays its own, linked to the public
@@ -186,7 +196,7 @@ builder `tools/make_map.py`, the IDC threshold applies only where the pack says 
 Later, after 1 Dec: a pack builder per commune from its federal statistical number (BFS number): national sources
 first, cantonal extras when present, generated once into a shared `map/<canton>/<commune>/` (a whole canton is too
 heavy for the browser); DE/IT UI (Swiss-wide means German and Italian communes); CO₂ factors and prices per pack
-or commune (see 8); add or remove buildings by clicking the map; sharing between
+or commune (see #11 hand-over); add or remove buildings by clicking the map; sharing between
 municipalities (e.g. commune → canton; accounts already get a role per municipality). Every "to check" in the table above is from memory, not
 verified: check it before building a non-Geneva pack.
 
@@ -216,7 +226,7 @@ and service level; a guaranteed full export (no lock-in); German and Italian; ac
 **Already good:** the data quality report (the differentiator); honest labels (estimated, simulated, CO₂ scope);
 open and portable (no build step, no external requests).
 
-**Proposed changes** (not done on 14 Nov; now in "To do for 1 Dec"):
+**Proposed changes** (not done on 14 Nov; now in "To do"):
 | # | Change | Size |
 |---|---|---|
 | 1 | Weather-corrected annual heat (to the 1991–2020 normal), second figure on Manage and the site page; the +12 % alert on it if it compares heat year on year | S–M |
