@@ -8,8 +8,9 @@ import { computeBoundsTree, acceleratedRaycast } from "./vendor/three-mesh-bvh.m
 THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
 
-const V = "21";
+const V = "26";
 const GREY = 0xb9bfbb;
+const SEL_COL = 0xff2bbf;   // the single selected/clicked building: a vivid, unmistakable magenta (also the beacon colour)
 const RAMP = {
   idc:   [0x2e9e6e, 0x9cc95a, 0xf0b33c, 0xe0663a, 0xb8322a],
   solar: [0xfdf1c7, 0xf8d66d, 0xf1b52c, 0xd98b0b],
@@ -192,7 +193,7 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
   scene.add(new THREE.Mesh(skg, plinthMat));
 
   // buildings: one merged mesh, vertex colours, triangle -> building for picking (BVH-accelerated)
-  const P = [], tri2b = [], ranges = [], centers = [];
+  const P = [], tri2b = [], ranges = [], centers = [], tops = [];
   const toV = (x, y, z) => [x - W / 2, z, -(y - H / 2)];
   const area = r => { let s = 0; for (let i = 0, n = r.length; i < n; i++) { const a = r[i], b = r[(i + 1) % n]; s += a[0] * b[1] - b[0] * a[1]; } return s / 2; };
   B.forEach((b, bi) => {
@@ -220,16 +221,35 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
     for (let k = start; k < end; k += 3) tri2b.push(bi);
     ranges.push([start, end]);
     centers.push(new THREE.Vector3(...toV(cx / (n || 1), cy / (n || 1), b.z + b.h / 2)));
+    tops.push(new THREE.Vector3(...toV(cx / (n || 1), cy / (n || 1), b.z + b.h)));
   });
   const bg = new THREE.BufferGeometry();
   bg.setAttribute("position", new THREE.Float32BufferAttribute(P, 3));
   const colors = new Float32Array(P.length);
   bg.setAttribute("color", new THREE.BufferAttribute(colors, 3));
   bg.computeVertexNormals();
-  bg.computeBoundsTree();
+  // indirect BVH: do NOT reorder the geometry triangles, so hit.faceIndex stays in our original order
+  // and tri2b[faceIndex] maps to the correct building (a reordered index silently picks the wrong block).
+  bg.computeBoundsTree({ indirect: true });
   const bMat = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });
   const bMesh = new THREE.Mesh(bg, bMat);
   scene.add(bMesh);
+  // selection beacon: a pin that floats above the selected building and draws on top of everything,
+  // so the picked block is unmistakable even when it is small or hidden behind taller neighbours.
+  const beacon = new THREE.Group();
+  const beaconMat = new THREE.MeshBasicMaterial({ color: SEL_COL, depthTest: false, depthWrite: false, transparent: true });
+  const pin = new THREE.Mesh(new THREE.ConeGeometry(7, 20, 16), beaconMat); pin.rotation.x = Math.PI; pin.position.y = 26;   // tip points down at the roof
+  const stem = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.1, 24, 10), beaconMat); stem.position.y = 36;
+  const halo = new THREE.Mesh(new THREE.SphereGeometry(4.5, 16, 16), beaconMat); halo.position.y = 50;
+  beacon.add(pin, stem, halo); beacon.renderOrder = 999; beacon.visible = false;
+  scene.add(beacon);
+  const SEL_SCALE = 0.025;   // beacon grows with camera distance so it stays a readable size at any zoom
+  function placeBeacon() {
+    if (SEL < 0) { beacon.visible = false; return; }
+    beacon.visible = true; beacon.position.copy(tops[SEL]);
+    const s = Math.max(1, camera.position.distanceTo(tops[SEL]) * SEL_SCALE);
+    beacon.scale.setScalar(s);
+  }
   // trees (Rive-Claire scenery, generated): one instanced mesh, not pickable
   let treeMesh = null;
   if (M.trees && M.trees.length) {
@@ -250,7 +270,6 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
   const col = new THREE.Color(), white = new THREE.Color(0xffffff), ghost = new THREE.Color();
   const WARN = 0xe0893a;                                 // imported map: a building not yet matched to a site
   const SITEHI = 0x2a9df4;                               // highlight: all buildings of the selected site
-  const SEL_COL = 0xff2bbf;                              // the single selected/clicked building: a vivid, unmistakable magenta
   const L = () => (RCLIKE ? layersRC : layers)(t, nf)[LAYER];
   const unmatched = bi => IMP && !B[bi].id_site;
   const selSite = () => (IMP && SEL >= 0) ? B[SEL].id_site : null;   // site of the selected building, for highlight
@@ -388,7 +407,7 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
     if (IMP && (prevSite || (bi >= 0 && B[bi].id_site))) paintAll();
     else { if (prev >= 0) paint(prev); if (bi >= 0) paint(bi); }
     if (bi >= 0) { panel(bi); if (fly) flyTo(centers[bi]); } else root.querySelector(".m3-panel").classList.add("hide");
-    flush(); placeLabels();
+    placeBeacon(); flush(); placeLabels();
   }
 
   // search by address
@@ -552,6 +571,7 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
     const az = Math.atan2(camera.position.x - controls.target.x, camera.position.z - controls.target.z);
     northSvg.style.transform = `rotate(${az}rad)`;
     const top = isTop(); if (top !== lastTop) { lastTop = top; topBtn.innerHTML = `<b>${top ? "3D" : "2D"}</b>`; topBtn.classList.toggle("on", top); topBtn.title = t(top ? "m_t_tilt" : "m_t_top"); }
+    placeBeacon();
     renderer.render(scene, camera);
     placeLabels();
     if (moving || anim) request();
