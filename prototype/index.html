@@ -52,7 +52,11 @@ nav a.on .ic{color:var(--accent)}
 .side-loc-current{padding:4px 10px 2px;border-bottom:1px solid var(--line);margin-bottom:2px}
 .side-loc-label{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:2px}
 .side-loc-name{display:block;font-size:13px;font-weight:700;color:var(--text);padding:2px 0 4px}
-.side-loc-select{display:block;width:100%;font-size:13px;font-weight:700;color:var(--text);background:transparent;border:none;border-bottom:2px solid var(--accent);padding:2px 0 4px;cursor:pointer;outline:none}
+.loc-btn{position:relative;display:inline-flex;align-items:center;gap:5px;max-width:100%;min-width:0;padding:4px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--text);font-size:13px;white-space:nowrap;cursor:pointer}
+.loc-btn:hover{border-color:var(--accent)} .loc-btn:focus-within{outline:2px solid var(--accent);outline-offset:1px}
+.loc-btn .loc-k{color:var(--muted)} .loc-btn b{font-weight:650;overflow:hidden;text-overflow:ellipsis} .loc-btn .loc-v{color:var(--muted);font-size:11px}
+.loc-btn select{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:16px}
+.side-loc-current .loc-btn{display:flex;width:100%;margin:2px 0 6px} .side-loc-current .loc-k{display:none} .side-loc-current .loc-v{margin-left:auto}
 .content{min-width:0;display:flex;flex-direction:column}
 .top{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:10px;height:52px;padding:0 24px;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
 .crumb{display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--muted);min-width:0;white-space:nowrap}
@@ -264,6 +268,7 @@ footer{color:var(--muted);font-size:12px;border-top:1px solid var(--line);margin
 }
 @media (max-width:720px){
   .top{padding:0 16px}
+  .top .loc-k{display:none}
   .notice{padding:6px 16px;align-items:flex-start}
   .notice::before{margin-top:6px}
   main{padding:18px 16px 40px}
@@ -698,7 +703,7 @@ fr:{
   m_p_year:"Construction", m_p_levels:"Niveaux", m_p_height:"Hauteur", m_p_sre:"Surface chauffée (SRE)", m_p_idc:"IDC {y}", m_p_carriers:"Énergies déclarées", m_p_heatkwh:"Chaleur consommée",
   m_p_boiler:"Chaudière active", m_p_pv:"Production possible", m_p_kwp:"Puissance · surface", m_src:"Sources : données SITG (OCEN, extraction nov. 2026), swisstopo",
   months:"mois", colon:" : ", sites_n:"{n} sites sur {m}",
-  nav_g_mun:"Municipalité de travail", nav_g_ops:"Service de l'énergie", nav_g_pub:"Public", side_commune:"",
+  nav_g_mun:"Municipalité de travail", loc_btn:"Commune :", nav_g_ops:"Service de l'énergie", nav_g_pub:"Public", side_commune:"",
   menu:"Menu", theme:"Thème clair ou sombre"
 },
 en:{
@@ -863,7 +868,7 @@ en:{
   m_p_year:"Built", m_p_levels:"Floors", m_p_height:"Height", m_p_sre:"Heated area (ERA)", m_p_idc:"IDC {y}", m_p_carriers:"Declared energy", m_p_heatkwh:"Heat consumed",
   m_p_boiler:"Active boiler", m_p_pv:"Possible output", m_p_kwp:"Capacity · area", m_src:"Sources: SITG data (OCEN, extracted Nov 2026), swisstopo",
   months:"months", colon:": ", sites_n:"{n} of {m} sites",
-  nav_g_mun:"Working municipality", nav_g_ops:"Energy service", nav_g_pub:"Public", side_commune:"",
+  nav_g_mun:"Working municipality", loc_btn:"Municipality:", nav_g_ops:"Energy service", nav_g_pub:"Public", side_commune:"",
   menu:"Menu", theme:"Light or dark theme"
 }};
 let LANG = "fr";
@@ -1435,22 +1440,25 @@ function renderLocality() {
     return;
   }
 
-  // Multiple municipalities: dropdown selector in nav
-  const opts = LOCALITIES.map(l =>
-    `<option value="${esc(l.slug)}" ${LOC && l.slug === LOC.slug ? "selected" : ""}>${esc(l.name)}</option>`
-  ).join("");
-  nav.innerHTML = `<span class="side-loc-label" data-t="nav_g_mun"></span>
-    <select id="loc-select" class="side-loc-select">${opts}</select>`;
+  // Several municipalities: a labelled button in the sidebar and in the page header (phones see the header one)
+  nav.innerHTML = `<span class="side-loc-label" data-t="nav_g_mun"></span>${locButton("loc-select")}`;
   applyT(nav);
-  const sel = document.getElementById("loc-select");
-  if (sel) sel.onchange = async () => {
-    LOC = LOCALITIES.find(l => l.slug === sel.value) || LOC;
-    try { localStorage.setItem("edm-locality", LOC.slug); } catch(e) {}
-    if (!MAP_LOADING) resetMap();
-    await loadData();
-    route();
-  };
 }
+function locButton(id) {
+  const opts = LOCALITIES.map(l => `<option value="${esc(l.slug)}" ${LOC && l.slug === LOC.slug ? "selected" : ""}>${esc(l.name)}</option>`).join("");
+  return `<label class="loc-btn"><span class="loc-k">${esc(t("loc_btn"))}</span><b>${esc(LOC?.name || "")}</b><span class="loc-v" aria-hidden="true">▾</span>`
+    + `<select id="${id}" aria-label="${esc(t("loc_btn"))}">${opts}</select></label>`;
+}
+async function chooseLocality(slug) {
+  const l = LOCALITIES.find(x => x.slug === slug);
+  if (!l || l === LOC) return;
+  LOC = l;
+  try { localStorage.setItem("edm-locality", LOC.slug); } catch(e) {}
+  if (!MAP_LOADING) resetMap();
+  await loadData();
+  route();
+}
+document.addEventListener("change", e => { if (e.target.id === "loc-select" || e.target.id === "loc-select-top") chooseLocality(e.target.value); });
 function applyT(el) {
   el.querySelectorAll("[data-t]").forEach(e => e.textContent = t(e.dataset.t));
 }
@@ -1490,7 +1498,7 @@ function renderAll(){
   document.querySelectorAll("nav a").forEach(a=>{ a.classList.toggle("on", a.dataset.view===VIEW); a.classList.toggle("hide", !can(a.dataset.view)); });
   document.getElementById("crumb").textContent = t(NAVKEY[VIEW]);
   const cl = document.getElementById("crumb-loc");
-  if (cl) cl.textContent = LOC ? LOC.name : (D?.meta?.commune || "");
+  if (cl) { if (LOCALITIES.length > 1) cl.innerHTML = locButton("loc-select-top"); else cl.textContent = LOC ? LOC.name : (D?.meta?.commune || ""); }
   renderLocality();
   side(false); renderAcct();
   if (VIEW==="accueil") renderWelcome(); else if (VIEW==="gestion") renderManager(); else if (VIEW==="donnees") renderData(); else if (VIEW==="qualite") renderQuality(); else if (VIEW==="citoyens") renderCitizen(); else if (VIEW==="carte") renderMap(); else if (VIEW==="localites") renderLocalities(); else if (VIEW==="utilisateurs") renderUsers(); else renderAbout();
@@ -2138,7 +2146,7 @@ let RZ, LASTW = innerWidth;
 window.addEventListener("resize", () => { clearTimeout(RZ); RZ = setTimeout(() => { if (Math.abs(innerWidth - LASTW) < 40 || !D) return; LASTW = innerWidth; const open = document.getElementById("drawer").classList.contains("open"); renderAll(); if (open) reopen(); }, 200); });
 matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", renderAll);
 
-const V = "40";
+const V = "41";
 (async () => {
   try {
     const c = await fetch("api/config.json?v="+V, {cache:"no-store"}).then(r => r.json());

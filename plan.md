@@ -110,7 +110,7 @@ Items 15–19 keep their numbers: their details are under "Public base layer" be
 - ~~**Step 4.**~~ Done 15 Nov: one map per municipality (S, David 15 Nov): once Geneva is its own municipality, drop the Rive-Claire /
   Geneva switch on the 3D tab (`MAPS`, `switchMap` in `prototype/index.html`, the switch in `map3d.js`); the map is
   the municipality's `map_config`. Clear the old `energiack-map` choice saved in `localStorage`.
-- **Step 5.** A clearer municipality switch (S, David 15 Nov): today it is a small uppercase label over a borderless
+- ~~**Step 5.**~~ Done 15 Nov: a clearer municipality switch, a labelled button in the sidebar and the page header (phones use the header one) (S, David 15 Nov): today it is a small uppercase label over a borderless
   dropdown at the top of the sidebar (`#loc-select` in `prototype/index.html`), easy to miss; with one municipality
   it is only a name. Make it visible and explicit: e.g. a labelled button "Municipality: Rive-Claire ▾" (FR/EN) that
   opens the list, also reachable on phone width; show the current municipality in the page header.
