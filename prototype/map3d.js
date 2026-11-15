@@ -8,7 +8,7 @@ import { computeBoundsTree, acceleratedRaycast } from "./vendor/three-mesh-bvh.m
 THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
 
-const V = "17";
+const V = "18";
 const GREY = 0xb9bfbb, SITE_COL = 0x1f6feb;   // SITE_COL: buildings linked to a site of the municipality
 const RAMP = {
   idc:   [0x2e9e6e, 0x9cc95a, 0xf0b33c, 0xe0663a, 0xb8322a],
@@ -425,7 +425,8 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
     ray.setFromCamera(ndc, camera);
     const hit = ray.intersectObject(bMesh, false)[0];
     lastPickMs = performance.now() - t1;
-    return hit ? tri2b[hit.faceIndex] : -1;
+    // the BVH reorders the triangle index: map back through it to the original triangle (3 own vertices each)
+    return hit ? tri2b[Math.floor(bg.index.array[hit.faceIndex * 3] / 3)] : -1;
   }
   let down = null;
   renderer.domElement.tabIndex = 0;
