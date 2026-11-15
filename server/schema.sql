@@ -21,6 +21,14 @@ ON CONFLICT (slug) DO UPDATE
       demo       = EXCLUDED.demo
   WHERE locality.map_config IS NULL OR locality.demo <> EXCLUDED.demo;
 
+-- Geneva: public building data only (SITG, swisstopo), no readings yet. Built in like Rive-Claire, so every server
+-- has it and the 3D map of Geneva is reached by choosing the municipality.
+INSERT INTO locality (slug, name, map_config)
+VALUES ('geneve', 'Genève', '{"key":"ge","dir":"map/"}')
+ON CONFLICT (slug) DO UPDATE
+  SET map_config = EXCLUDED.map_config
+  WHERE locality.map_config IS NULL;
+
 -- ── upgrade from the single-municipality version ──────────────────────────────
 -- A database created before localities existed has the tables below without locality_id, and CREATE TABLE IF NOT
 -- EXISTS leaves them as they are. This block runs once on such a database: every existing row goes to Rive-Claire
@@ -197,11 +205,11 @@ CREATE TABLE IF NOT EXISTS staged_file (
 CREATE INDEX IF NOT EXISTS staged_file_import ON staged_file (staged_import_id);
 
 -- ── seed ──────────────────────────────────────────────────────────────────────
--- Grant all existing (non-demo) users access to Rive-Claire.
+-- Grant all existing (non-demo) users access to the built-in municipalities (Rive-Claire, Geneva).
 -- Demo accounts are granted in cli.py AFTER auth.reset_demo() creates them.
 INSERT INTO user_locality (user_id, locality_id, role)
 SELECT u.id, l.id,
     CASE u.role WHEN 'admin' THEN 'admin' WHEN 'technique' THEN 'manager' ELSE 'viewer' END
 FROM app_user u CROSS JOIN locality l
-WHERE l.slug = 'rive-claire' AND u.demo = false
+WHERE l.slug IN ('rive-claire', 'geneve') AND u.demo = false
 ON CONFLICT DO NOTHING;

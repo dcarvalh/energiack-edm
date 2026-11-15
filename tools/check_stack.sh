@@ -92,23 +92,27 @@ as real -X POST "$URL/api/logout" >/dev/null
 
 echo "5. several municipalities"
 L="$URL/api/localities"
-NEW='{"slug":"geneve","name":"Geneve (fictional)"}'
+curl -fsS "$L" | grep -q '"slug":"geneve","name":"Genève"' || { echo "built-in Geneva not listed to visitors"; exit 1; }
+curl -fsS "$L" | grep -q '"dir":"map/"' || { echo "Geneva has no map"; exit 1; }
+[ "$(code "$URL/api/data.json?locality=geneve")" = 503 ]                                             # no readings yet
+[ "$(code -b "$TMP/admin" -H 'content-type: application/json' -d '{"slug":"x","name":"X","map":"nope"}' "$L")" = 422 ]
+NEW='{"slug":"test-fict","name":"Test (fictional)"}'
 [ "$(code -b "$TMP/technique" -H 'content-type: application/json' -d "$NEW" "$L")" = 403 ]         # admins only
-post -b "$TMP/admin" -d "$NEW" "$L" | grep -q '"slug":"geneve"'
-[ "$(code "$L/geneve/staging")" = 401 ]
-[ "$(code -b "$TMP/elu" "$L/geneve/staging")" = 403 ]
-[ "$(code -b "$TMP/technique" -F "file=@README.md" "$L/geneve/staging")" = 422 ]                   # not a ZIP
-as technique -F "file=@geneve/geneve-energy-data.zip" "$L/geneve/staging" -o "$TMP/staged.json"
+post -b "$TMP/admin" -d "$NEW" "$L" | grep -q '"slug":"test-fict"'
+[ "$(code "$L/test-fict/staging")" = 401 ]
+[ "$(code -b "$TMP/elu" "$L/test-fict/staging")" = 403 ]
+[ "$(code -b "$TMP/technique" -F "file=@README.md" "$L/test-fict/staging")" = 422 ]                   # not a ZIP
+as technique -F "file=@geneve/geneve-energy-data.zip" "$L/test-fict/staging" -o "$TMP/staged.json"
 sid=$("$PY" -c 'import json, sys; d = json.load(open(sys.argv[1])); assert len(d["files"]) == 10 and not d["unrecognised"], d; print(d["staging_id"])' "$TMP/staged.json")
-if curl -fsS "$L" | grep -q '"slug":"geneve"'; then echo "a municipality without data is listed to visitors"; exit 1; fi
-as technique -X POST "$L/geneve/staging/$sid/commit" | grep -q '"added":7872'
-[ "$(code -b "$TMP/technique" -X POST "$L/geneve/staging/$sid/commit")" = 422 ]                     # already committed
-as technique --compressed "$URL/api/data.json?locality=geneve" -o "$TMP/geneve.json"
+if curl -fsS "$L" | grep -q '"slug":"test-fict"'; then echo "a municipality without data is listed to visitors"; exit 1; fi
+as technique -X POST "$L/test-fict/staging/$sid/commit" | grep -q '"added":7872'
+[ "$(code -b "$TMP/technique" -X POST "$L/test-fict/staging/$sid/commit")" = 422 ]                     # already committed
+as technique --compressed "$URL/api/data.json?locality=test-fict" -o "$TMP/geneve.json"
 "$PY" -c 'import json, sys; d = json.load(open(sys.argv[1])); n = len(d["sites"]); assert n == 40, n' "$TMP/geneve.json"
 as technique --compressed "$URL/api/data.json?locality=rive-claire" | cmp -s - "$TMP/full.json" || { echo "Rive-Claire changed after the Geneva import"; exit 1; }
-[ "$(code -b "$TMP/technique" -X DELETE "$L/geneve")" = 403 ]
-[ "$(code -b "$TMP/admin" -X DELETE "$L/geneve")" = 200 ]
-[ "$(code -b "$TMP/technique" "$URL/api/data.json?locality=geneve")" = 404 ]
+[ "$(code -b "$TMP/technique" -X DELETE "$L/test-fict")" = 403 ]
+[ "$(code -b "$TMP/admin" -X DELETE "$L/test-fict")" = 200 ]
+[ "$(code -b "$TMP/technique" "$URL/api/data.json?locality=test-fict")" = 404 ]
 as technique --compressed "$URL/data.json" | cmp -s - "$TMP/full.json" || { echo "Rive-Claire changed after deleting Geneva"; exit 1; }
 
 echo "stack check OK"

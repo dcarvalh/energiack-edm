@@ -51,12 +51,12 @@ def localities(conn, user=None):
     if user and user["role"] == "admin":
         return conn.execute(
             "SELECT l.id, l.slug, l.name, l.country, l.map_config, l.demo, 'admin' AS role "
-            "FROM locality l ORDER BY l.name").fetchall()
+            "FROM locality l ORDER BY l.id").fetchall()
     if user:
         return conn.execute(
             "SELECT l.id, l.slug, l.name, l.country, l.map_config, l.demo, ul.role "
             "FROM locality l JOIN user_locality ul ON l.id = ul.locality_id "
-            "WHERE ul.user_id = %s ORDER BY l.name", (user["id"],)).fetchall()
+            "WHERE ul.user_id = %s ORDER BY l.id", (user["id"],)).fetchall()
     return []
 
 
@@ -66,10 +66,15 @@ def locality_by_slug(conn, slug):
         (slug,)).fetchone()
 
 
-def create_locality(conn, slug, name, country="CH"):
+# The 3D maps this server ships (folders under prototype/). A municipality points to one, or to none.
+MAPS = {"rc": {"key": "rc", "dir": "map-rc/"}, "ge": {"key": "ge", "dir": "map/"}}
+
+
+def create_locality(conn, slug, name, country="CH", map_key=None):
+    mc = Jsonb(MAPS[map_key]) if map_key else None
     loc = conn.execute(
-        "INSERT INTO locality (slug, name, country) VALUES (%s, %s, %s) "
-        "RETURNING id, slug, name, country", (slug, name, country)).fetchone()
+        "INSERT INTO locality (slug, name, country, map_config) VALUES (%s, %s, %s, %s) "
+        "RETURNING id, slug, name, country, map_config", (slug, name, country, mc)).fetchone()
     # Grant all existing users access (admins=admin, technique=manager, others=viewer)
     conn.execute(
         "INSERT INTO user_locality (user_id, locality_id, role) "

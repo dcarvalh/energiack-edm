@@ -497,6 +497,12 @@ footer{color:var(--muted);font-size:12px;border-top:1px solid var(--line);margin
             <span data-t="loc_f_slug" style="font-size:.85rem;color:#888;display:block;margin-bottom:4px"></span>
             <input id="loc-f-slug" type="text" required pattern="[a-z0-9-]+" style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px">
           </label>
+          <label style="display:block;margin-bottom:16px">
+            <span data-t="loc_f_map" style="font-size:.85rem;color:#888;display:block;margin-bottom:4px"></span>
+            <select id="loc-f-map" style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px">
+              <option value="" data-t="loc_map_none"></option><option value="ge" data-t="loc_map_ge"></option><option value="rc" data-t="loc_map_rc"></option>
+            </select>
+          </label>
           <div class="row" style="gap:8px">
             <button type="submit" class="chip" data-t="loc_f_submit"></button>
             <button type="button" class="chip" id="loc-f-cancel" data-t="loc_f_cancel"></button>
@@ -559,12 +565,14 @@ fr:{
   dm_replace_ok:"Table remplacée.", dm_replace_err:"Erreur de remplacement.",
   dm_prev:"← Préc.", dm_next:"Suiv. →", dm_all_rows:"Toutes les lignes",
   nav_localities:"Localités",
+  nd_title:"Aucun relevé pour {name}", nd_load:"Chargez des données via le module Données pour commencer.", nd_none:"Cette commune n'a pas encore publié de relevés.", nd_map:"La carte 3D montre déjà ses bâtiments (données publiques).", nd_go_map:"Voir la carte 3D", nd_go_data:"Aller aux Données",
   loc_lede:"Chaque localité possède ses propres bâtiments, compteurs et données. L'administrateur voit toutes les localités.",
   loc_list:"Localités disponibles", loc_create_btn:"+ Nouvelle localité",
   loc_create_title:"Créer une localité", loc_f_name:"Nom affiché", loc_f_slug:"Identifiant (slug, ex : ma-commune, lettres minuscules et tirets)",
   loc_f_submit:"Créer", loc_f_cancel:"Annuler",
   loc_h_name:"Nom", loc_h_slug:"Slug", loc_h_data:"Données chargées", loc_h_actions:"Actions",
   loc_no_data:"Aucun import",
+  loc_f_map:"Carte 3D", loc_map_none:"Aucune carte", loc_map_ge:"Genève (bâtiments publics SITG)", loc_map_rc:"Rive-Claire (schématique)", loc_h_map:"Carte",
   loc_created:"Localité créée.", loc_create_err:"Erreur lors de la création.",
   loc_readings:"{n} relevés", loc_active:"actif", loc_open:"Ouvrir",
   loc_delete_tip:"Supprimer cette localité et toutes ses données",
@@ -722,12 +730,14 @@ en:{
   dm_replace_ok:"Table replaced.", dm_replace_err:"Replace error.",
   dm_prev:"← Prev", dm_next:"Next →", dm_all_rows:"All rows",
   nav_localities:"Localities",
+  nd_title:"No readings for {name}", nd_load:"Load data via the Data module to get started.", nd_none:"This municipality has not published readings yet.", nd_map:"The 3D map already shows its buildings (public data).", nd_go_map:"Open the 3D map", nd_go_data:"Go to Data",
   loc_lede:"Each locality has its own buildings, meters and data. Administrators see all localities.",
   loc_list:"Available localities", loc_create_btn:"+ New locality",
   loc_create_title:"Create a locality", loc_f_name:"Display name", loc_f_slug:"Identifier (slug, e.g. my-municipality, lowercase letters and dashes)",
   loc_f_submit:"Create", loc_f_cancel:"Cancel",
   loc_h_name:"Name", loc_h_slug:"Slug", loc_h_data:"Loaded data", loc_h_actions:"Actions",
   loc_no_data:"No import yet",
+  loc_f_map:"3D map", loc_map_none:"No map", loc_map_ge:"Geneva (SITG public buildings)", loc_map_rc:"Rive-Claire (schematic)", loc_h_map:"Map",
   loc_created:"Locality created.", loc_create_err:"Error creating locality.",
   loc_readings:"{n} readings", loc_active:"active", loc_open:"Open",
   loc_delete_tip:"Delete this locality and all its data",
@@ -1005,38 +1015,25 @@ function deltaHtml(cur, ref, label, goodIfDown=true){
   return `<div class="delta ${Math.abs(d)<0.005?'mut':good?'good':'badc'}">${pct(d,1)} <span class="mut" style="font-weight:500">${esc(label)}</span></div>`;
 }
 function noDataBanner(){
-  const name = LOC?.name || "";
+  const name = LOC?.name || "", load = SERVER && can("donnees"), map = LOC?.map_config;
   return `<div class="card" style="margin-top:14px;text-align:center;padding:2.5rem">
-    <div style="font-size:2rem;margin-bottom:12px">📂</div>
-    <h2>${esc(LANG==="fr"?`Aucune donnée pour ${name}`:`No data for ${name}`)}</h2>
-    <p class="sub" style="margin:8px 0 16px">${esc(LANG==="fr"
-      ?"Chargez des données via le module Données pour commencer."
-      :"Load data via the Data module to get started.")}</p>
-    <a href="#donnees" class="chip" onclick="location.hash='#donnees'">${esc(LANG==="fr"?"Aller aux Données":"Go to Data")}</a>
+    <h2>${esc(t("nd_title",{name}))}</h2>
+    <p class="sub" style="margin:8px 0 16px">${esc([load ? t("nd_load") : t("nd_none"), map ? t("nd_map") : ""].filter(Boolean).join(" "))}</p>
+    <div class="row" style="justify-content:center;gap:8px">${map ? `<a href="#carte" class="chip">${esc(t("nd_go_map"))}</a>` : ""}${load ? `<a href="#donnees" class="chip">${esc(t("nd_go_data"))}</a>` : ""}</div>
   </div>`;
+}
+// A municipality without readings (Geneva today): the data views show one clear message instead of empty charts.
+function noData(view){
+  const sec = document.getElementById("v-"+view), old = document.getElementById("no-data-"+view);
+  if (old) old.remove();
+  const none = !!D?.meta?.no_data;
+  Array.from(sec.children).forEach(c => { if (none) c.style.display = "none"; else c.style.removeProperty("display"); });
+  if (none) { const el = document.createElement("div"); el.id = "no-data-"+view; el.innerHTML = noDataBanner(); sec.prepend(el); }
+  return none;
 }
 
 function renderManager(){
-  const banner = document.getElementById("no-data-banner");
-  if (D?.meta?.no_data) {
-    // Show banner, hide existing content — never destroy the DOM structure
-    if (!banner) {
-      const el = document.createElement("div");
-      el.id = "no-data-banner";
-      el.innerHTML = noDataBanner();
-      document.getElementById("v-gestion").prepend(el);
-    }
-    // Hide all section content except the banner
-    Array.from(document.getElementById("v-gestion").children)
-      .forEach(c => { if (c.id !== "no-data-banner") c.style.display = "none"; });
-    return;
-  }
-  // Data now available — remove banner and restore visibility
-  if (banner) {
-    banner.remove();
-    Array.from(document.getElementById("v-gestion").children)
-      .forEach(c => c.style.removeProperty("display"));
-  }
+  if (noData("gestion")) return;
   const Y = M.years[YEAR], P = M.years[YEAR-1], B0 = M.years[D.meta.baseline_year];
   document.getElementById("years").innerHTML = YEARS.map(y=>`<button data-y="${y}" class="${y===YEAR?'on':''}">${y}</button>`).join("");
   const k = [
@@ -1103,6 +1100,7 @@ function renderAI(elId, part){
     + `<div class="meta">${esc(t("ai_meta",{d:new Intl.DateTimeFormat(locale(),{dateStyle:"long"}).format(new Date(R.generated)), m:R.model}))}</div>`;
 }
 function renderCitizen(){
+  if (noData("citoyens")) return;
   const CY = YEARS[YEARS.length-1], Y = M.years[CY], B0 = M.years[D.meta.baseline_year];
   const inhab = D.meta?.inhabitants || 25000;
   const commune = LOC?.name || D.meta?.commune || "";
@@ -1146,6 +1144,7 @@ function qrDetail(code, it){
   return x==null ? "" : String(x);
 }
 function renderQuality(){
+  if (noData("qualite")) return;
   if (!D?.quality) {
     document.getElementById("qr-kpis").innerHTML = "";
     document.getElementById("qr-list").innerHTML = "";
@@ -1426,8 +1425,8 @@ function renderLocality() {
   const name = LOC?.name || (D?.meta?.commune) || "";
   if (!nav) return;
 
-  if (!SERVER || !USER) {
-    // Static/public: show commune name below the brand only
+  if (LOCALITIES.length <= 1 && (!SERVER || !USER)) {
+    // One municipality, visitor or static host: the name below the brand is enough
     nav.classList.add("hide");
     return;
   }
@@ -1487,8 +1486,8 @@ function renderAll(){
         noticeEl.style.display = "none";
       }
     } else {
-      // Static hosting: keep the original notice
-      noticeEl.style.display = "";
+      // Static hosting: keep the original notice (it credits the Rive-Claire data; Geneva has its own credit on the map)
+      noticeEl.style.display = (LOC && !LOC.demo && VIEW !== "carte") ? "none" : "";
       noticeEl.textContent = t(VIEW==="carte" ? "notice_map" : "notice");
     }
   }
@@ -1532,7 +1531,8 @@ function loadData(){
   const slug = LOC?.slug;
   const base = SERVER
     ? (slug ? `api/data.json?locality=${slug}&v=${V}&r=${ROLE()}` : `api/data.json?v=${V}&r=${ROLE()}`)
-    : `data.json?v=${V}`;
+    : `${LOC?.data || "data.json"}?v=${V}`;
+  if (!SERVER && LOC && !LOC.data) { D = emptyData(LOC.name); compute(); return Promise.resolve(); }
   return fetch(base, SERVER ? {cache:"no-cache"} : {})
     .then(r => {
       if (!r.ok) {
@@ -1598,11 +1598,12 @@ function renderLocalities(){
   fetch("api/localities", {cache:"no-store"}).then(r => r.ok ? r.json() : Promise.reject()).then(list => {
     if (!list.length) { tb.innerHTML = `<p class="sub">${esc(t("loc_no_data"))}</p>`; return; }
     tb.innerHTML = `<div class="tablewrap"><table><thead><tr>
-      <th>${esc(t("loc_h_name"))}</th><th>${esc(t("loc_h_slug"))}</th>
+      <th>${esc(t("loc_h_name"))}</th><th>${esc(t("loc_h_slug"))}</th><th>${esc(t("loc_h_map"))}</th>
       <th>${esc(t("loc_h_data"))}</th><th>${esc(t("loc_h_actions"))}</th>
     </tr></thead><tbody>${list.map(l => `<tr>
       <td><b>${esc(l.name)}</b>${LOC?.slug===l.slug ? ` <span class="pill p-ren" style="font-style:normal">${esc(t("loc_active"))}</span>`:""}</td>
       <td><code>${esc(l.slug)}</code></td>
+      <td>${esc(t(l.map_config?.key ? "loc_map_"+l.map_config.key : "loc_map_none"))}</td>
       <td id="loc-st-${esc(l.slug)}">${esc(t("loc_no_data"))}</td>
       <td style="white-space:nowrap">
         <button class="chip" style="margin-right:4px" onclick="switchToLocality('${esc(l.slug)}')">${esc(t("loc_open"))}</button>
@@ -1627,8 +1628,9 @@ function renderLocalities(){
     e.preventDefault();
     const name = document.getElementById("loc-f-name").value.trim();
     const slug = document.getElementById("loc-f-slug").value.trim();
+    const map = document.getElementById("loc-f-map").value || null;
     try {
-      await api("api/localities", {slug, name}, "POST");
+      await api("api/localities", {slug, name, map}, "POST");
       const lr = await fetch("api/localities",{cache:"no-store"}); if(lr.ok) LOCALITIES = await lr.json();
       msg(t("loc_created")); formCard.classList.add("hide");
       document.getElementById("loc-f-name").value = ""; document.getElementById("loc-f-slug").value = "";
@@ -2140,7 +2142,7 @@ let RZ, LASTW = innerWidth;
 window.addEventListener("resize", () => { clearTimeout(RZ); RZ = setTimeout(() => { if (Math.abs(innerWidth - LASTW) < 40 || !D) return; LASTW = innerWidth; const open = document.getElementById("drawer").classList.contains("open"); renderAll(); if (open) reopen(); }, 200); });
 matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", renderAll);
 
-const V = "38";
+const V = "39";
 (async () => {
   try {
     const c = await fetch("api/config.json?v="+V, {cache:"no-store"}).then(r => r.json());
@@ -2155,6 +2157,11 @@ const V = "38";
         const saved = localStorage.getItem("edm-locality");
         LOC = LOCALITIES.find(l => l.slug === saved) || LOCALITIES[0];
       }
+    } else if (c.localities?.length) {
+      // Static host: the municipalities and their files are listed in api/config.json
+      LOCALITIES = c.localities;
+      let saved = null; try { saved = localStorage.getItem("edm-locality"); } catch(e) {}
+      LOC = LOCALITIES.find(l => l.slug === saved) || LOCALITIES[0];
     }
   } catch (e) {}
   await loadData(); route();

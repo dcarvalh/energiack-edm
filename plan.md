@@ -104,7 +104,9 @@ Items 15–19 keep their numbers: their details are under "Public base layer" be
 - ~~**Step 2.**~~ Done 15 Nov (`START_HERE.md`): "Start here" doc (S, new): what openEDM is, what is done and not done, run it in 5 minutes, where each part of the
    code lives, next steps (points here). Today that is spread across `README.md`, `plan.md`, `CLAUDE.md` and `docs/`.
    Refresh it at step 9.
-- **Step 3.** Geneva as a built-in municipality (S–M, item 15).
+- ~~**Step 3.**~~ Done 15 Nov: Geneva as a built-in municipality (S–M, item 15): seeded with the `map/` map, listed to
+  visitors before it has readings (pages without data say so and point to the map), the admin picks a map when creating
+  a municipality.
 - **Step 4.** One map per municipality (S, David 15 Nov): once Geneva is its own municipality, drop the Rive-Claire /
   Geneva switch on the 3D tab (`MAPS`, `switchMap` in `prototype/index.html`, the switch in `map3d.js`); the map is
   the municipality's `map_config`. Clear the old `energiack-map` choice saved in `localStorage`.
