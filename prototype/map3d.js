@@ -8,7 +8,7 @@ import { computeBoundsTree, acceleratedRaycast } from "./vendor/three-mesh-bvh.m
 THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
 
-const V = "14";
+const V = "15";
 const GREY = 0xb9bfbb;
 const RAMP = {
   idc:   [0x2e9e6e, 0x9cc95a, 0xf0b33c, 0xe0663a, 0xb8322a],
@@ -295,7 +295,7 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
     if (RC) { el.innerHTML = panelRC(b); el.classList.remove("hide"); el.querySelector(".m3-close").onclick = () => select(-1); return; }
     const idcClass = b.idc ? (b.idc.mj_m2 >= 800 ? "p-fossil" : b.idc.mj_m2 >= 450 ? "p-warn" : "p-ren") : "";
     const hc = b.heat ? hex(HEAT[b.heat]) : null;
-    el.innerHTML = `<div class="row"><div style="min-width:0"><div class="tsub">${esc(tr(b.use) || "")}</div><h2 style="margin:2px 0 0">${esc(b.addr || "EGID " + (b.egid || "–"))}</h2></div><div class="spacer"></div><button class="x m3-close" aria-label="close">×</button></div>
+    el.innerHTML = `<div class="row"><div style="min-width:0"><div class="tsub">${esc(tr(b.use) || "")}</div><h2 style="margin:2px 0 0">${esc(b.addr || "EGID " + (b.egid || "–"))}</h2>${b.npa ? `<div class="tsub">${esc(b.npa)}</div>` : ""}</div><div class="spacer"></div><button class="x m3-close" aria-label="close">×</button></div>
       <div class="m3-sec">${row(t("m_p_year"), b.year)}${row(t("m_p_levels"), b.levels)}${row(t("m_p_height"), nf(b.h, 1) + " m")}${row(t("m_p_sre"), b.sre ? nf(b.sre) + " m²" : null)}</div>
       <div class="m3-sec"><div class="m3-h">${esc(t("m_l_heat"))}</div>
         ${b.heat ? `<span class="pill" style="background:${hc}22;color:${hc}">${esc(t("m_heat_" + b.heat))}</span>` : `<span class="mut">${esc(t("m_nodata"))}</span>`}
@@ -317,7 +317,7 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
 
   // search by address
   const input = root.querySelector(".m3-search input"), results = root.querySelector(".m3-results");
-  const index = B.map((b, i) => [norm(b.addr), i]).filter(([a]) => a);
+  const index = B.map((b, i) => [norm([b.addr, b.alias].filter(Boolean).join(" · ")), i]).filter(([a]) => a);   // alias: the building's other official addresses
   input.addEventListener("input", () => {
     const q = norm(input.value.trim());
     if (q.length < 3) { results.classList.add("hide"); return; }
