@@ -1,50 +1,49 @@
 ﻿id_installation;id_site;type;libelle;vecteur;puissance_kw;mise_en_service;retrait;remarque
-G01-I1;G01;pv;Installation photovoltaïque;soleil;48;2022-07;;Puissance en kWc
-G01-I2;G01;pac_sol_eau;Pompe à chaleur sol-eau (sondes géothermiques);électricité;360;2005-05;;COP annuel visé 4
-G02-I1;G02;chaudiere_gaz;Chaudière à gaz;gaz;80;2005-10;;
-G03-I1;G03;chaudiere_gaz;Chaudière à gaz;gaz;20;2005-04;;
-G04-I1;G04;pv;Installation photovoltaïque;soleil;50;2019-07;;Puissance en kWc
-G04-I2;G04;chaudiere_gaz;Chaudière à gaz;gaz;60;2005-08;;
-G05-I1;G05;chaudiere_mazout;Chaudière à mazout;mazout;300;2005-01;;
+G01-I1;G01;pv;Installation photovoltaïque;soleil;26;2022-07;;Puissance en kWc
+G01-I2;G01;chaudiere_mazout;Chaudière à mazout;mazout;80;2005-05;;
+G02-I1;G02;sous_station_cad;Sous-station de chauffage à distance;chaleur à distance;900;2005-07;;
+G03-I1;G03;chaudiere_gaz;Chaudière à gaz;gaz;280;2003-07;;
+G04-I1;G04;pv;Installation photovoltaïque;soleil;80;2019-07;;Puissance en kWc
+G04-I2;G04;sous_station_cad;Sous-station de chauffage à distance;chaleur à distance;310;2005-08;;
+G05-I1;G05;chaudiere_gaz;Chaudière à gaz;gaz;500;2005-01;;
 G06-I1;G06;pv;Installation photovoltaïque;soleil;60;2019-08;;Puissance en kWc
-G06-I2;G06;chaudiere_gaz;Chaudière à gaz;gaz;490;2005-03;;
-G07-I1;G07;pv;Installation photovoltaïque;soleil;100;2021-07;;Puissance en kWc
-G07-I2;G07;chaudiere_gaz;Chaudière à gaz;gaz;420;2005-02;;
-G08-I1;G08;chaudiere_gaz;Chaudière à gaz;gaz;620;2005-10;;
-G09-I1;G09;pv;Installation photovoltaïque;soleil;77;2022-05;;Puissance en kWc
-G09-I2;G09;chaudiere_gaz;Chaudière à gaz;gaz;390;2000-09;;
-G10-I1;G10;sous_station_cad;Sous-station de chauffage à distance;chaleur à distance;150;2005-01;;
-G11-I1;G11;chaudiere_gaz;Chaudière à gaz;gaz;20;2005-02;;
-G12-I1;G12;sous_station_cad;Sous-station de chauffage à distance;chaleur à distance;280;2004-09;;
-G13-I1;G13;chaudiere_gaz;Chaudière à gaz;gaz;60;2005-11;;
-G14-I1;G14;chaudiere_gaz;Chaudière à gaz;gaz;70;2005-05;;
-G15-I1;G15;pv;Installation photovoltaïque;soleil;12;2021-03;;Puissance en kWc
-G15-I2;G15;chaudiere_gaz;Chaudière à gaz;gaz;30;2005-12;;
-G16-I1;G16;chaudiere_gaz;Chaudière à gaz;gaz;130;2005-05;;
-G17-I1;G17;chaudiere_gaz;Chaudière à gaz;gaz;60;2005-03;;
-G18-I1;G18;electrique_direct;Chauffage électrique direct;électricité;40;2005-02;;
-G19-I1;G19;chaudiere_mazout;Chaudière à mazout;mazout;490;2005-05;;
-G20-I1;G20;chaudiere_gaz;Chaudière à gaz;gaz;90;2001-09;;
-G21-I1;G21;chaudiere_gaz;Chaudière à gaz;gaz;190;2005-03;;
+G06-I2;G06;sous_station_cad;Sous-station de chauffage à distance;chaleur à distance;220;2005-03;;
+G07-I1;G07;pv;Installation photovoltaïque;soleil;56;2021-07;;Puissance en kWc
+G07-I2;G07;sous_station_cad;Sous-station de chauffage à distance;chaleur à distance;80;2005-02;;
+G08-I1;G08;chaudiere_mazout;Chaudière à mazout;mazout;210;2005-10;;
+G09-I1;G09;pv;Installation photovoltaïque;soleil;94;2022-05;;Puissance en kWc
+G09-I2;G09;chaudiere_gaz;Chaudière à gaz;gaz;100;2005-09;;
+G10-I1;G10;chaudiere_mazout;Chaudière à mazout;mazout;750;2005-01;;
+G11-I1;G11;sous_station_cad;Sous-station de chauffage à distance;chaleur à distance;80;2005-02;;
+G12-I1;G12;sous_station_cad;Sous-station de chauffage à distance;chaleur à distance;440;2021-09;;
+G13-I1;G13;sous_station_cad;Sous-station de chauffage à distance;chaleur à distance;200;2005-11;;
+G14-I1;G14;sous_station_cad;Sous-station de chauffage à distance;chaleur à distance;250;2005-05;;
+G15-I1;G15;pv;Installation photovoltaïque;soleil;40;2021-03;;Puissance en kWc
+G15-I2;G15;sous_station_cad;Sous-station de chauffage à distance;chaleur à distance;300;2005-12;;
+G16-I1;G16;chaudiere_gaz;Chaudière à gaz;gaz;900;2005-05;;
+G17-I1;G17;sous_station_cad;Sous-station de chauffage à distance;chaleur à distance;150;2005-03;;
+G18-I1;G18;chaudiere_gaz;Chaudière à gaz;gaz;20;2005-02;;
+G19-I1;G19;chaudiere_gaz;Chaudière à gaz;gaz;70;2005-05;;
+G20-I1;G20;sous_station_cad;Sous-station de chauffage à distance;chaleur à distance;200;2005-09;;
+G21-I1;G21;chaudiere_mazout;Chaudière à mazout;mazout;60;2006-03;;
 G22-I1;G22;chaudiere_gaz;Chaudière à gaz;gaz;60;2005-03;;
 G23-I1;G23;chaudiere_gaz;Chaudière à gaz;gaz;120;2005-09;;
-G24-I1;G24;chaudiere_gaz;Chaudière à gaz;gaz;320;2005-10;;
-G25-I1;G25;chaudiere_gaz;Chaudière à gaz;gaz;310;2005-01;;
+G24-I1;G24;chaudiere_gaz;Chaudière à gaz;gaz;900;2005-10;;
+G25-I1;G25;chaudiere_gaz;Chaudière à gaz;gaz;670;2005-01;;
 G26-I1;G26;chaudiere_mazout;Chaudière à mazout;mazout;590;2005-06;;
-G27-I1;G27;pv;Installation photovoltaïque;soleil;198;2020-04;;Puissance en kWc
-G27-I2;G27;chaudiere_mazout;Chaudière à mazout;mazout;560;2005-01;;
-G28-I1;G28;chaudiere_gaz;Chaudière à gaz;gaz;380;2005-10;;
-G29-I1;G29;pac_air_eau;Pompe à chaleur air-eau;électricité;180;2005-02;;COP annuel visé 3,8
-G30-I1;G30;chaudiere_gaz;Chaudière à gaz;gaz;190;2005-09;;
-G31-I1;G31;chaudiere_gaz;Chaudière à gaz;gaz;200;2005-03;;
-G32-I1;G32;chaudiere_mazout;Chaudière à mazout;mazout;270;2005-09;2023-07;
-G32-I2;G32;chaudiere_gaz;Chaudière à gaz;gaz;230;2023-08;;
-G33-I1;G33;chaudiere_mazout;Chaudière à mazout;mazout;130;2005-10;;
-G34-I1;G34;chaudiere_gaz;Chaudière à gaz;gaz;440;2005-04;;
-G35-I1;G35;pv;Installation photovoltaïque;soleil;34;2023-08;;Puissance en kWc
-G35-I2;G35;chaudiere_mazout;Chaudière à mazout;mazout;160;2005-04;;
-G36-I1;G36;chaudiere_gaz;Chaudière à gaz;gaz;140;2005-07;;
-G37-I1;G37;pv;Installation photovoltaïque;soleil;50;2023-05;;Puissance en kWc
-G37-I2;G37;sous_station_cad;Sous-station de chauffage à distance;chaleur à distance;300;2005-08;;
-G38-I1;G38;chaudiere_gaz;Chaudière à gaz;gaz;90;2005-08;;
-G39-I1;G39;chaudiere_gaz;Chaudière à gaz;gaz;80;2005-04;;
+G27-I1;G27;pv;Installation photovoltaïque;soleil;50;2020-04;;Puissance en kWc
+G27-I2;G27;chaudiere_gaz;Chaudière à gaz;gaz;60;2005-01;;
+G28-I1;G28;chaudiere_gaz;Chaudière à gaz;gaz;820;2005-10;;
+G29-I1;G29;sous_station_cad;Sous-station de chauffage à distance;chaleur à distance;170;2007-02;;
+G30-I1;G30;chaudiere_gaz;Chaudière à gaz;gaz;230;2005-02;;
+G31-I1;G31;chaudiere_gaz;Chaudière à gaz;gaz;150;2005-09;;
+G32-I1;G32;chaudiere_mazout;Chaudière à mazout;mazout;200;2005-03;;
+G33-I1;G33;chaudiere_mazout;Chaudière à mazout;mazout;150;2005-09;;
+G34-I1;G34;chaudiere_mazout;Chaudière à mazout;mazout;210;2005-09;;
+G35-I1;G35;pv;Installation photovoltaïque;soleil;24;2021-04;;Puissance en kWc
+G35-I2;G35;chaudiere_gaz;Chaudière à gaz;gaz;100;2005-09;;
+G36-I1;G36;chaudiere_gaz;Chaudière à gaz;gaz;290;2005-12;;
+G37-I1;G37;pv;Installation photovoltaïque;soleil;48;2020-06;;Puissance en kWc
+G37-I2;G37;chaudiere_gaz;Chaudière à gaz;gaz;120;2005-11;;
+G38-I1;G38;sous_station_cad;Sous-station de chauffage à distance;chaleur à distance;60;2005-08;;
+G39-I1;G39;sous_station_cad;Sous-station de chauffage à distance;chaleur à distance;140;2005-08;;

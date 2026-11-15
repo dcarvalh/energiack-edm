@@ -37,7 +37,8 @@ What it does and how to run it: `README.md`. Team plan, decisions and next steps
 - Several municipalities: every data table is keyed by `locality_id`; API under `/api/localities/{slug}/…`.
 - Built-in datasets: `BUNDLED` in `tools/import_rive_claire.py` (Rive-Claire guide; `geneve-demo` from `geneve/csv/`).
   After changing `tools/make_geneva_fake.py`, rerun it, rebuild `prototype/data-geneve-demo.json`
-  (`import_rive_claire.py --locality geneve-demo --out …`) and the zip; `check_stack.sh` compares server and static.
+  (`import_rive_claire.py --locality geneve-demo --out …`) and the zip; `check_stack.sh` compares server and static. A `simulated` built-in dataset is replaced at every start
+  (`store.load(..., replace=True)`), so changed demo sites never linger in the database.
   `locality.simulated` = real addresses with simulated readings: the app shows a banner and tags every figure.
 - Roles (issue #15: admin, technique, elu, public): `server/auth.py` decides, the API enforces it on the data (no raw
   readings or quality report below `technique`); `ACCESS` in `prototype/index.html` only hides menus and must mirror it.

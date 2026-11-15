@@ -159,6 +159,7 @@ async def import_locality(slug: str, file: UploadFile = File(None),
     loc = store.locality_by_slug(conn, slug)
     if not loc:
         raise HTTPException(404, "locality not found")
+    replace = False
     if file:
         import csv
         import io
@@ -180,9 +181,10 @@ async def import_locality(slug: str, file: UploadFile = File(None),
         # Bundled demo dataset — only available for the built-in demo municipalities
         T = store.rc.BUNDLED[slug]()
         source = f"{slug} (demo dataset reloaded)"
+        replace = bool(loc.get("simulated"))
     else:
         raise HTTPException(422, "A ZIP file is required. Only demo municipalities can use the bundled dataset.")
-    result = store.load(conn, T, source, loc["id"])
+    result = store.load(conn, T, source, loc["id"], replace)
     _cache.clear()
     return dict(result)
 

@@ -21,7 +21,7 @@ def do_import(conn):
         loc = store.locality_by_slug(conn, slug)
         if not loc:
             raise SystemExit(f"locality '{slug}' not found — run seed first")
-        r = store.load(conn, read(), f"{slug} (bundled dataset)", loc["id"])
+        r = store.load(conn, read(), f"{slug} (bundled dataset)", loc["id"], replace=loc["simulated"])
         print(f"{slug} import {r['id']}: read {r['rows_read']}, loaded {r['loaded']}, rejected {r['rejected']} · "
               f"added {r['added']}, unchanged {r['unchanged']}, changed {r['changed']}")
 

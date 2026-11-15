@@ -62,7 +62,7 @@ def localities(conn, user=None):
 
 def locality_by_slug(conn, slug):
     return conn.execute(
-        "SELECT id, slug, name, country, map_config, demo FROM locality WHERE slug = %s",
+        "SELECT id, slug, name, country, map_config, demo, simulated FROM locality WHERE slug = %s",
         (slug,)).fetchone()
 
 
@@ -109,8 +109,10 @@ def _upsert(cur, table, key, cols, rows):
         f"ON CONFLICT ({', '.join(key)}) DO UPDATE SET {sets}", rows)
 
 
-def load(conn, T, source, locality_id):
-    """Import the tables T ({name: [row dicts]}). Returns the import_run row. All or nothing."""
+def load(conn, T, source, locality_id, replace=False):
+    """Import the tables T ({name: [row dicts]}). Returns the import_run row. All or nothing.
+    replace: first remove the locality's sites, meters and readings (a regenerated, fully simulated dataset whose
+    sites may differ from the stored ones); added/unchanged/changed still compare with what was stored."""
     report, rej = rc.check(T)
     why = {}                                           # (meter, month) -> check that rejected the row
     for ch in report["checks"]:
@@ -121,6 +123,13 @@ def load(conn, T, source, locality_id):
         run = cur.execute(
             "INSERT INTO import_run (source, locality_id) VALUES (%s, %s) RETURNING id",
             (source, locality_id)).fetchone()["id"]
+        have = {(r["id_compteur"], r["mois"]): (text(r["valeur"]), text(r["energie_kwh"]), text(r["qualite"]))
+                for r in cur.execute(
+                    "SELECT id_compteur, mois, valeur, energie_kwh, qualite FROM reading WHERE locality_id = %s",
+                    (locality_id,)).fetchall()}
+        if replace:
+            for table in ("reading", "meter", "installation", "building"):
+                cur.execute(f"DELETE FROM {table} WHERE locality_id = %s", (locality_id,))
         for name, (table, key, cols) in REF.items():
             _upsert(cur, table, ["locality_id", key], cols + ["pos", "locality_id"],
                     [[null(r.get(c)) for c in cols] + [n, locality_id] for n, r in enumerate(T[name])])
@@ -128,10 +137,6 @@ def load(conn, T, source, locality_id):
         cur.executemany("INSERT INTO reference (name, pos, row, locality_id) VALUES (%s, %s, %s, %s)",
                         [(name, n, Jsonb(r), locality_id) for name in LOOKUPS for n, r in enumerate(T[name])])
 
-        have = {(r["id_compteur"], r["mois"]): (text(r["valeur"]), text(r["energie_kwh"]), text(r["qualite"]))
-                for r in cur.execute(
-                    "SELECT id_compteur, mois, valeur, energie_kwh, qualite FROM reading WHERE locality_id = %s",
-                    (locality_id,)).fetchall()}
         added = same = changed = 0
         rows, refused = [], []
         for n, r in enumerate(T["mesures"]):

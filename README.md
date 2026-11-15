@@ -51,7 +51,7 @@ One server holds several municipalities, each with its own buildings, meters, re
 (every table is keyed by municipality, so two communes can use the same IDs). Once logged in, a selector in the side
 menu switches between them. Rive-Claire is created at start as the demo. To add one: as administrator, **Localités ›
 New**, then as technical staff **Données** and upload a ZIP in the Rive-Claire CSV format (`rive-claire/csv/`).
-**Genève (démo)** is built in too: 39 real Geneva buildings (addresses and EGIDs from SITG) plus public lighting, with
+**Genève (démo)** is built in too: 39 real Geneva buildings in one neighbourhood (Plainpalais / Jonction; addresses and EGIDs from SITG) plus public lighting, with
 **fully simulated** meters and readings (`tools/make_geneva_fake.py` → `geneve/csv/`, also zipped as
 `geneve/geneve-energy-data.zip`, a ready-made upload example). A permanent banner and a "simulated" tag on every
 figure say so. The static Pages demo shows Rive-Claire, Genève (map only) and Genève (démo)

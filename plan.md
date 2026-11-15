@@ -117,6 +117,21 @@ Items 15–19 keep their numbers: their details are under "Public base layer" be
 - ~~**Step 6.**~~ Done 15 Nov: Geneva addresses from SITG `CAD_ADRESSE` (`tools/geneva_addresses.py`, normal-case names): most buildings sharing one address 10 → 2. Without an address 487 → 1933: annexes, garages and building parts with their own EGID that the register gives no address (their old one was the energy record of a group); they show "EGID …". Idea: a "part of <address>" link for them. (M, item 19.) Before step 8, because Genève (démo) shows real addresses.
 - ~~**Step 7.**~~ Done 15 Nov: EGID link (item 16): optional `egid` column in `batiments` (`ALTER TABLE building ADD COLUMN IF NOT EXISTS egid`). On the Geneva map linked buildings get a blue site label, a "Municipality sites" legend filter and an "All data for this site" button; the site page gets a "Public building data" table read from the map. Tested with two fictional Geneva sites linked by hand (no committed data has EGIDs yet: step 8).
 - ~~**Step 8.**~~ Done 15 Nov: Genève (démo) (item 18), built-in municipality `geneve-demo`: 39 real buildings of the Geneva map chosen by SITG use and linked by EGID, plus public lighting; yearly heat = public heat index × floor area (2025 lands at 85-95 % of it: −2 %/yr trend, mild year), electricity and water = the map's simulated values. Permanent banner and a "simulated" tag on every reading-based figure (not on the public building data). Seeded by the server from `geneve/csv/`, static copy `prototype/data-geneve-demo.json` for Pages; `check_stack.sh` asserts both are equal. Fixed on the way: the generator's monthly split gave heat and solar 0.48× their yearly target and electricity and water 2.4×. The climate tables were already Geneva's real ones (checked against MeteoSwiss Genève-Cointrin), nothing to replace.
+- ~~**Step 8a.**~~ Done 15 Nov (David: "one neighbourhood, clustered and highlighted"): the 39 Genève (démo) buildings
+  now sit in one neighbourhood (Plainpalais / Jonction around Boulevard Carl-Vogt, all within 520 m), 32 with the
+  matching SITG use, 7 in a plausible host (`FALLBACK` in `tools/make_geneva_fake.py`). The map opens framed on them
+  with only them lit (legend "Municipality sites", click to show all); site names appear when zoomed in, on hover or
+  when selected. Fixed: that legend key ghosted every building. The server replaces a simulated built-in dataset at
+  each start (`store.load(..., replace=True)`), so old demo sites do not linger. Address check against OpenStreetMap:
+  of 11,869 OSM addresses inside a map footprint, 72.8 % match exactly, 2.9 % same street other number, 10.2 % another
+  street (mostly second entrances of corner and Old Town buildings that SITG does not attach to that EGID; only 0.6 %
+  point to a building 40 m+ away); the 35 demo sites with an OSM address in their footprint all agree.
+- **Step 8b.** Building sheets in Genève (démo) (M, David 15 Nov, new session): Rive-Claire's map panel has a
+  "Building sheet" button (`#fiche/<id>`, `openSheet()` in `prototype/index.html`, `panelRC()` in `map3d.js`) with year,
+  levels, heating and installations, measured heat index, heat / electricity / solar / water of the year; Genève
+  (démo) only shows the public SITG panel and "Open site", no sheet. Give the 39 demo buildings the same: the sheet
+  and the measured block in the map panel, from the demo readings (every figure tagged "simulated", banner kept), next
+  to the public SITG data (not tagged). Check that clicking a building opens it, FR/EN, phone width.
 - **Step 9.** Last: stability pass on the server version (S, new): every page and role on https://openedm.davidcarvalho.work/,
    FR and EN, phone width; fix what is broken or confusing (empty states, errors). Then a project entry on the
    portfolio site (`portfolio/`, separate repo) linking the server version.
