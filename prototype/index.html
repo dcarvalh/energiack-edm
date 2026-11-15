@@ -1912,6 +1912,26 @@ async function switchToLocality(slug) {
   await loadData(); renderAll();
   location.hash = "#gestion";
 }
+// Is this municipality still present server-side? (guards against a deleted active municipality)
+async function localityExists(slug) {
+  try { const l = await fetch("api/localities",{cache:"no-store"}).then(r=>r.ok?r.json():[]); return l.some(x=>x.slug===slug); }
+  catch(e) { return true; }   // on a network hiccup, don't block the user
+}
+// Re-sync the municipality list and fall back to a valid active municipality.
+async function recoverLocality() {
+  try {
+    const list = await fetch("api/localities",{cache:"no-store"}).then(r=>r.ok?r.json():[]);
+    LOCALITIES = list;
+    if (!LOC || !list.some(l=>l.slug===LOC.slug)) {
+      LOC = list[0] || null;
+      if (LOC) { try { localStorage.setItem("edm-locality", LOC.slug); } catch(e){} }
+      else { try { localStorage.removeItem("edm-locality"); } catch(e){} }
+      if (MAP) { MAP.destroy(); MAP = null; MAP_LOADING = false; }
+      await loadData();
+      renderAll();
+    }
+  } catch(e) {}
+}
 
 /* ---------------------------------------------------------------- data manager (staging + production) */
 let DM_TABLE = null, DM_PAGE = 1, DM_PER = 50;
@@ -1978,16 +1998,29 @@ function renderData(){
       if (!inp.files?.length) return;
       const preview = document.getElementById("dm-preview");
       const slug = LOC.slug;
+      // Guard against a stale active municipality (e.g. it was deleted in another tab/session)
+      if (!(await localityExists(slug))) {
+        inp.value = "";
+        preview.innerHTML = `<p class="sub" style="color:var(--warn)">${esc(LANG==="fr"
+          ? "La municipalité active n'existe plus. Sélectionnez-en une autre."
+          : "The active municipality no longer exists. Pick another one.")}</p>`;
+        await recoverLocality();
+        return;
+      }
       preview.innerHTML = `<p class="sub">⏳ ${esc(inp.files[0].name)} → ${esc(LOC.name)}…</p>`;
       const fd = new FormData(); fd.append("file", inp.files[0]);
       try {
         const r = await fetch(`api/localities/${slug}/staging`, {method:"POST", body:fd});
-        if (!r.ok) throw new Error(await r.text());
+        if (!r.ok) {
+          const detail = (await r.json().catch(()=>({}))).detail || r.status;
+          if (r.status === 404) { await recoverLocality(); }
+          throw new Error(detail);
+        }
         const res = await r.json();
         preview.innerHTML = "";
         inp.value = "";
         await dmLoadStagings(res.staging_id);
-      } catch(e) { preview.innerHTML = `<p style="color:var(--warn)">${esc(String(e))}</p>`; }
+      } catch(e) { preview.innerHTML = `<p style="color:var(--warn)">${esc(String(e.message||e))}</p>`; }
     };
   }
 
@@ -2353,7 +2386,7 @@ let RZ, LASTW = innerWidth;
 window.addEventListener("resize", () => { clearTimeout(RZ); RZ = setTimeout(() => { if (Math.abs(innerWidth - LASTW) < 40 || !D) return; LASTW = innerWidth; const open = document.getElementById("drawer").classList.contains("open"); renderAll(); if (open) reopen(); }, 200); });
 matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", renderAll);
 
-const V = "41";
+const V = "42";
 (async () => {
   try {
     const c = await fetch("api/config.json?v="+V, {cache:"no-store"}).then(r => r.json());
