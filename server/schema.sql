@@ -189,6 +189,16 @@ CREATE TABLE IF NOT EXISTS map_tile (
     PRIMARY KEY (map_import_id, i, j)
 );
 
+-- Durable building ↔ site matches, keyed by the federal building id (EGID) so they survive a map re-import.
+-- (map_building.id is a transient serial; the EGID is the stable identifier.)
+CREATE TABLE IF NOT EXISTS map_match (
+    locality_id integer NOT NULL REFERENCES locality ON DELETE CASCADE,
+    egid        text NOT NULL,
+    id_site     text NOT NULL,
+    at          timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (locality_id, egid)
+);
+
 -- ── seed ──────────────────────────────────────────────────────────────────────
 INSERT INTO locality (slug, name, map_config, demo)
 VALUES ('rive-claire', 'Rive-Claire', '{"key":"rc","dir":"map-rc/"}', true)

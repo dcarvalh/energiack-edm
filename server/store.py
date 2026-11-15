@@ -339,16 +339,29 @@ def map_import(conn, locality_id, bbox, step=16, px=1.0, tiles=1, name=None):
 
 
 def map_automatch(conn, locality_id):
-    """Link map buildings to our sites by EGID (map_building.egid == building.egid). Returns count matched."""
-    row = conn.execute(
+    """Link map buildings to our sites by the federal EGID (stable across re-imports). Two durable sources:
+       1) a building row in our data carrying the same EGID -> that building's site
+       2) a saved manual match (map_match)                  -> its site  (wins over 1)
+    Returns the number of buildings matched."""
+    # 1) buildings in our dataset that already carry an EGID
+    conn.execute(
         "UPDATE map_building mb SET id_site = b.id_site, match_kind = 'egid' "
         "FROM map_import mi, building b "
         "WHERE mb.map_import_id = mi.id AND mi.locality_id = %s "
-        "  AND b.locality_id = %s AND b.egid IS NOT NULL AND mb.egid = b.egid "
-        "  AND mb.id_site IS NULL "
-        "RETURNING mb.id", (locality_id, locality_id)).fetchall()
+        "  AND b.locality_id = %s AND b.egid IS NOT NULL AND b.id_site IS NOT NULL AND mb.egid = b.egid",
+        (locality_id, locality_id))
+    # 2) saved manual matches override
+    conn.execute(
+        "UPDATE map_building mb SET id_site = mm.id_site, match_kind = 'manual' "
+        "FROM map_import mi, map_match mm "
+        "WHERE mb.map_import_id = mi.id AND mi.locality_id = %s "
+        "  AND mm.locality_id = %s AND mb.egid = mm.egid",
+        (locality_id, locality_id))
     conn.commit()
-    return len(row)
+    n = conn.execute(
+        "SELECT count(*) AS n FROM map_building mb JOIN map_import mi ON mi.id = mb.map_import_id "
+        "WHERE mi.locality_id = %s AND mb.id_site IS NOT NULL", (locality_id,)).fetchone()["n"]
+    return n
 
 
 def map_get(conn, locality_id):
@@ -386,14 +399,86 @@ def map_tile(conn, locality_id, i, j):
 
 
 def map_set_site(conn, locality_id, building_id, id_site):
-    """Manual match: assign (or clear) the site of one map building."""
+    """Manual match: assign (or clear) the site of one map building, and persist it by EGID so it
+    survives a re-import (map_match). Clearing removes the saved match."""
     r = conn.execute(
         "UPDATE map_building mb SET id_site = %s, match_kind = %s "
         "FROM map_import mi WHERE mb.map_import_id = mi.id AND mi.locality_id = %s AND mb.id = %s "
-        "RETURNING mb.id",
+        "RETURNING mb.egid",
         (id_site, "manual" if id_site else None, locality_id, building_id)).fetchone()
+    if r is None:
+        return False
+    egid = r["egid"]
+    if egid:
+        if id_site:
+            conn.execute(
+                "INSERT INTO map_match (locality_id, egid, id_site) VALUES (%s, %s, %s) "
+                "ON CONFLICT (locality_id, egid) DO UPDATE SET id_site = EXCLUDED.id_site, at = now()",
+                (locality_id, egid, id_site))
+        else:
+            conn.execute("DELETE FROM map_match WHERE locality_id = %s AND egid = %s", (locality_id, egid))
     conn.commit()
-    return r is not None
+    return True
+
+
+def map_register_building(conn, locality_id, map_building_id, mode, id_site=None, site_name=None):
+    """Register a map block as a real building in this municipality, then match it durably by EGID.
+       mode='existing' -> add the building under an existing site (id_site required)
+       mode='new'      -> create a new site (site_name) with this one building
+    Returns {id_site, id_batiment, egid}."""
+    mb = conn.execute(
+        "SELECT mb.egid, mb.attrs FROM map_building mb JOIN map_import mi ON mi.id = mb.map_import_id "
+        "WHERE mi.locality_id = %s AND mb.id = %s", (locality_id, map_building_id)).fetchone()
+    if not mb:
+        raise LookupError("map building not found")
+    egid = mb["egid"]
+    a = mb["attrs"] or {}
+    addr = a.get("addr") or (f"EGID {egid}" if egid else "Bâtiment")
+    levels = a.get("levels")
+    year = a.get("year")
+    sre = None  # GWR area is footprint, not SRE; leave blank (user can edit in the Data module)
+
+    with conn.transaction(), conn.cursor() as cur:
+        if mode == "new":
+            if not site_name:
+                raise ValueError("site_name required for a new site")
+            # next free site id in this locality: Gnn / Snn style -> use "M" prefix to avoid clashes
+            n = cur.execute("SELECT count(*) AS n FROM building WHERE locality_id = %s", (locality_id,)).fetchone()["n"]
+            sid = f"MAP{n + 1:03d}"
+            typologie = "Autre"
+            pos = n
+        else:
+            if not id_site:
+                raise ValueError("id_site required for an existing site")
+            sid = id_site
+            exist = cur.execute(
+                "SELECT nom_site, typologie, quartier, max(pos) OVER () AS maxpos FROM building "
+                "WHERE locality_id = %s AND id_site = %s LIMIT 1", (locality_id, sid)).fetchone()
+            if not exist:
+                raise LookupError("site not found")
+            typologie = exist["typologie"]
+            site_name = exist["nom_site"]
+            pos = (exist["maxpos"] or 0) + 1
+
+        # a free building id under this site
+        k = cur.execute("SELECT count(*) AS n FROM building WHERE locality_id = %s AND id_site = %s",
+                        (locality_id, sid)).fetchone()["n"]
+        id_batiment = f"{sid}-B{k + 1}"
+        cur.execute(
+            "INSERT INTO building (locality_id, id_batiment, id_site, nom_site, quartier, typologie, nom_batiment, "
+            "annee_construction, sre_m2, niveaux, egid, pos) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) "
+            "ON CONFLICT (locality_id, id_batiment) DO UPDATE SET egid = EXCLUDED.egid",
+            (locality_id, id_batiment, sid, site_name, a.get("quartier") or (None if mode == "new" else None),
+             typologie, addr, year, sre, levels, egid, pos))
+        # durable match + colour the block now
+        if egid:
+            cur.execute(
+                "INSERT INTO map_match (locality_id, egid, id_site) VALUES (%s,%s,%s) "
+                "ON CONFLICT (locality_id, egid) DO UPDATE SET id_site = EXCLUDED.id_site, at = now()",
+                (locality_id, egid, sid))
+        cur.execute(
+            "UPDATE map_building SET id_site = %s, match_kind = 'manual' WHERE id = %s", (sid, map_building_id))
+    return {"id_site": sid, "id_batiment": id_batiment, "egid": egid, "site_name": site_name}
 
 
 def map_delete(conn, locality_id):

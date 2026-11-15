@@ -77,6 +77,12 @@ class MapMatch(BaseModel):
     id_site: str | None = None
 
 
+class MapRegister(BaseModel):
+    mode: str                  # "existing" | "new"
+    id_site: str | None = None # for mode="existing"
+    site_name: str | None = None  # for mode="new"
+
+
 def _start(request, response, conn, token):
     https = request.headers.get("x-forwarded-proto", request.url.scheme) == "https"
     response.set_cookie(auth.COOKIE, token, max_age=auth.HOURS * 3600, httponly=True, samesite="lax", secure=https, path="/")
@@ -316,6 +322,24 @@ def map_match(slug: str, building_id: int, body: MapMatch, u=Depends(need(*auth.
     if not store.map_set_site(conn, loc["id"], building_id, body.id_site):
         raise HTTPException(404, "map building not found")
     return {"id": building_id, "id_site": body.id_site}
+
+
+@app.post("/api/localities/{slug}/map/building/{building_id}/register")
+def map_register(slug: str, building_id: int, body: MapRegister, u=Depends(need(*auth.FULL)), conn=Depends(db)):
+    """Register a map block as a real building in this municipality (new or existing site) and match it by EGID."""
+    loc = store.locality_by_slug(conn, slug)
+    if not loc:
+        raise HTTPException(404, "locality not found")
+    if body.mode not in ("existing", "new"):
+        raise HTTPException(422, "mode must be 'existing' or 'new'")
+    try:
+        res = store.map_register_building(conn, loc["id"], building_id, body.mode, body.id_site, body.site_name)
+    except LookupError as e:
+        raise HTTPException(404, str(e))
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+    _cache.clear()
+    return res
 
 
 @app.delete("/api/localities/{slug}/map")

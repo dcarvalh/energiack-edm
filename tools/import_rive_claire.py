@@ -148,7 +148,7 @@ def build(T, QUALITY, REJ):
         b0 = rows[0]
         active = [i for i in inst[sid] if not i["retrait"]]
         sites.append({
-            "id": sid, "name": {"fr": b0["nom_site"], "en": b0["nom_site"]}, "type": TYPE_CODE[b0["typologie"]],
+            "id": sid, "name": {"fr": b0["nom_site"], "en": b0["nom_site"]}, "type": TYPE_CODE.get(b0["typologie"], "autre"),
             "quarter": b0["quartier"], "area_m2": round(sum(num(b["sre_m2"]) or 0 for b in rows)),
             "year_built": min(int(b["annee_construction"]) for b in rows) if b0["annee_construction"] else None,
             "pv_kwp": sum(num(i["puissance_kw"]) or 0 for i in active if i["type"] == "pv"),

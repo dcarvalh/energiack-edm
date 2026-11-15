@@ -8,7 +8,7 @@ import { computeBoundsTree, acceleratedRaycast } from "./vendor/three-mesh-bvh.m
 THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
 
-const V = "14";
+const V = "15";
 const GREY = 0xb9bfbb;
 const RAMP = {
   idc:   [0x2e9e6e, 0x9cc95a, 0xf0b33c, 0xe0663a, 0xb8322a],
@@ -112,6 +112,7 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
         <div class="m3-title"></div><div class="m3-sub"></div>
         <div class="m3-search"><input type="search" autocomplete="off"><div class="m3-results hide"></div></div>
         <div class="chips m3-layers"></div>
+        <div class="seg m3-mfilter hide"></div>
         <div class="m3-legend"></div>
       </div>
     </div>
@@ -245,15 +246,22 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
 
   // ---------------------------------------------------------------- colouring + class filter
   let LAYER = "idc", SEL = -1, HOV = -1, ONLY = null;   // ONLY = isolated class index, or "nd" for no data, or "un" for unmatched
+  let MFILTER = "all";                                   // imported map: "all" | "matched" | "unmatched"
   const col = new THREE.Color(), white = new THREE.Color(0xffffff), ghost = new THREE.Color();
   const WARN = 0xe0893a;                                 // imported map: a building not yet matched to a site
+  const SITEHI = 0x2a9df4;                               // highlight: all buildings of the selected site
   const L = () => (RCLIKE ? layersRC : layers)(t, nf)[LAYER];
   const unmatched = bi => IMP && !B[bi].id_site;
+  const selSite = () => (IMP && SEL >= 0) ? B[SEL].id_site : null;   // site of the selected building, for highlight
   function paint(bi, lay = L()) {
     const c = lay.cls(B[bi]);
     const un = unmatched(bi);
-    const hidden = ONLY !== null && (ONLY === "un" ? !un : ONLY === "nd" ? (un || c !== -1) : c !== ONLY);
+    const mfHidden = IMP && (MFILTER === "matched" ? un : MFILTER === "unmatched" ? !un : false);
+    const hidden = mfHidden || (ONLY !== null && (ONLY === "un" ? !un : ONLY === "nd" ? (un || c !== -1) : c !== ONLY));
+    const site = selSite();
+    const siteHi = site && B[bi].id_site === site;        // this building belongs to the selected site
     if (hidden) col.copy(ghost);
+    else if (siteHi) col.setHex(SITEHI);
     else if (un) col.setHex(WARN);
     else col.setHex(c < 0 ? GREY : lay.ramp[c]);
     if (bi === SEL) col.lerp(white, 0.6); else if (bi === HOV) col.lerp(white, 0.35);
@@ -282,6 +290,12 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
       : RC ? t("m_sub_rc", { n: nf(B.length), s: nf(new Set(B.map(b => b.site)).size), y: M.year }) : t("m_sub", { n: nf(B.length) });
     root.querySelector(".m3-search input").placeholder = t(RCLIKE ? "m_search_rc" : "m_search");
     root.querySelector(".m3-layers").innerHTML = LAYER_KEYS.map(k => `<button class="chip ${k === LAYER ? "on" : ""}" data-ml="${k}">${esc(t(RCLIKE && k === "idc" ? "m_l_hi" : "m_l_" + k))}</button>`).join("");
+    const mf = root.querySelector(".m3-mfilter");
+    if (mf) {
+      mf.classList.toggle("hide", !IMP);
+      if (IMP) mf.innerHTML = [["all", "m_mf_all"], ["matched", "m_mf_matched"], ["unmatched", "m_mf_unmatched"]]
+        .map(([k, key]) => `<button data-mf="${k}" class="${MFILTER === k ? "on" : ""}">${esc(t(key))}</button>`).join("");
+    }
     root.querySelector(".m3-legend").innerHTML = legendHtml();
     root.querySelector(".m3-hint").textContent = matchMedia("(pointer:coarse)").matches ? t("m_hint_touch") : t("m_hint");
     const tips = { pan: "m_t_pan", orbit: "m_t_orbit", in: "m_t_in", out: "m_t_out", rl: "m_t_rl", rr: "m_t_rr", top: isTop() ? "m_t_tilt" : "m_t_top", north: "m_north", full: isFull() ? "m_t_fullx" : "m_t_full", home: "m_reset" };
@@ -328,7 +342,8 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
            ${row(t("m_p_heatkwh"), mwh(r.heat_kwh))}${row(t("m_l_elec"), mwh(r.elec_kwh))}${row(t("m_p_pvprod"), mwh(r.pv_kwh))}${row(t("m_l_water"), r.water_m3 ? nf(r.water_m3) + " m³" : null)}</div>`
       : `<div class="m3-sec"><span class="pill p-warn">${esc(t("m_unmatched"))}</span>
            <div class="mut" style="font-size:12px;margin-top:6px">${esc(t("m_imp_unmatched_hint"))}</div>
-           ${api.canMatch ? `<div class="m3-acts" style="margin-top:8px"><button class="btn m3-match">${esc(t("m_imp_match_btn"))}</button></div>` : ""}</div>`;
+           ${api.canMatch ? `<div class="m3-acts" style="margin-top:8px"><button class="btn m3-match">${esc(t("m_imp_match_btn"))}</button>
+             <button class="btn alt m3-register">${esc(t("m_imp_register_btn"))}</button></div>` : ""}</div>`;
     return head + body + `<div class="m3-src">EGID ${esc(b.egid || "–")} · ${esc(t("m_attr_imp"))}</div>`;
   }
   function panel(bi) {
@@ -336,9 +351,11 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
     if (IMP) {
       el.innerHTML = panelIMP(b); el.classList.remove("hide");
       el.querySelector(".m3-close").onclick = () => select(-1);
-      const mb = el.querySelector(".m3-match"), um = el.querySelector(".m3-unmatch");
-      if (mb) mb.onclick = () => api.matchBuilding && api.matchBuilding(b, s => { b.id_site = s; b.match_kind = "manual"; b.rc = s ? (api.siteData(s) || null) : null; enrichHeat(b); paint(bi); flush(); ui(); panel(bi); });
-      if (um) um.onclick = () => api.matchBuilding && api.setMatch && api.setMatch(b.id, null, () => { b.id_site = null; b.rc = null; paint(bi); flush(); ui(); panel(bi); });
+      const mb = el.querySelector(".m3-match"), um = el.querySelector(".m3-unmatch"), rg = el.querySelector(".m3-register");
+      const applyMatch = s => { b.id_site = s; b.match_kind = "manual"; b.rc = s ? (api.siteData(s) || null) : null; enrichHeat(b); paintAll(); flush(); ui(); panel(bi); };
+      if (mb) mb.onclick = () => api.matchBuilding && api.matchBuilding(b, applyMatch);
+      if (rg) rg.onclick = () => api.registerBuilding && api.registerBuilding(b, applyMatch);
+      if (um) um.onclick = () => api.setMatch && api.setMatch(b.id, null, () => { b.id_site = null; b.rc = null; paintAll(); flush(); ui(); panel(bi); });
       return;
     }
     if (RC) { el.innerHTML = panelRC(b); el.classList.remove("hide"); el.querySelector(".m3-close").onclick = () => select(-1); return; }
@@ -358,9 +375,12 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
     el.querySelector(".m3-close").onclick = () => select(-1);
   }
   function select(bi, fly) {
+    const prevSite = selSite();
     const prev = SEL; SEL = bi;
-    if (prev >= 0) paint(prev);
-    if (bi >= 0) { paint(bi); panel(bi); if (fly) flyTo(centers[bi]); } else root.querySelector(".m3-panel").classList.add("hide");
+    // imported map: selecting a matched building highlights every building of the same site, so repaint all
+    if (IMP && (prevSite || (bi >= 0 && B[bi].id_site))) paintAll();
+    else { if (prev >= 0) paint(prev); if (bi >= 0) paint(bi); }
+    if (bi >= 0) { panel(bi); if (fly) flyTo(centers[bi]); } else root.querySelector(".m3-panel").classList.add("hide");
     flush(); placeLabels();
   }
 
@@ -378,8 +398,9 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
 
   root.addEventListener("click", e => {
     const l = e.target.closest("[data-ml]"); if (l) { LAYER = l.dataset.ml; ONLY = null; ui(); paintAll(); return; }
+    const mf = e.target.closest("[data-mf]"); if (mf) { MFILTER = mf.dataset.mf; ui(); paintAll(); return; }
     const k = e.target.closest("[data-cls]");
-    if (k) { const v = k.dataset.cls === "nd" ? "nd" : +k.dataset.cls; ONLY = ONLY === v ? null : v; root.querySelector(".m3-legend").innerHTML = legendHtml(); paintAll(); return; }
+    if (k) { const v = (k.dataset.cls === "nd" || k.dataset.cls === "un") ? k.dataset.cls : +k.dataset.cls; ONLY = ONLY === v ? null : v; root.querySelector(".m3-legend").innerHTML = legendHtml(); paintAll(); return; }
     const r = e.target.closest("[data-bi]"); if (r) { results.classList.add("hide"); input.value = B[+r.dataset.bi].addr; select(+r.dataset.bi, true); return; }
     const mp = e.target.closest("[data-map]"); if (mp) { if (mp.dataset.map !== cfg.key) api.switchMap(mp.dataset.map); return; }
     const tb = e.target.closest("[data-tool]"); if (!tb) return;
