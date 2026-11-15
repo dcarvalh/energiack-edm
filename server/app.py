@@ -237,7 +237,7 @@ def locality_rejected(slug: str, u=Depends(need(*auth.FULL)), conn=Depends(db)):
 
 # ── Imported 3D map (Swiss geo platform) ─────────────────────────────────────
 
-MAX_SPAN_M = 2500           # cap the zone side (metres) to bound the fetch
+MAX_SPAN_M = 5000           # cap the zone side (metres) to bound the fetch (large zones are tiled into several blocks)
 
 
 @app.get("/api/geo/search")
@@ -265,11 +265,12 @@ def map_import(slug: str, body: MapImport, u=Depends(need(*auth.FULL)), conn=Dep
     xmin, ymin, xmax, ymax = bbox
     if xmax <= xmin or ymax <= ymin:
         raise HTTPException(422, "bbox: xmax>xmin and ymax>ymin required")
-    if max(xmax - xmin, ymax - ymin) > MAX_SPAN_M:
+    span = max(xmax - xmin, ymax - ymin)
+    if span > MAX_SPAN_M:
         raise HTTPException(422, f"zone too large (max {MAX_SPAN_M} m per side)")
+    tiles = max(1, min(round(span / 1000), 6))            # ~1 km aerial block per tile, so large zones stay detailed
     try:
-        summary = store.map_import(conn, loc["id"], bbox, tiles=max(1, min(body.tiles, 3)),
-                                   px=body.px, name=body.name)
+        summary = store.map_import(conn, loc["id"], bbox, tiles=tiles, px=body.px, name=body.name)
     except Exception as e:
         raise HTTPException(502, f"map fetch failed: {e}")
     # Point this locality's map_config at the imported map

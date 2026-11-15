@@ -570,7 +570,9 @@ fr:{
   mi_title:"Importer une carte 3D", mi_sub:"Choisissez une zone sur la plateforme suisse (geo.admin.ch)",
   mi_search:"Rechercher un lieu", mi_search_ph:"Commune, quartier, rue…", mi_noresult:"Aucun résultat",
   mi_scale:"Taille de la zone", mi_scale_s:"Petite (≈600 m)", mi_scale_m:"Moyenne (≈1 km)", mi_scale_l:"Grande (≈2 km)",
-  mi_zone:"Zone : {label} · ≈{m} m de côté", mi_import:"Importer la carte 3D", mi_importing:"Import en cours (bâtiments, photo aérienne)…",
+  mi_scale_xl:"Très grande (≈3 km)", mi_scale_xxl:"Maximale (≈5 km)",
+  mi_zone:"Zone : {label} · ≈{m} m de côté", mi_big:"Zone étendue : import découpé en plusieurs blocs, cela peut prendre 1 à 2 min.",
+  mi_import:"Importer la carte 3D", mi_importing:"Import en cours (bâtiments, photo aérienne)…",
   mi_done:"{n} bâtiments · {m} rattachés par EGID · {u} à rattacher. Ouverture de la carte…", mi_fail:"Échec :",
   mp_title:"Rattacher à un site", mp_search:"Rechercher un site…", mp_none:"Aucun site",
   loc_delete_confirm:"Supprimer la localité « {name} » et TOUTES ses données (bâtiments, compteurs, mesures, sas) ?\n\nTapez le nom pour confirmer :",
@@ -746,7 +748,9 @@ en:{
   mi_title:"Import a 3D map", mi_sub:"Pick a zone on the Swiss platform (geo.admin.ch)",
   mi_search:"Search a place", mi_search_ph:"Municipality, district, street…", mi_noresult:"No result",
   mi_scale:"Zone size", mi_scale_s:"Small (≈600 m)", mi_scale_m:"Medium (≈1 km)", mi_scale_l:"Large (≈2 km)",
-  mi_zone:"Zone: {label} · ≈{m} m per side", mi_import:"Import the 3D map", mi_importing:"Importing (buildings, aerial photo)…",
+  mi_scale_xl:"Very large (≈3 km)", mi_scale_xxl:"Maximum (≈5 km)",
+  mi_zone:"Zone: {label} · ≈{m} m per side", mi_big:"Wide zone: import is split into several blocks, it can take 1–2 min.",
+  mi_import:"Import the 3D map", mi_importing:"Importing (buildings, aerial photo)…",
   mi_done:"{n} buildings · {m} matched by EGID · {u} to match. Opening the map…", mi_fail:"Failed:",
   mp_title:"Match to a site", mp_search:"Search a site…", mp_none:"No site",
   loc_delete_tip:"Delete this locality and all its data",
@@ -1786,6 +1790,8 @@ function mapImportDialog(slug, name){
         <option value="300">${esc(t("mi_scale_s"))}</option>
         <option value="500" selected>${esc(t("mi_scale_m"))}</option>
         <option value="1000">${esc(t("mi_scale_l"))}</option>
+        <option value="1500">${esc(t("mi_scale_xl"))}</option>
+        <option value="2500">${esc(t("mi_scale_xxl"))}</option>
       </select>
     </label>
     <p id="mi-zone" class="sub" style="margin:0 0 10px"></p>
@@ -1804,7 +1810,9 @@ function mapImportDialog(slug, name){
     if (!MAP_ZONE) { go.disabled = true; zoneEl.textContent = ""; return; }
     go.disabled = false;
     const [x0,y0,x1,y1] = MAP_ZONE.bbox;
-    zoneEl.textContent = t("mi_zone", {label: MAP_ZONE.label, m: Math.round(Math.max(x1-x0, y1-y0))});
+    const span = Math.max(x1-x0, y1-y0);
+    zoneEl.textContent = t("mi_zone", {label: MAP_ZONE.label, m: Math.round(span)});
+    zoneEl.innerHTML += span > 2000 ? `<br><span class="notice" style="margin-top:4px">${esc(t("mi_big"))}</span>` : "";
   };
   const pickCentre = (cx, cy, label) => {
     const half = +document.getElementById("mi-scale").value;
@@ -2386,7 +2394,7 @@ let RZ, LASTW = innerWidth;
 window.addEventListener("resize", () => { clearTimeout(RZ); RZ = setTimeout(() => { if (Math.abs(innerWidth - LASTW) < 40 || !D) return; LASTW = innerWidth; const open = document.getElementById("drawer").classList.contains("open"); renderAll(); if (open) reopen(); }, 200); });
 matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", renderAll);
 
-const V = "46";
+const V = "47";
 (async () => {
   try {
     const c = await fetch("api/config.json?v="+V, {cache:"no-store"}).then(r => r.json());
