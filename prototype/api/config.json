@@ -1,1 +1,25 @@
-{"server": false, "note": "Static host (e.g. GitHub Pages): no accounts, every page open. On the server stack the API answers this path instead (server/app.py)."}
+{
+ "server": false,
+ "note": "Static host (e.g. GitHub Pages): no accounts, every page open. On the server stack the API answers this path instead (server/app.py). localities mirrors the built-in ones of server/schema.sql: data = the file to load, none = no readings.",
+ "localities": [
+  {
+   "slug": "rive-claire",
+   "name": "Rive-Claire",
+   "map_config": {
+    "key": "rc",
+    "dir": "map-rc/"
+   },
+   "demo": true,
+   "data": "data.json"
+  },
+  {
+   "slug": "geneve",
+   "name": "Genève",
+   "map_config": {
+    "key": "ge",
+    "dir": "map/"
+   },
+   "demo": false
+  }
+ ]
+}

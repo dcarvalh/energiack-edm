@@ -64,6 +64,7 @@ class NewLocality(BaseModel):
     slug: str
     name: str
     country: str = "CH"
+    map: str | None = None      # a key of store.MAPS, or none
 
 
 def _start(request, response, conn, token):
@@ -120,17 +121,20 @@ def health(conn=Depends(db)):
 def list_localities(u=Depends(current), conn=Depends(db)):
     if u:
         return store.localities(conn, u)
-    # Public: only localities that have imported data, so the default is always usable
+    # Public: localities with imported data, or with a map of public buildings (Geneva); an empty one stays hidden
     return conn.execute(
         "SELECT l.id, l.slug, l.name, l.country, l.map_config, l.demo, 'viewer' AS role "
-        "FROM locality l WHERE EXISTS (SELECT 1 FROM import_run WHERE locality_id = l.id AND report IS NOT NULL) "
-        "ORDER BY l.name"
+        "FROM locality l WHERE l.map_config IS NOT NULL "
+        "OR EXISTS (SELECT 1 FROM import_run WHERE locality_id = l.id AND report IS NOT NULL) "
+        "ORDER BY l.id"
     ).fetchall()
 
 
 @app.post("/api/localities")
 def create_locality(body: NewLocality, u=Depends(need("admin")), conn=Depends(db)):
-    return store.create_locality(conn, body.slug, body.name, body.country)
+    if body.map and body.map not in store.MAPS:
+        raise HTTPException(422, "unknown map")
+    return store.create_locality(conn, body.slug, body.name, body.country, body.map)
 
 
 @app.delete("/api/localities/{slug}")
