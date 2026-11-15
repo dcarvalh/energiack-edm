@@ -93,7 +93,7 @@ hand), resetting passwords from the app.
 
 ## To do (priorities set by David, 15 Nov; one branch + PR each, one session per item)
 
-**Goal until 1 Dec** (David, 15 Nov): a stable demo he can link from his portfolio and talk about; a repo teammates can
+**Goal until 1 Dec** (David, 15 Nov): a stable demo he can show and talk about; a repo teammates can
 join and understand quickly (what is done, what is not, what is next); a state anyone, David included, can pick up
 again after weeks away. Not a "polish" pass: no redesign. Effort: S = under an hour, M = about one session, L = several.
 Items 15–19 keep their numbers: their details are under "Public base layer" below.
@@ -141,7 +141,6 @@ Items 15–19 keep their numbers: their details are under "Public base layer" be
   `prototype/data.json` was stale (no coverage KPI on Pages); on the static copy Data and Localities showed "Select a
   municipality" / "Error creating locality": they now say these need the server version, with a link. Left as is:
   `api/data.json?locality=geneve` answers 503 (no readings yet), which the app reads as "no data yet".
-  Portfolio entry (`portfolio/`, separate repo) linking the server version: written 15 Nov, in EN/FR/PT.
 - **Step 10.** Geneva: estimated instead of simulated (David, 15 Nov). For every simulated value in the Geneva
   municipalities (the Genève map's electricity and water, and the readings of Genève (démo)), try to estimate the real
   value from public data (e.g. SITG heat index × floor area, building type and size, published consumption ratios),
