@@ -238,6 +238,7 @@ def locality_rejected(slug: str, u=Depends(need(*auth.FULL)), conn=Depends(db)):
 # ── Imported 3D map (Swiss geo platform) ─────────────────────────────────────
 
 MAX_SPAN_M = 5000           # cap the zone side (metres) to bound the fetch (large zones are tiled into several blocks)
+NO_STORE = {"Cache-Control": "no-store"}   # the imported map changes on every re-import: never serve a stale tile/mesh
 
 
 @app.get("/api/geo/search")
@@ -289,7 +290,7 @@ def map_buildings(slug: str, u=Depends(current), conn=Depends(db)):
     if not data:
         raise HTTPException(404, "no map imported for this locality")
     return Response(json.dumps(data, ensure_ascii=False, separators=(",", ":")),
-                    media_type="application/json")
+                    media_type="application/json", headers=NO_STORE)
 
 
 @app.get("/api/localities/{slug}/map/terrain.bin")
@@ -300,7 +301,7 @@ def map_terrain(slug: str, u=Depends(current), conn=Depends(db)):
     t = store.map_terrain(conn, loc["id"])
     if t is None:
         raise HTTPException(404, "no terrain")
-    return Response(t, media_type="application/octet-stream")
+    return Response(t, media_type="application/octet-stream", headers=NO_STORE)
 
 
 @app.get("/api/localities/{slug}/map/aerial_{i}_{j}.jpg")
@@ -311,7 +312,7 @@ def map_aerial(slug: str, i: int, j: int, u=Depends(current), conn=Depends(db)):
     jpg = store.map_tile(conn, loc["id"], i, j)
     if jpg is None:
         raise HTTPException(404, "no tile")
-    return Response(jpg, media_type="image/jpeg")
+    return Response(jpg, media_type="image/jpeg", headers=NO_STORE)
 
 
 @app.put("/api/localities/{slug}/map/building/{building_id}")
