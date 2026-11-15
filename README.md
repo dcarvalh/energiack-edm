@@ -4,15 +4,17 @@ Energ-IACK 2026 · Défi 2 « EDM citoyen et souverain ».
 
 An open-source Energy Data Management tool (EDM) that a commune **owns**: open data format, readable code, runs on any static host
 or on its own server with a database and logins, and the same format lets communes compare and share. Built at the
-Energ-IACK hackathon, Geneva, 13–14 Nov 2026.
+Energ-IACK hackathon, Geneva, 13–14 Nov 2026. **The project goes on after the hackathon: next presentation on Tue 1 Dec 2026.**
 
-**Live demo, open: https://dcarvalh.github.io/energiack-edm/** (FR/EN toggle top right, also `?lang=en`). Static, no login, every page visible.
+**Main link, the server version: https://openedm.davidcarvalho.work/** The app on PostgreSQL, with several
+municipalities, file imports through a staging area, and four roles (admin, technique, elu, public) enforced by the
+server. "Log in" (top right) shows one-click demo accounts for each role. Fictional data only.
 
-**Pitch deck (French): https://dcarvalh.github.io/energiack-edm/pitch/** Seven slides in the browser; it also runs
-offline from `prototype/pitch/index.html` (see "Pitch deck" below).
+**Open static copy: https://dcarvalh.github.io/energiack-edm/** (FR/EN toggle top right, also `?lang=en`). GitHub
+Pages, no login, every page visible; the server-only views (Data, Municipalities, Users) are not there.
 
-**Live demo with logins: https://openedm.davidcarvalho.work/** The same app on PostgreSQL, with four roles enforced by
-the server. "Log in" (top right) shows one-click demo accounts for each role. Fictional data only.
+**Pitch deck: [French](https://dcarvalh.github.io/energiack-edm/pitch/) · [English](https://dcarvalh.github.io/energiack-edm/pitch/en.html)**
+Seven slides in the browser; it also runs offline from `prototype/pitch/` (see "Pitch deck" below).
 
 ## What it shows
 
@@ -85,15 +87,17 @@ backups: `docs/deploy.md`.
 
 ## Pitch deck
 
-**Live: https://dcarvalh.github.io/energiack-edm/pitch/** The pitch as a web page, in French: a title slide and six
-slides, with short clips of the app, small animations and a QR code to the version with logins.
+**Live: [French](https://dcarvalh.github.io/energiack-edm/pitch/) (`index.html`) · [English](https://dcarvalh.github.io/energiack-edm/pitch/en.html) (`en.html`)**
+The pitch as a web page: a title slide and six slides, with short clips of the app, small animations and a QR code to
+the server version (openedm.davidcarvalho.work). Both decks use the same clips, recorded with the app in French. A
+change to one deck goes into the other too.
 
 - **Keys:** → / space / click = next, ← (or a click on the left quarter) = back, Home / End, `F` = full screen.
 - **Run it locally, no server and no internet:** `prototype/pitch/` holds everything it needs (font, clips, QR code).
-  Clone the repo (or "Code › Download ZIP" on GitHub), then open `prototype/pitch/index.html` in a browser. That folder
+  Clone the repo (or "Code › Download ZIP" on GitHub), then open `prototype/pitch/index.html` (or `en.html`) in a browser. That folder
   can also be copied alone, to a USB stick for example. Only the QR code needs a connection, on the phone that scans it.
-- **Or through the local server:** `python3 -m http.server 8000 -d prototype`, then http://127.0.0.1:8000/pitch/
-- **Edit a slide:** one `<section class="slide">` per slide in `prototype/pitch/index.html`.
+- **Or through the local server:** `python3 -m http.server 8000 -d prototype`, then http://127.0.0.1:8000/pitch/ (English: /pitch/en.html)
+- **Edit a slide:** one `<section class="slide">` per slide in `prototype/pitch/index.html` and `en.html`.
 - **Re-record a clip** (needs the tools setup under "Files"; then copy the MP4 to `prototype/pitch/clips/`):
 
 ```bash
@@ -117,7 +121,7 @@ tools/check_page.py     headless browser check: all views, FR/EN, desktop/phone,
                         (on the server version: CHECK_ROLE=admin logs in first and adds the server-only views)
 tools/record_video.py   records clips of the app: one MP4 per shot + joined file in video-out/
                         (--lang fr|en, --shots, --size, --zoom, --url, --audio); edit SHOTS at the top of the file
-prototype/pitch/        the pitch deck (French), self-contained: index.html, clips/, fonts/, qr-server.svg (see "Pitch deck")
+prototype/pitch/        the pitch deck, self-contained: index.html (French), en.html (English), clips/, fonts/, qr-server.svg (see "Pitch deck")
 prototype/api/config.json  {"server": false} on a static host; on the server the API answers instead (logins on)
 compose.yaml, .env.example the server version: PostgreSQL + API + Caddy
 server/                 the API (FastAPI): schema.sql, store.py (database ↔ data.json), auth.py (accounts, roles), cli.py

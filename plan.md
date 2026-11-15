@@ -98,10 +98,9 @@ visit (what to look at, in what order), fewer controls per screen, plain-languag
 demo (energy manager → council → citizen). The demo link is the server version (decided 15 Nov).
 
 **Pitch and docs**
-1. Slides in English: an English copy of `prototype/pitch/` (today French only), same clips with EN app text.
-2. Update `README.md`: the project goes on after the hackathon, 1 Dec presentation, current features (municipalities,
-   staging import, roles); the server version is the main link, Pages the open copy. Check the pitch QR codes and
-   links point to one of these two.
+1. Done 15 Nov: English deck `prototype/pitch/en.html`. David chose to reuse the French clips (French app text).
+2. Done 15 Nov: `README.md` updated (project goes on, 1 Dec, server = main link, Pages = open copy, current
+   features). QR codes checked: the deck's points to the server version, `docs/qr` to Pages.
 3. Pitch clips: the two clips stacked on slides 2 and 3 are small on a projector.
 
 **P0 user stories, still open** (status comment on each issue, 15 Nov; #5 closed as done)
