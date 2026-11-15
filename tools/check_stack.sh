@@ -109,7 +109,7 @@ post -b "$TMP/admin" -d "$NEW" "$L" | grep -q '"slug":"test-fict"'
 as technique -F "file=@geneve/geneve-energy-data.zip" "$L/test-fict/staging" -o "$TMP/staged.json"
 sid=$("$PY" -c 'import json, sys; d = json.load(open(sys.argv[1])); assert len(d["files"]) == 10 and not d["unrecognised"], d; print(d["staging_id"])' "$TMP/staged.json")
 if curl -fsS "$L" | grep -q '"slug":"test-fict"'; then echo "a municipality without data is listed to visitors"; exit 1; fi
-as technique -X POST "$L/test-fict/staging/$sid/commit" | grep -q '"added":7872'
+as technique -X POST "$L/test-fict/staging/$sid/commit" | grep -q '"added":8087'
 [ "$(code -b "$TMP/technique" -X POST "$L/test-fict/staging/$sid/commit")" = 422 ]                     # already committed
 as technique --compressed "$URL/api/data.json?locality=test-fict" -o "$TMP/geneve.json"
 "$PY" -c 'import json, sys; d = json.load(open(sys.argv[1])); n = len(d["sites"]); assert n == 40, n' "$TMP/geneve.json"
