@@ -107,7 +107,7 @@ Items 15–19 keep their numbers: their details are under "Public base layer" be
 - ~~**Step 3.**~~ Done 15 Nov: Geneva as a built-in municipality (S–M, item 15): seeded with the `map/` map, listed to
   visitors before it has readings (pages without data say so and point to the map), the admin picks a map when creating
   a municipality.
-- **Step 4.** One map per municipality (S, David 15 Nov): once Geneva is its own municipality, drop the Rive-Claire /
+- ~~**Step 4.**~~ Done 15 Nov: one map per municipality (S, David 15 Nov): once Geneva is its own municipality, drop the Rive-Claire /
   Geneva switch on the 3D tab (`MAPS`, `switchMap` in `prototype/index.html`, the switch in `map3d.js`); the map is
   the municipality's `map_config`. Clear the old `energiack-map` choice saved in `localStorage`.
 - **Step 5.** A clearer municipality switch (S, David 15 Nov): today it is a small uppercase label over a borderless
