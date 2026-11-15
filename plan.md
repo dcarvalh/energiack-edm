@@ -1,11 +1,12 @@
 # Team plan · openEDM (Défi 2 « EDM citoyen et souverain »)
 
-Updated 14 Nov 2026, 10:00. What exists and how to run it: `README.md`. What is still missing: see "What's missing" below.
+Updated 15 Nov 2026. What exists and how to run it: `README.md`. What is left: see "To do for 1 Dec" below.
 
 ## Deadlines
-- All deliverables before **14:00 on Sat 14 Nov**.
-  Deliverables: prototype, code with declared third-party parts and licences (`THIRD_PARTY.md`), slides, one-page project sheet.
-- Pitch: about 5 minutes, 2 of them video. **Tell a story**, don't list features.
+- Hackathon pitch: done, Sat 14 Nov (deliverables in by 14:00: prototype, code with `THIRD_PARTY.md`, slides, project sheet).
+- **The project goes on. Next presentation: Tue 1 Dec 2026.** Aim: more polished and easier to use (what that means
+  exactly is still to decide, see "To do for 1 Dec" › Decide first).
+- Pitch format so far: about 5 minutes, **tell a story**, don't list features.
 
 ## The pitch in one line
 An EDM a commune owns: one open-source codebase for every commune, open data format, runs on its own server or shared
@@ -78,54 +79,61 @@ hosting, and it **complements** existing tools as an aggregator instead of repla
 | Heat index per site in MJ/m²·yr (#7): Manage table, site page, Rive-Claire map layer with the Geneva IDC classes | done 14 Nov. Approximate, **not weather-corrected**, never called the IDC. Heat-pump heat: heat meter at S09/S12, elsewhere pump electricity × the COP measured that month at S09/S12, marked estimated. No index where heating is direct electric (not metered apart) |
 | Server stack: PostgreSQL + API + Caddy (`compose.yaml`, `server/`, `docs/deploy.md`) | merged 13 Nov night (#23); live since 13 Nov night on one small cloud server (EU), with its own domain and HTTPS since 14 Nov. `data.json` comes from the database, identical to the static build |
 | Logins and roles (#15): admin, technique, élu·e, public; menus filtered, data filtered by the server, Users page, one-click demo accounts | done 14 Nov (#25), live on the server version with demo accounts on; GitHub Pages stays open without login |
+| Several municipalities on one server (#43): municipality selector, Municipalities page, ZIP upload into a staging area, row review/edit, commit; 3D map per municipality | merged 14 Nov; checked by CI (`tools/check_stack.sh`, #45). Whether the live server runs it: not checked on 15 Nov |
+| Pitch deck (`prototype/pitch/`, French only, runs offline) with app clips and two QR codes | done 14 Nov (#33–#46) |
 
-**Two live copies.** GitHub Pages (static, open, no login; the pitch QR code points there) and the server version
-(database, logins, roles, one-click demo accounts): https://openedm.davidcarvalho.work/ (both links in `README.md`).
+**Main link: the server version** https://openedm.davidcarvalho.work/ (database, logins, roles, one-click demo
+accounts; David, 15 Nov). GitHub Pages stays as an open static copy (no login). The old redirect domain is retired.
 Server access and its cost are with David.
 
 **Hosted version, decided (14 Nov):** one small server running `compose.yaml` (see `docs/deploy.md`); built-in
 accounts, an OpenID Connect server (Keycloak, Authentik, Zitadel) only when a commune wants its own single sign-on.
-Roles per #15. Still open: accounts per commune (several communes on one install), deploys on merge (the server is
-updated by hand), creating accounts from the app.
+Roles per #15. Several communes on one install: done (#43). Still open: deploys on merge (the server is updated by
+hand), resetting passwords from the app.
 
-## What's missing (14 Nov, 10:00)
+## To do for 1 Dec (15 Nov; one branch + PR each, one session per item)
 
-**For 14:00 today (deliverables):**
-1. Slides: **done, in this repo** as a web deck (`prototype/pitch/`, live at `/pitch/`, runs offline; README › Pitch
-   deck). David chose a silent deck clicked through live, with clips of the app, over a separate video file (14 Nov).
-   The one-page project sheet is not in this repo; nothing about it was checked here.
-2. Which link the pitch shows: Pages (QR code, open) or the server version (logins, demo roles). Both work.
-3. Optional quick wins, not started: weather-corrected heat (the climate data is in `data.json`, unused) and a traffic
-   light per site against its typology (Buyer review below, items 1 and 2).
+**Decide first** (team): what "more polished and easier to use" means. Suggested starting points: a guided first
+visit (what to look at, in what order), fewer controls per screen, plain-language labels, one obvious story path for the
+demo (energy manager → council → citizen). The demo link is the server version (decided 15 Nov).
 
-**Server version, not done:**
-- An admin account for David (real accounts are created on the server: `docs/deploy.md` › Accounts).
-- A budget alert on the cloud account; deploys on merge (the server is updated by hand; the Stack workflow's deploy job
-  is ready but needs SSH secrets).
-- Accounts per commune (today one commune per install), creating accounts and resetting passwords in the app,
-  importing a file from the app (today a server command), corrections with a trace (who, when, why).
+**Pitch and docs**
+1. Slides in English: an English copy of `prototype/pitch/` (today French only), same clips with EN app text.
+2. Update `README.md`: the project goes on after the hackathon, 1 Dec presentation, current features (municipalities,
+   staging import, roles); the server version is the main link, Pages the open copy. Check the pitch QR codes and
+   links point to one of these two.
+3. Pitch clips: the two clips stacked on slides 2 and 3 are small on a projector.
 
-**Team user stories still open** (GitHub issues): #5 load the challenge data (largely done: import + quality report),
-#6 quality of results, #7 consistent indicators, #8 explore the portfolio and a site, #9 compare without hiding limits,
-#10 political summary, #11 export and hand-over, #12 costs vs a target, #13 AI summary (AI report is off for now),
-#14 heating change review, #16 internal vs publishable indicator, #17 normal-year heat forecast, #18 alert when a month
-leaves the expected range, #19 boiler replacement simulation, #20 combine levers, #26–#29 views per audience
-(decision-maker, citizen, energy manager, analyst). Close the ones the app already covers after checking them.
+**P0 user stories, still open** (status comment on each issue, 15 Nov; #5 closed as done)
+4. #6 quality: coverage, estimated and excluded readings shown in Manage for the chosen year; a visible note on an
+   incomplete total; a person decides between two different values for the same meter and month.
+5. #8 explore: choose the fluid, a perimeter (quarter, building type) and months at portfolio level.
+6. #9 compare: a month vs the same month a year before; show the absolute difference next to the %; coverage of the
+   compared periods; alert wording asks a question, never claims a fault.
+7. #10 council summary: choose the year, printable page, quality and limits in the summary; same numbers as Manage.
+8. #11 hand-over: CSV of the filtered Manage view; a guide and a formula dictionary; one config file per commune
+   (assumed prices are still in `tools/import_rive_claire.py`).
 
-**Not verified:** three-mesh-bvh / OrbitControls and server-stack licence lines in `THIRD_PARTY.md` (from memory);
-SITG/swisstopo attribution wording; real-phone performance of the 3D map.
+**Indicators** (from the Buyer review below)
+9. Weather-corrected heat (degree-days are in `meta.climate`, unused); dynamic COP shown for heat-pump sites
+   (`meta.hp_cop`, used but not displayed).
+10. Traffic light per site: heat kWh/m² vs its typology average, labelled "approximate".
+11. Corrections by an authorised person with a trace (who, when, why); median replacements today are automatic.
 
-## Next steps (keep the UI minimal; FR and EN for every string)
-1. Corrections: negative values and spikes are replaced by the median of the same month in other years (David, 13 Nov).
-   Later: let an authorised person correct a value with a trace (who, when, why).
-2. Indicators: weather-corrected heat index (the raw one is done), dynamic COP shown for heat-pump sites (the monthly COP is in `meta.hp_cop`, used but not displayed).
-3. Targets per site with a traffic light (kWh/m² vs target).
-4. Pitch deck: done (14 Nov), `prototype/pitch/`. Its last slide carries a second QR code, to the server version.
-   Open: the two clips stacked on slides 2 and 3 are small on a projector; an English copy does not exist.
-5. Ideas, not started: consumption breaks after renovations, synergies between buildings, price scenarios; place the
-   fictional commune in a recognisable Geneva neighbourhood on the map.
+**Server version**
+12. Check the live server runs the current `main` (#43 municipalities); deploys on merge (the Stack workflow's deploy job
+    needs SSH secrets); a budget alert on the cloud account; David's admin account; reset passwords in the app.
 
-## Buyer review (13 Nov evening, not started)
+**Housekeeping**
+13. Close issue #4 ("test") if nobody uses it; go through P1/P2 issues (#12–#20) and the audience views (#26–#29),
+    close what is covered.
+14. Check the licence lines in `THIRD_PARTY.md` (three-mesh-bvh, OrbitControls, server stack: written from memory) and
+    the SITG/swisstopo attribution wording; test the 3D map on a real phone.
+
+**Ideas, not planned:** consumption breaks after renovations, synergies between buildings, price scenarios, indirect CO₂,
+DE/IT, place Rive-Claire in a recognisable Geneva neighbourhood on the map.
+
+## Buyer review (13 Nov evening; since then: login, roles and a ZIP upload are done)
 A review of the app as a buyer would see it: the commune's energy manager, plus the council, IT and procurement who sign.
 Checked in the code: the degree-day data (`meta.climate`, `meta.climate_normal`) is in `data.json` but no calculation uses it.
 Comparisons with commercial tools are from memory, not researched.
@@ -148,7 +156,7 @@ and service level; a guaranteed full export (no lock-in); German and Italian; ac
 **Already good:** the data quality report (the differentiator); honest labels (estimated, simulated, CO₂ scope);
 open and portable (no build step, no external requests).
 
-**Proposed before 14:00 Sat** (one branch + PR each; if short on time, only 1 and 2):
+**Proposed changes** (not done on 14 Nov; now in "To do for 1 Dec"):
 | # | Change | Size |
 |---|---|---|
 | 1 | Weather-corrected annual heat (to the 1991–2020 normal), second figure on Manage and the site page; the +12 % alert on it if it compares heat year on year | S–M |
@@ -157,4 +165,4 @@ open and portable (no build step, no external requests).
 | 4 | Printable council page (print layout + button) | S |
 | 5 | "Run it in your commune" block on How it works: hosting options, nLPD stance, estimated cost shape, CSV template and import command, full-export promise | S |
 
-Not now: upload in the browser, real login, invoice checks, indirect CO₂, e-mail alerts, DE/IT, hourly data.
+Not now: invoice checks, indirect CO₂, e-mail alerts, DE/IT, hourly data.

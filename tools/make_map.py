@@ -7,7 +7,7 @@ Real public data, fetched once (cached in data/cache/) and cut to the area:
   - solar potential per building:                 SITG OCEN_SOLAIRE_PV_BATIMENT
   - terrain: swisstopo swissALTI3D 2 m (STAC)     - aerial photo: swisstopo SWISSIMAGE (WMS), tiled
   - place labels: swisstopo search API
-Simulated (flagged "sim"): electricity and water per building. Not public; Quanthome provides them per EGID.
+Simulated (flagged "sim"): electricity and water per building (no public source).
 
 Run: .venv/bin/python tools/make_map.py [--box xmin,ymin,xmax,ymax] [--out DIR] [--step 8] [--px 0.8] [--tiles 2]
 Outputs: buildings.json, terrain.bin (Int16 dm), aerial_<i>_<j>.jpg
