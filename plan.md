@@ -134,10 +134,11 @@ point every municipality reuses without copying it; what a municipality imports 
 buildings by **EGID** (the federal building ID, already in `prototype/map/buildings.json`). Maps are already shared:
 `map_config` points to a folder, so several municipalities can use `map/` today.
 Decided: a portfolio is a list of EGIDs in the import, not an area drawn on the map (a commune's buildings are
-scattered, and the 3D map is slow without a GPU); the map's extent comes from the commune boundary. The public demo
-links only a few public-owned buildings to fictional readings, under a permanent "fictional readings" banner, so
-invented figures are never taken for real ones at a real address. Keep it generic (a regional data pack, Geneva first),
-not hard-wired to Geneva.
+scattered, and the 3D map is slow without a GPU); the map's extent comes from the commune boundary. Real and
+simulated data never mix in one municipality (David, 15 Nov): the default **Genève** shows only public, true values;
+a separate **Genève (démo)** has a set of real buildings where every reading is simulated, to show the features
+Rive-Claire has (site sheet, meters, history, alerts). Keep it generic (a regional data pack, Geneva first), not
+hard-wired to Geneva.
 15. Geneva as a built-in municipality: seeded in `server/schema.sql` like Rive-Claire, `map_config` → `map/`; the admin
     chooses the map when creating a municipality (`POST /api/localities` takes slug, name and country only today).
 16. EGID link: optional `egid` column in the `building` import (upgrade step in `schema.sql`, `check_upgrade.sh` must
@@ -145,6 +146,14 @@ not hard-wired to Geneva.
     site page shows the public attributes (height, use, heating, heat index, solar). Buildings without EGID work as now.
 17. A public-data view for a municipality with no readings yet (map, heat-index classes, heating mix, solar), since
     Manage and Citizens need readings. The public municipality list hides a municipality with no import today.
+    This is what the default Genève shows.
+18. Genève (démo): about 40 real buildings on the same `map/` (chosen by use: schools, offices, sports, culture),
+    each with its EGID and fully simulated meters and readings, rebuilt by `tools/make_geneva_fake.py` (today it
+    makes 40 sites that are not linked to the map). Make the simulated values plausible from public attributes: floor
+    area from footprint × levels, yearly heat from the public heat index, monthly split by degree-days (already in the
+    reference tables), electricity from assumed kWh/m² per use (labelled "assumed"). On screen: a permanent "simulated
+    data" banner and a "simulated" tag on every figure, never only a footnote, because the addresses are real.
+    Needs 16.
 
 Later, after 1 Dec: one map extent per Geneva commune, generated once into a shared `map/ge/<commune>/` (the
 whole canton is too heavy for the browser); add or remove buildings by clicking the map; sharing between
