@@ -28,7 +28,8 @@ finish() {
 }
 trap finish EXIT
 # Rows per table. Runs on both versions of the schema; import_run is left out (every start adds one run).
-# Rows of a built-in locality the base branch lacks ($NEW_LOC, set below) are left out: it gets seeded at the upgrade.
+# Rows of Genève (démo) are left out: fully simulated, it is regenerated and replaced at every start (step 3 checks it
+# against its static copy instead).
 counts() { dc exec -T db psql -U openedm -d openedm -At -c "
   SELECT 'building', count(*) FROM building WHERE locality_id NOT IN (SELECT id FROM locality WHERE slug = '$NEW_LOC') UNION ALL
   SELECT 'installation', count(*) FROM installation WHERE locality_id NOT IN (SELECT id FROM locality WHERE slug = '$NEW_LOC') UNION ALL
@@ -40,7 +41,7 @@ counts() { dc exec -T db psql -U openedm -d openedm -At -c "
 echo "1. start from $BASE ($(git rev-parse --short "$BASE"))"
 mkdir "$TMP/base"
 git archive "$BASE" | tar -x -C "$TMP/base"
-NEW_LOC=""; grep -q "'geneve-demo'" "$TMP/base/server/schema.sql" || NEW_LOC=geneve-demo   # Genève (démo) is new in this branch
+NEW_LOC=geneve-demo
 dc down -v --remove-orphans >/dev/null 2>&1 || true
 old up -d --build --wait --quiet-pull
 curl -fsS "$URL/api/health" | grep -q '"ok":true'
@@ -50,7 +51,7 @@ echo "2. start this checkout on the same database"
 dc up -d --build --wait --quiet-pull
 curl -fsS "$URL/api/health" | grep -q '"ok":true'
 
-echo "3. nothing lost; data.json = static build"
+echo "3. nothing lost; data.json = static build (Rive-Claire and Genève démo)"
 after=$(counts)
 [ "$before" = "$after" ] || { echo "row counts changed:"; diff <(echo "$before") <(echo "$after") || true; exit 1; }
 echo "   $(echo "$after" | tr '\n' ' ')"
@@ -63,6 +64,8 @@ p = sys.argv[1] + "/"
 full, static = (json.load(open(p + n + ".json", encoding="utf-8")) for n in ("full", "static"))
 assert full == static, "data.json differs after the upgrade: " + ", ".join(k for k in static if full.get(k) != static[k])
 EOF
+curl -fsS -b "$TMP/technique" --compressed "$URL/api/data.json?locality=geneve-demo" -o "$TMP/gdemo.json"
+"$PY" -c 'import json, sys; a, b = (json.load(open(f, encoding="utf-8")) for f in sys.argv[1:]); assert a == b, "Genève (démo) differs from prototype/data-geneve-demo.json after the upgrade: " + ", ".join(k for k in b if a.get(k) != b[k])' "$TMP/gdemo.json" prototype/data-geneve-demo.json
 
 echo "4. re-import adds nothing; a second start is clean"
 out=$(dc exec -T api python -m server.cli import)

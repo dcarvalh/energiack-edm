@@ -281,6 +281,13 @@ USES = {
     "Caserne de pompiers": ["Service du feu"], "Logements communaux": ["Hab plusieurs logements"],
 }
 HEAT_CODE = {"district": "CAD", "heatpump": "PAC", "wood": "GR", "electric": "EL"}
+# Plan item 18 (David, 15 Nov): the demo sites sit in one neighbourhood (Plainpalais / Jonction, around Boulevard
+# Carl-Vogt), not across the city. Each site takes the building nearest CENTRE (map metres) with its SITG use, within
+# RADIUS; where the area has none, a plausible host from FALLBACK (crèche on a residential ground floor, offices...).
+CENTRE, RADIUS = (1450, 1450), 550
+FALLBACK = {"Administration": ["Bureaux"], "Crèche (EVE)": ["Hab. - rez activités"], "Bibliothèque": ["Bureaux"],
+            "Salle communale": ["Centre de loisirs", "Salle de spectacle"], "Maison de quartier": ["Salle de spectacle"],
+            "École primaire": ["Autre école"]}
 NOT_QUARTER = {"Gare Cornavin", "Jet d'eau", "Parc des Bastions", "Rhône"}
 
 
@@ -288,17 +295,23 @@ def link_sites():
     data = json.loads(MAP_JSON.read_text(encoding="utf-8"))
     meta, used = data["meta"], set()
     labels = [l for l in meta["labels"] if l["name"] not in NOT_QUARTER]
-    rnd = random.Random(18)
-    for s in SITES:
-        if s["typo"] not in USES:
-            continue
-        cands = [b for b in data["buildings"] if b.get("use") in USES[s["typo"]] and b.get("addr") and b.get("idc")
-                 and b["egid"] not in used and b["h"] >= 4]
-        cands.sort(key=lambda b: b["egid"])
-        b = rnd.choice(cands)
+    pool = []
+    for b in data["buildings"]:
+        if b.get("addr") and b.get("idc") and b.get("egid") and b["h"] >= 4:
+            ring = max(b["rings"], key=len)
+            b["_c"] = (sum(p[0] for p in ring) / len(ring), sum(p[1] for p in ring) / len(ring))
+            b["_d"] = math.dist(b["_c"], CENTRE)
+            pool.append(b)
+    pool.sort(key=lambda b: (b["_d"], b["egid"]))
+    rare = lambda s: sum(b.get("use") in USES[s["typo"]] for b in pool)    # rarest site types choose first
+    for s in sorted((s for s in SITES if s["typo"] in USES), key=rare):
+        free = [b for b in pool if b["egid"] not in used]
+        b = (next((b for b in free if b.get("use") in USES[s["typo"]] and b["_d"] <= RADIUS), None)
+             or next((b for b in free if b.get("use") in FALLBACK.get(s["typo"], []) and b["_d"] <= RADIUS), None)
+             or next(b for b in free if b.get("use") in USES[s["typo"]]))
         used.add(b["egid"])
         ring = max(b["rings"], key=len)
-        cx, cy = sum(p[0] for p in ring) / len(ring), sum(p[1] for p in ring) / len(ring)
+        cx, cy = b["_c"]
         area = abs(sum(ring[i - 1][0] * ring[i][1] - ring[i][0] * ring[i - 1][1] for i in range(len(ring)))) / 2
         sre = b.get("sre") or round(area * (b.get("levels") or max(1, round(b["h"] / 3.2))) * 0.8)
         heat = HEAT_CODE.get(b.get("heat")) or (

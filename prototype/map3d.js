@@ -8,7 +8,7 @@ import { computeBoundsTree, acceleratedRaycast } from "./vendor/three-mesh-bvh.m
 THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
 
-const V = "16";
+const V = "17";
 const GREY = 0xb9bfbb, SITE_COL = 0x1f6feb;   // SITE_COL: buildings linked to a site of the municipality
 const RAMP = {
   idc:   [0x2e9e6e, 0x9cc95a, 0xf0b33c, 0xe0663a, 0xb8322a],
@@ -158,7 +158,7 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
   controls.touches = { ONE: THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_ROTATE };
   controls.enableDamping = true; controls.dampingFactor = 0.12; controls.zoomSpeed = 1.2;
   controls.maxPolarAngle = 1.3; controls.minDistance = 60; controls.maxDistance = Math.max(W, H) * 1.6;
-  const HOME = RC   // Rive-Claire: shift left so the north-west quarter is not under the card
+  let HOME = RC   // Rive-Claire: shift left so the north-west quarter is not under the card
     ? { pos: new THREE.Vector3(-W * 0.3, Math.max(W, H) * 0.62, H * 0.92), target: new THREE.Vector3(-W * 0.13, 0, -H * 0.02) }
     : { pos: new THREE.Vector3(-W * 0.18, Math.max(W, H) * 0.42, H * 0.72), target: new THREE.Vector3(0, 0, -H * 0.04) };
 
@@ -245,7 +245,8 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
   stage.innerHTML = ""; stage.appendChild(renderer.domElement);
 
   // ---------------------------------------------------------------- colouring + class filter
-  let LAYER = "idc", SEL = -1, HOV = -1, ONLY = null;   // ONLY = isolated class index, or "nd" for no data
+  const ONLY0 = NLINK ? "site" : null;   // a municipality with linked sites opens with only them lit
+  let LAYER = "idc", SEL = -1, HOV = -1, ONLY = ONLY0;   // ONLY = isolated class index, "nd" for no data, "site" for linked buildings
   const col = new THREE.Color(), white = new THREE.Color(0xffffff), ghost = new THREE.Color();
   const L = () => (RC ? layersRC : layers)(t, nf)[LAYER];
   function paint(bi, lay = L()) {
@@ -342,9 +343,9 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
   input.addEventListener("keydown", e => { if (e.key === "Enter") { const f = results.querySelector("[data-bi]"); if (f) f.click(); } if (e.key === "Escape") results.classList.add("hide"); });
 
   root.addEventListener("click", e => {
-    const l = e.target.closest("[data-ml]"); if (l) { LAYER = l.dataset.ml; ONLY = null; ui(); paintAll(); return; }
+    const l = e.target.closest("[data-ml]"); if (l) { LAYER = l.dataset.ml; ONLY = ONLY0; ui(); paintAll(); return; }
     const k = e.target.closest("[data-cls]");
-    if (k) { const v = k.dataset.cls === "nd" ? "nd" : +k.dataset.cls; ONLY = ONLY === v ? null : v; root.querySelector(".m3-legend").innerHTML = legendHtml(); paintAll(); return; }
+    if (k) { const v = ["nd", "site"].includes(k.dataset.cls) ? k.dataset.cls : +k.dataset.cls; ONLY = ONLY === v ? null : v; root.querySelector(".m3-legend").innerHTML = legendHtml(); paintAll(); return; }
     const r = e.target.closest("[data-bi]"); if (r) { results.classList.add("hide"); input.value = B[+r.dataset.bi].addr; select(+r.dataset.bi, true); return; }
     const tb = e.target.closest("[data-tool]"); if (!tb) return;
     const tool = tb.dataset.tool;
@@ -354,7 +355,7 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
     else if (tool === "top") orbitTo(isTop() ? { phi: 0.95 } : { phi: 0.0001 });
     else if (tool === "north") orbitTo({ theta: 0 });
     else if (tool === "full") toggleFull();
-    else if (tool === "home") { ONLY = null; ui(); paintAll(); animate(HOME.pos.clone(), HOME.target.clone()); }
+    else if (tool === "home") { ONLY = ONLY0; ui(); paintAll(); animate(HOME.pos.clone(), HOME.target.clone()); }
   });
 
   // ---------------------------------------------------------------- view tools: drag mode, orbit moves, full screen
@@ -441,7 +442,7 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
     const bi = pick(e);
     if (bi !== HOV) { const p = HOV; HOV = bi; if (p >= 0) paint(p); if (bi >= 0) paint(bi); flush(); }
     renderer.domElement.style.cursor = bi >= 0 ? "pointer" : "";
-    if (bi >= 0) { const b = B[bi], v = L().val(b); api.showTip(e, `<b>${esc(b.addr || "EGID " + b.egid)}</b><br>${esc(tr(b.use) || "")}${v ? `<br>${esc(v)}` : ""}`); } else api.hideTip();
+    if (bi >= 0) { const b = B[bi], v = L().val(b); api.showTip(e, `<b>${esc(b.addr || "EGID " + b.egid)}</b><br>${esc(tr(b.use) || "")}${b.siteName ? `<br>${esc(b.siteName)}` : ""}${v ? `<br>${esc(v)}` : ""}`); } else api.hideTip();
   });
   renderer.domElement.addEventListener("pointerleave", () => { api.hideTip(); if (HOV >= 0) { const p = HOV; HOV = -1; paint(p); flush(); } });
 
@@ -452,7 +453,7 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
   B.forEach((b, i) => { if (b.site && (bySite[b.site] === undefined || b.z + b.h > B[bySite[b.site]].z + B[bySite[b.site]].h)) bySite[b.site] = i; });
   for (const i of Object.values(bySite)) {
     const d = document.createElement("div"); d.className = "m3-place m3-site"; d.textContent = B[i].siteName; labWrap.appendChild(d);
-    labs.push({ d, site: true, v: new THREE.Vector3(centers[i].x, centers[i].y + B[i].h / 2 + 12, centers[i].z) });
+    labs.push({ d, site: B[i].site, v: new THREE.Vector3(centers[i].x, centers[i].y + B[i].h / 2 + 12, centers[i].z) });
   }
   const pv = new THREE.Vector3();
   function placeLabels() {
@@ -460,7 +461,7 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
     const pnl = root.querySelector(".m3-panel"), cut = pnl.classList.contains("hide") || w < 720 ? w : w - pnl.offsetWidth - 70;
     for (const l of labs) {
       pv.copy(l.v).project(camera);
-      const vis = pv.z < 1 && Math.abs(pv.x) < 1.05 && Math.abs(pv.y) < 1.05 && (l.site || dist > 500) && ((pv.x + 1) / 2) * w < cut;
+      const vis = pv.z < 1 && Math.abs(pv.x) < 1.05 && Math.abs(pv.y) < 1.05 && (l.site ? dist < 900 || B[SEL]?.site === l.site || B[HOV]?.site === l.site : dist > 500) && ((pv.x + 1) / 2) * w < cut;
       l.d.style.opacity = vis ? 1 : 0;
       if (vis) l.d.style.transform = `translate(${((pv.x + 1) / 2) * w}px, ${((1 - pv.y) / 2) * h}px) translate(-50%, -100%)`;
     }
@@ -503,6 +504,11 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
     renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); request();
   });
   ro.observe(stage);
+  if (NLINK) {   // frame the municipality's sites (Genève démo: one neighbourhood) instead of the whole map
+    const box = new THREE.Box3(); B.forEach((b, i) => { if (b.site) box.expandByPoint(centers[i]); });
+    const c = box.getCenter(new THREE.Vector3()), S = Math.max(600, (box.max.x - box.min.x), (box.max.z - box.min.z)) * 1.25;
+    HOME = { pos: new THREE.Vector3(c.x - S * 0.18, S * 0.55, c.z + S * 0.8), target: new THREE.Vector3(c.x, 0, c.z) };
+  }
   camera.position.copy(HOME.pos); controls.target.copy(HOME.target); controls.update();
   theme(); setMode("pan"); ui();
   window.__m3 = { buildMs, lastPick: () => lastPickMs, n: B.length, cam: () => { const s = sph(); return [Math.round(s.radius), +s.phi.toFixed(3), +s.theta.toFixed(3), Math.round(controls.target.x), Math.round(controls.target.z)]; } };   // read by the headless check
