@@ -91,6 +91,8 @@ CREATE TABLE IF NOT EXISTS building (
     PRIMARY KEY (locality_id, id_batiment)
 );
 CREATE INDEX IF NOT EXISTS building_site ON building (locality_id, id_site);
+-- optional federal building id (EGID): links a site's building to the public one on the map (plan item 16)
+ALTER TABLE building ADD COLUMN IF NOT EXISTS egid bigint;
 
 CREATE TABLE IF NOT EXISTS installation (
     locality_id      integer NOT NULL REFERENCES locality ON DELETE CASCADE,
