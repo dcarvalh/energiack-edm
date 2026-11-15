@@ -141,7 +141,13 @@ Items 15–19 keep their numbers: their details are under "Public base layer" be
   `prototype/data.json` was stale (no coverage KPI on Pages); on the static copy Data and Localities showed "Select a
   municipality" / "Error creating locality": they now say these need the server version, with a link. Left as is:
   `api/data.json?locality=geneve` answers 503 (no readings yet), which the app reads as "no data yet".
-  Then a project entry on the portfolio site (`portfolio/`, separate repo) linking the server version.
+  Portfolio entry (`portfolio/`, separate repo) linking the server version: written 15 Nov, in EN/FR/PT.
+- **Step 10.** Geneva: estimated instead of simulated (David, 15 Nov). For every simulated value in the Geneva
+  municipalities (the Genève map's electricity and water, and the readings of Genève (démo)), try to estimate the real
+  value from public data (e.g. SITG heat index × floor area, building type and size, published consumption ratios),
+  replace the simulated number with the estimate and label it "estimated" (with its method and source) instead of
+  "simulated". Where no estimate is possible, or its error would likely be large, show "no data" instead of a number.
+  To decide per indicator: which public source, which error is still acceptable.
 
 **Before 1 Dec, after "Now"**
 - #10 council summary (S–M): choose the year, printable page, quality and limits in it; same numbers as Manage.
