@@ -4,7 +4,7 @@ Public repo. Live at https://dcarvalh.github.io/energiack-edm/ (GitHub Pages, de
 What it does and how to run it: `README.md`. Team plan, decisions and next steps: `plan.md`. Dataset notes: `docs/rive-claire-data.md`.
 
 ## Rules
-- **Public repo: only public or fictional data.** Data received under confidentiality at the event (partner APIs, real
+- **Public repo: only public or fictional data.** Restricted partner data and any mention of it (name, fields, notes) never get committed. Data received under confidentiality at the event (partner APIs, real
   municipal cases) never goes into git, the site, or an AI service without the owner's OK.
 - **FR and EN are a must.** Every visible string goes through the `T.fr` / `T.en` dictionaries in `prototype/index.html`
   (`map3d.js` uses the same `t()`). `tools/check_page.py` fails if the two key sets differ.

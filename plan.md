@@ -82,8 +82,8 @@ hosting, and it **complements** existing tools as an aggregator instead of repla
 | Several municipalities on one server (#43): municipality selector, Municipalities page, ZIP upload into a staging area, row review/edit, commit; 3D map per municipality | merged 14 Nov; checked by CI (`tools/check_stack.sh`, #45). Whether the live server runs it: not checked on 15 Nov |
 | Pitch deck (`prototype/pitch/`, French only, runs offline) with app clips and two QR codes | done 14 Nov (#33–#46) |
 
-**Two live copies.** GitHub Pages (static, open, no login; the pitch QR code points there) and the server version
-(database, logins, roles, one-click demo accounts): https://openedm.davidcarvalho.work/ (both links in `README.md`).
+**Main link: the server version** https://openedm.davidcarvalho.work/ (database, logins, roles, one-click demo
+accounts; David, 15 Nov). GitHub Pages stays as an open static copy (no login). The old redirect domain is retired.
 Server access and its cost are with David.
 
 **Hosted version, decided (14 Nov):** one small server running `compose.yaml` (see `docs/deploy.md`); built-in
@@ -95,12 +95,13 @@ hand), resetting passwords from the app.
 
 **Decide first** (team): what "more polished and easier to use" means. Suggested starting points: a guided first
 visit (what to look at, in what order), fewer controls per screen, plain-language labels, one obvious story path for the
-demo (energy manager → council → citizen), and which link the demo shows (Pages or the server version).
+demo (energy manager → council → citizen). The demo link is the server version (decided 15 Nov).
 
 **Pitch and docs**
 1. Slides in English: an English copy of `prototype/pitch/` (today French only), same clips with EN app text.
 2. Update `README.md`: the project goes on after the hackathon, 1 Dec presentation, current features (municipalities,
-   staging import, roles), and which live link is for what.
+   staging import, roles); the server version is the main link, Pages the open copy. Check the pitch QR codes and
+   links point to one of these two.
 3. Pitch clips: the two clips stacked on slides 2 and 3 are small on a projector.
 
 **P0 user stories, still open** (status comment on each issue, 15 Nov; #5 closed as done)
