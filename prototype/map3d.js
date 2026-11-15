@@ -8,9 +8,10 @@ import { computeBoundsTree, acceleratedRaycast } from "./vendor/three-mesh-bvh.m
 THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
 
-const V = "27";
+const V = "29";
 const GREY = 0xb9bfbb;
-const SEL_COL = 0xff2bbf;   // the single selected/clicked building: a vivid, unmistakable magenta
+const SEL_COL = 0xff2bbf;   // selected/clicked building: a vivid magenta outline rim
+const SITEHI = 0x2a9df4;    // the other blocks of the selected building's site: a thinner blue outline rim
 const RAMP = {
   idc:   [0x2e9e6e, 0x9cc95a, 0xf0b33c, 0xe0663a, 0xb8322a],
   solar: [0xfdf1c7, 0xf8d66d, 0xf1b52c, 0xd98b0b],
@@ -233,6 +234,45 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
   const bMat = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });
   const bMesh = new THREE.Mesh(bg, bMat);
   scene.add(bMesh);
+  // Selection outline: a slightly inflated back-face shell of a building draws a crisp coloured rim
+  // around its silhouette WITHOUT recolouring the building, so it keeps its data/metric colour.
+  // Selected block -> thick magenta; the other blocks of its site -> a thinner blue rim.
+  function hullGeo(biList, thickness) {
+    // enforce outward (front) winding per triangle so side:BackSide renders only the far faces = a clean silhouette rim
+    // (the building mesh mixes winding — roofs vs walls — which would otherwise fill the whole shell).
+    const out = [], Pp = bg.attributes.position.array, nrm = new THREE.Vector3(), e1 = new THREE.Vector3(), e2 = new THREE.Vector3();
+    for (const bi of biList) {
+      const [s, e] = ranges[bi], c = centers[bi];
+      let rad = 0; for (let k = s; k < e; k++) rad += Math.hypot(Pp[3*k]-c.x, Pp[3*k+1]-c.y, Pp[3*k+2]-c.z);
+      rad = rad / Math.max(1, e - s) || 1;
+      const f = 1 + thickness / rad;                       // scale from the block centroid -> ~uniform rim width
+      const sv = k => [c.x + (Pp[3*k]-c.x)*f, c.y + (Pp[3*k+1]-c.y)*f, c.z + (Pp[3*k+2]-c.z)*f];
+      for (let k = s; k + 2 < e; k += 3) {
+        const a = sv(k), b = sv(k+1), d = sv(k+2);
+        e1.set(b[0]-a[0], b[1]-a[1], b[2]-a[2]); e2.set(d[0]-a[0], d[1]-a[1], d[2]-a[2]); nrm.crossVectors(e1, e2);
+        const outward = nrm.x*((a[0]+b[0]+d[0])/3 - c.x) + nrm.y*((a[1]+b[1]+d[1])/3 - c.y) + nrm.z*((a[2]+b[2]+d[2])/3 - c.z);
+        if (outward >= 0) out.push(...a, ...b, ...d); else out.push(...a, ...d, ...b);
+      }
+    }
+    const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(out, 3)); return g;
+  }
+  const outlineSite = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial({ color: SITEHI, side: THREE.BackSide }));
+  const outlineSel  = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial({ color: SEL_COL, side: THREE.BackSide }));
+  outlineSite.visible = outlineSel.visible = false; outlineSite.renderOrder = 1; outlineSel.renderOrder = 2;
+  scene.add(outlineSite, outlineSel);
+  const SEL_T = 2.4, SITE_T = 1.0;                         // rim thickness (m): selected thick, site-mates thin
+  function setHull(mesh, biList, thickness) {
+    mesh.geometry.dispose();
+    mesh.geometry = biList.length ? hullGeo(biList, thickness) : new THREE.BufferGeometry();
+    mesh.visible = biList.length > 0;
+  }
+  const siteOf = b => IMP ? b.id_site : (RC ? b.site : null);
+  function updateOutlines() {
+    setHull(outlineSel, SEL >= 0 && !isHidden(SEL) ? [SEL] : [], SEL_T);
+    let mates = [];
+    if (SEL >= 0) { const sid = siteOf(B[SEL]); if (sid != null) for (let i = 0; i < B.length; i++) if (i !== SEL && siteOf(B[i]) === sid && !isHidden(i)) mates.push(i); }
+    setHull(outlineSite, mates, SITE_T);
+  }
   // trees (Rive-Claire scenery, generated): one instanced mesh, not pickable
   let treeMesh = null;
   if (M.trees && M.trees.length) {
@@ -252,10 +292,8 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
   let MFILTER = "all";                                   // imported map: "all" | "matched" | "unmatched"
   const col = new THREE.Color(), white = new THREE.Color(0xffffff), ghost = new THREE.Color();
   const WARN = 0xe0893a;                                 // imported map: a building not yet matched to a site
-  const SITEHI = 0x2a9df4;                               // highlight: all buildings of the selected site
   const L = () => (RCLIKE ? layersRC : layers)(t, nf)[LAYER];
   const unmatched = bi => IMP && !B[bi].id_site;
-  const selSite = () => (IMP && SEL >= 0) ? B[SEL].id_site : null;   // site of the selected building, for highlight
   const anyFilter = () => ONLY !== null || (IMP && MFILTER !== "all");
   function isHidden(bi, lay = L()) {                     // currently filtered out of view (ghosted) -> not pickable
     const c = lay.cls(B[bi]), un = unmatched(bi);
@@ -266,18 +304,14 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
     const c = lay.cls(B[bi]);
     const un = unmatched(bi);
     const hidden = isHidden(bi, lay);
-    const site = selSite();
-    const siteHi = site && B[bi].id_site === site;        // this building belongs to the selected site
-    if (hidden) col.copy(ghost);
-    else if (bi === SEL) col.setHex(SEL_COL);             // the clicked/selected block: one unmistakable colour
-    else if (siteHi) col.setHex(SITEHI);
+    if (hidden) col.copy(ghost);                           // selection/site are shown by outline rims, not by recolouring
     else if (un) col.setHex(WARN);
     else col.setHex(c < 0 ? GREY : lay.ramp[c]);
-    if (bi === SEL) { /* already the selection colour */ } else if (bi === HOV) col.lerp(white, 0.35);
+    if (bi === HOV) col.lerp(white, 0.35);
     const [s, e] = ranges[bi];
     for (let k = s; k < e; k++) { colors[3 * k] = col.r; colors[3 * k + 1] = col.g; colors[3 * k + 2] = col.b; }
   }
-  function paintAll() { const lay = L(); for (let i = 0; i < B.length; i++) paint(i, lay); flush(); }
+  function paintAll() { const lay = L(); for (let i = 0; i < B.length; i++) paint(i, lay); updateOutlines(); flush(); }
   function flush() { bg.attributes.color.needsUpdate = true; request(); }
 
   // ---------------------------------------------------------------- UI
@@ -384,13 +418,10 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
     el.querySelector(".m3-close").onclick = () => select(-1);
   }
   function select(bi, fly) {
-    const prevSite = selSite();
-    const prev = SEL; SEL = bi;
-    // imported map: selecting a matched building highlights every building of the same site, so repaint all
-    if (IMP && (prevSite || (bi >= 0 && B[bi].id_site))) paintAll();
-    else { if (prev >= 0) paint(prev); if (bi >= 0) paint(bi); }
+    SEL = bi;
+    updateOutlines();                                     // selection + site shown as outline rims; no recolouring
     if (bi >= 0) { panel(bi); if (fly) flyTo(centers[bi]); } else root.querySelector(".m3-panel").classList.add("hide");
-    flush(); placeLabels();
+    request(); placeLabels();
   }
 
   // search by address
