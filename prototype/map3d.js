@@ -8,7 +8,7 @@ import { computeBoundsTree, acceleratedRaycast } from "./vendor/three-mesh-bvh.m
 THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
 
-const V = "13";
+const V = "14";
 const GREY = 0xb9bfbb;
 const RAMP = {
   idc:   [0x2e9e6e, 0x9cc95a, 0xf0b33c, 0xe0663a, 0xb8322a],
@@ -107,7 +107,6 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
     <div class="m3-labels"></div>
     <div class="m3-ui">
       <div class="m3-card">
-        <div class="seg m3-maps"><button data-map="rc"></button><button data-map="ge"></button></div>
         <div class="m3-title"></div><div class="m3-sub"></div>
         <div class="m3-search"><input type="search" autocomplete="off"><div class="m3-results hide"></div></div>
         <div class="chips m3-layers"></div>
@@ -259,7 +258,6 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
       + `<div class="m3-fhint">${esc(ONLY === null ? t("m_filter_hint") : t("m_filter_clear"))}</div>`;
   }
   function ui() {
-    for (const b of root.querySelectorAll("[data-map]")) { b.textContent = t("m_map_" + b.dataset.map); b.classList.toggle("on", b.dataset.map === cfg.key); }
     root.querySelector(".m3-title").textContent = t(RC ? "m_map_title_rc" : "m_map_title");
     root.querySelector(".m3-sub").textContent = RC ? t("m_sub_rc", { n: nf(B.length), s: nf(new Set(B.map(b => b.site)).size), y: M.year }) : t("m_sub", { n: nf(B.length) });
     root.querySelector(".m3-search input").placeholder = t(RC ? "m_search_rc" : "m_search");
@@ -334,7 +332,6 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
     const k = e.target.closest("[data-cls]");
     if (k) { const v = k.dataset.cls === "nd" ? "nd" : +k.dataset.cls; ONLY = ONLY === v ? null : v; root.querySelector(".m3-legend").innerHTML = legendHtml(); paintAll(); return; }
     const r = e.target.closest("[data-bi]"); if (r) { results.classList.add("hide"); input.value = B[+r.dataset.bi].addr; select(+r.dataset.bi, true); return; }
-    const mp = e.target.closest("[data-map]"); if (mp) { if (mp.dataset.map !== cfg.key) api.switchMap(mp.dataset.map); return; }
     const tb = e.target.closest("[data-tool]"); if (!tb) return;
     const tool = tb.dataset.tool;
     if (tool === "pan" || tool === "orbit") setMode(tool);

@@ -69,15 +69,17 @@ with sync_playwright() as p:
                 page.click("[data-lang='en']"); page.wait_for_timeout(300)
                 if "Manage" not in page.inner_text("nav"):
                     problems.append("language toggle did not switch nav to EN")
-                # 3D map: Rive-Claire by default, switch to Geneva and back (one WebGL canvas at a time)
+                # 3D map: one per municipality. Rive-Claire's by default; choosing Geneva shows its map, then back
                 page.goto(URL + "?lang=en#carte"); page.wait_for_selector("#m3 canvas", timeout=60000)
                 page.wait_for_function("window.__m3 && window.__m3.n < 100", timeout=60000)
-                page.click("[data-map='ge']"); page.wait_for_function("window.__m3 && window.__m3.n > 1000", timeout=90000)
+                if page.locator("[data-map]").count():
+                    problems.append("the old map switch is still on the 3D map")
+                page.select_option("#loc-select", "geneve"); page.wait_for_function("window.__m3 && window.__m3.n > 1000", timeout=90000)
                 page.wait_for_timeout(1500); page.screenshot(path=str(OUT / "desk-light-en-carte-geneva.png"))
-                page.click("[data-map='rc']"); page.wait_for_function("window.__m3 && window.__m3.n < 100", timeout=60000)
+                page.select_option("#loc-select", "rive-claire"); page.wait_for_function("window.__m3 && window.__m3.n < 100", timeout=60000)
                 if page.locator("canvas").count() != 1:
-                    problems.append(f"map switch left {page.locator('canvas').count()} canvases")
-                page.evaluate("localStorage.removeItem('energiack-map')")
+                    problems.append(f"municipality switch left {page.locator('canvas').count()} canvases")
+                page.evaluate("localStorage.removeItem('edm-locality')")
             if errs:
                 problems.append(f"{dev} {scheme} JS errors: {errs[:5]}")
             ctx.close()

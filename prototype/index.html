@@ -232,7 +232,7 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;ba
 .m3-ui{position:absolute;top:12px;left:12px;max-width:360px}
 .m3-card,.m3-hint,.m3-attr{background:color-mix(in srgb,var(--surface) 90%,transparent);backdrop-filter:blur(8px);border:1px solid var(--line);box-shadow:var(--shadow)}
 .m3-card{border-radius:12px;padding:12px 14px;max-height:calc(100vh - 190px);overflow:auto}
-.m3-maps{margin-bottom:8px} .m3-title{font-weight:680;letter-spacing:-.01em;font-size:16px} .m3-sub{font-size:12.5px;color:var(--muted);margin-bottom:10px}
+.m3-title{font-weight:680;letter-spacing:-.01em;font-size:16px} .m3-sub{font-size:12.5px;color:var(--muted);margin-bottom:10px}
 .m3-legend{margin-top:10px;font-size:12px;color:var(--muted)} .m3-unit{font-weight:600;color:var(--text);margin-bottom:6px}
 .m3-key{display:inline-flex;align-items:center;gap:5px;margin:0 10px 4px 0} .m3-key i{width:10px;height:10px;border-radius:3px;display:inline-block}
 .m3-panel{position:absolute;top:12px;right:12px;bottom:40px;width:340px;overflow-y:auto;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;box-shadow:var(--shadow)}
@@ -686,7 +686,7 @@ fr:{
   m_nodata:"Pas de donnée", m_yr:"an", m_sim:"simulé",
   m_hint:"Glisser : déplacer · Clic droit : pivoter · Molette : zoom · Flèches : déplacer · Clic : détails", m_hint_touch:"1 doigt : déplacer · 2 doigts : zoom et rotation · Toucher : détails",
   m_reset:"Recentrer", m_attr:"© swisstopo · Données SITG (extraction nov. 2026), traitées par openEDM · électricité et eau simulées",
-  m_map_rc:"Rive-Claire", m_map_ge:"Genève", m_map_title_rc:"Rive-Claire · patrimoine communal",
+  m_nomap:"Pas encore de carte 3D pour cette commune.", m_map_title_rc:"Rive-Claire · patrimoine communal",
   m_sub_rc:"{n} bâtiments · {s} sites · relevés {y} · plan fictif, volumes schématiques", m_search_rc:"Rechercher un site…",
   m_attr_rc:"Données : Energ-IA Transition, Energ-IACK 2026 (CC BY 4.0) · volumes déduits de la SRE et des niveaux, agrandis ×{k} · lac, routes et arbres inventés",
   m_src_rc:"Source : Energ-IA Transition, Energ-IACK 2026 (CC BY 4.0)", m_l_int:"Énergie / m²", m_l_hi:"Indice de chaleur", m_p_hi:"Indice de chaleur", m_n_hi:"Approximatif, non corrigé du climat : pas l'IDC officiel.", m_n_hi_est:"Approximatif, non corrigé du climat : pas l'IDC officiel. Chaleur de la pompe à chaleur estimée.",
@@ -851,7 +851,7 @@ en:{
   m_nodata:"No data", m_yr:"yr", m_sim:"simulated",
   m_hint:"Drag: move · Right-drag: rotate · Wheel: zoom · Arrow keys: move · Click: details", m_hint_touch:"1 finger: move · 2 fingers: zoom and rotate · Tap: details",
   m_reset:"Reset view", m_attr:"© swisstopo · SITG data (extracted Nov 2026), processed by openEDM · electricity and water simulated",
-  m_map_rc:"Rive-Claire", m_map_ge:"Geneva", m_map_title_rc:"Rive-Claire · municipal buildings",
+  m_nomap:"No 3D map for this municipality yet.", m_map_title_rc:"Rive-Claire · municipal buildings",
   m_sub_rc:"{n} buildings · {s} sites · {y} readings · fictional plan, schematic volumes", m_search_rc:"Search a site…",
   m_attr_rc:"Data: Energ-IA Transition, Energ-IACK 2026 (CC BY 4.0) · volumes from floor area and levels, enlarged ×{k} · lake, roads and trees invented",
   m_src_rc:"Source: Energ-IA Transition, Energ-IACK 2026 (CC BY 4.0)", m_l_int:"Energy / m²", m_l_hi:"Heat index", m_p_hi:"Heat index", m_n_hi:"Approximate, not weather-corrected: not the official IDC.", m_n_hi_est:"Approximate, not weather-corrected: not the official IDC. Heat-pump heat estimated.",
@@ -1231,24 +1231,20 @@ function renderAbout(){
 /* ---------------------------------------------------------------- 3D map (loaded on first visit) */
 let MAP = null, MAP_LOADING = false;
 const isDark = () => { const a = document.documentElement.dataset.theme; return a ? a === "dark" : matchMedia("(prefers-color-scheme: dark)").matches; };
+// One map per municipality: its map_config picks one of these (no switch on the map)
 const MAPS = {rc:{key:"rc", dir:"map-rc/"}, ge:{key:"ge", dir:"map/"}};
-let MAPKEY = "rc", MAP_PICKED = false;   // MAP_PICKED: the user chose a map with the switch since the municipality changed
-try { if (MAPS[localStorage.getItem("energiack-map")]) MAPKEY = localStorage.getItem("energiack-map"); } catch(e) {}
-function switchMap(k){
-  if (MAP_LOADING || !MAPS[k] || k===MAPKEY) return;
-  MAPKEY = k; MAP_PICKED = true; try { localStorage.setItem("energiack-map", k); } catch(e) {}
-  if (MAP) { MAP.destroy(); MAP = null; }
-  renderMap();
-}
+try { localStorage.removeItem("energiack-map"); } catch(e) {}   // the old map switch's saved choice
+let MAP_FOR = null;   // slug of the municipality the shown (or loading) map belongs to
+function resetMap(){ if (MAP) MAP.destroy(); MAP = null; MAP_FOR = null; }
 function renderMap(){
+  const mapCfg = MAPS[LOC?.map_config?.key], el = document.getElementById("m3");
+  if (!MAP_LOADING && MAP_FOR && MAP_FOR !== LOC?.slug) resetMap();
+  if (!mapCfg) { el.innerHTML = `<div class="m3-loading">${esc(t("m_nomap"))}</div>`; return; }
   if (MAP || MAP_LOADING) return;
-  MAP_LOADING = true;
-  // The municipality's declared map is the default; the switch on the map still changes it
-  const mc = LOC?.map_config;
-  if (!MAP_PICKED && mc?.key && MAPS[mc.key]) MAPKEY = mc.key;
-  const mapCfg = MAPS[MAPKEY];
-  import("./map3d.js?v="+V).then(m => m.initMap(document.getElementById("m3"), {t, nf, esc, showTip, hideTip, dark:isDark, lang:()=>LANG, switchMap, heatIndex:(sid, y)=>(M.sites[sid]||{})[y]}, mapCfg))
-    .then(x => { MAP = x; MAP_LOADING = false; }).catch(e => { MAP_LOADING = false; document.getElementById("m3").innerHTML = `<div class="m3-loading">${esc(String(e))}</div>`; });
+  MAP_LOADING = true; MAP_FOR = LOC.slug;
+  import("./map3d.js?v="+V).then(m => m.initMap(el, {t, nf, esc, showTip, hideTip, dark:isDark, lang:()=>LANG, heatIndex:(sid, y)=>(M.sites[sid]||{})[y]}, mapCfg))
+    .then(x => { MAP = x; MAP_LOADING = false; if (MAP_FOR !== LOC?.slug && VIEW === "carte") renderMap(); })
+    .catch(e => { MAP_LOADING = false; MAP_FOR = null; el.innerHTML = `<div class="m3-loading">${esc(String(e))}</div>`; });
 }
 
 /* ---------------------------------------------------------------- site drawer */
@@ -1450,7 +1446,7 @@ function renderLocality() {
   if (sel) sel.onchange = async () => {
     LOC = LOCALITIES.find(l => l.slug === sel.value) || LOC;
     try { localStorage.setItem("edm-locality", LOC.slug); } catch(e) {}
-    MAP_PICKED = false; if (MAP) { MAP.destroy(); MAP = null; MAP_LOADING = false; }
+    if (!MAP_LOADING) resetMap();
     await loadData();
     route();
   };
@@ -1684,7 +1680,7 @@ function locDelete(slug, name) {
       // Active locality was deleted: switch to first remaining
       LOC = remaining.length ? remaining[0] : null;
       if (LOC) try { localStorage.setItem("edm-locality", LOC.slug); } catch(e) {}
-      MAP_PICKED = false; if (MAP) { MAP.destroy(); MAP = null; MAP_LOADING = false; }
+      if (!MAP_LOADING) resetMap();
       await loadData();
       renderAll();          // refreshes sidebar + all views
     }
@@ -2142,7 +2138,7 @@ let RZ, LASTW = innerWidth;
 window.addEventListener("resize", () => { clearTimeout(RZ); RZ = setTimeout(() => { if (Math.abs(innerWidth - LASTW) < 40 || !D) return; LASTW = innerWidth; const open = document.getElementById("drawer").classList.contains("open"); renderAll(); if (open) reopen(); }, 200); });
 matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", renderAll);
 
-const V = "39";
+const V = "40";
 (async () => {
   try {
     const c = await fetch("api/config.json?v="+V, {cache:"no-store"}).then(r => r.json());
