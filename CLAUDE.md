@@ -44,6 +44,7 @@ What it does and how to run it: `README.md`. Team plan, decisions and next steps
 ## Map (3D tab)
 - Two maps, one per municipality (its `map_config`, no switch on the map): Rive-Claire (`prototype/map-rc/`, `tools/make_rive_claire_map.py`, default) and Geneva (`prototype/map/`,
   `tools/make_map.py`). Same schema; `map3d.js` branches on `cfg.key === "rc"`. `initMap` returns `destroy()`, called when the municipality changes.
+- Site ↔ map building: optional `egid` column in `batiments` (`build()` emits it only when set). `index.html` passes `sites` (EGID → site) to `initMap`; the site page reads the public attributes with `publicBuildings()` from `map3d.js`.
 - Never build straight into `prototype/`: `--out` a scratch folder, test it, then copy.
 - three.js 0.160.0 and three-mesh-bvh 0.7.6 vendored in `prototype/vendor/`. BVH keeps hover picking fast on 10k buildings.
   `OrbitControls.js` only exports `OrbitControls`. Headless 3D needs `--use-angle=swiftshader --enable-unsafe-swiftshader`.

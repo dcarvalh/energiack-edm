@@ -115,7 +115,7 @@ Items 15–19 keep their numbers: their details are under "Public base layer" be
   it is only a name. Make it visible and explicit: e.g. a labelled button "Municipality: Rive-Claire ▾" (FR/EN) that
   opens the list, also reachable on phone width; show the current municipality in the page header.
 - ~~**Step 6.**~~ Done 15 Nov: Geneva addresses from SITG `CAD_ADRESSE` (`tools/geneva_addresses.py`, normal-case names): most buildings sharing one address 10 → 2. Without an address 487 → 1933: annexes, garages and building parts with their own EGID that the register gives no address (their old one was the energy record of a group); they show "EGID …". Idea: a "part of <address>" link for them. (M, item 19.) Before step 8, because Genève (démo) shows real addresses.
-- **Step 7.** EGID link (M–L, item 16). Needed by step 8.
+- ~~**Step 7.**~~ Done 15 Nov: EGID link (item 16): optional `egid` column in `batiments` (`ALTER TABLE building ADD COLUMN IF NOT EXISTS egid`). On the Geneva map linked buildings get a blue site label, a "Municipality sites" legend filter and an "All data for this site" button; the site page gets a "Public building data" table read from the map. Tested with two fictional Geneva sites linked by hand (no committed data has EGIDs yet: step 8).
 - **Step 8.** Genève (démo) (L, item 18). Until item 17 exists, it is what the Geneva map shows with readings.
 - **Step 9.** Last: stability pass on the server version (S, new): every page and role on https://openedm.davidcarvalho.work/,
    FR and EN, phone width; fix what is broken or confusing (empty states, errors). Then a project entry on the

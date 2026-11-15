@@ -8,8 +8,8 @@ import { computeBoundsTree, acceleratedRaycast } from "./vendor/three-mesh-bvh.m
 THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
 
-const V = "15";
-const GREY = 0xb9bfbb;
+const V = "16";
+const GREY = 0xb9bfbb, SITE_COL = 0x1f6feb;   // SITE_COL: buildings linked to a site of the municipality
 const RAMP = {
   idc:   [0x2e9e6e, 0x9cc95a, 0xf0b33c, 0xe0663a, 0xb8322a],
   solar: [0xfdf1c7, 0xf8d66d, 0xf1b52c, 0xd98b0b],
@@ -99,6 +99,14 @@ const LAYER_KEYS = ["idc", "heat", "solar", "elec", "water"];
 const hex = c => "#" + c.toString(16).padStart(6, "0");
 const norm = s => (s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
+// Public attributes of the map's buildings with these EGIDs, for the site page (plan item 16). use is translated.
+const PUB = {};
+export async function publicBuildings(dir, egids, lang) {
+  PUB[dir] = PUB[dir] || fetch(dir + "buildings.json?v=" + V).then(r => r.json()).then(d => new Map(d.buildings.filter(b => b.egid).map(b => [b.egid, b])));
+  const m = await PUB[dir];
+  return egids.map(e => m.get(e)).filter(Boolean).map(b => ({ ...b, use: (lang === "en" && EN[b.use]) || b.use }));
+}
+
 export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
   const { t, nf, esc } = api, RC = cfg.key === "rc", DIR = cfg.dir;
   const tr = s => (api.lang() === "en" && EN[s]) || s;
@@ -126,6 +134,9 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
     const x = api.heatIndex(b.site, b.rc.year);
     b.rc.mj_m2 = x && x.hi != null ? Math.round(x.hi) : null; b.rc.hi_est = !!(x && x.hiEst);
   }
+  const SITES = (!RC && api.sites) || {};                   // EGID -> the municipality's site that owns the building (plan item 16)
+  let NLINK = 0;
+  if (!RC) for (const b of B) { const s = SITES[b.egid]; if (s) { b.site = s.id; b.siteName = s.name; NLINK++; } }
   const [terr, imgs] = await Promise.all([
     fetch(DIR + "terrain.bin?v=" + V).then(r => r.arrayBuffer()).then(b => new Int16Array(b)),
     Promise.all(Array.from({ length: NT * NT }, (_, k) => new Promise((res, rej) => {
@@ -239,7 +250,7 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
   const L = () => (RC ? layersRC : layers)(t, nf)[LAYER];
   function paint(bi, lay = L()) {
     const c = lay.cls(B[bi]);
-    const hidden = ONLY !== null && (ONLY === "nd" ? c !== -1 : c !== ONLY);
+    const hidden = ONLY !== null && (ONLY === "site" ? !B[bi].site : ONLY === "nd" ? c !== -1 : c !== ONLY);
     if (hidden) col.copy(ghost); else col.setHex(c < 0 ? GREY : lay.ramp[c]);
     if (bi === SEL) col.lerp(white, 0.6); else if (bi === HOV) col.lerp(white, 0.35);
     const [s, e] = ranges[bi];
@@ -255,6 +266,7 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
     const item = (key, colour, label, n) => `<button class="m3-key ${ONLY === key ? "on" : ""} ${ONLY !== null && ONLY !== key ? "off" : ""}" data-cls="${key}"><i style="background:${hex(colour)}"></i><span>${esc(label)}</span><em>${nf(n)}</em></button>`;
     return `<div class="m3-unit">${esc(t((RC ? "m_lg_rc_" : "m_lg_") + LAYER))}${lay.unit ? ` · ${esc(lay.unit)}` : ""}${lay.sim ? ` <span class="pill p-warn">${esc(t("m_sim"))}</span>` : ""}</div>`
       + `<div class="m3-keys">${lay.labels.map((l, i) => item(i, lay.ramp[i], l, counts[i])).join("")}${item("nd", GREY, t("m_nodata"), nd)}</div>`
+      + (NLINK ? `<div class="m3-keys">${item("site", SITE_COL, t("m_sites"), NLINK)}</div>` : "")
       + `<div class="m3-fhint">${esc(ONLY === null ? t("m_filter_hint") : t("m_filter_clear"))}</div>`;
   }
   function ui() {
@@ -292,11 +304,13 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
   }
   function panel(bi) {
     const b = B[bi], el = root.querySelector(".m3-panel"), yr = t("m_yr");
+    const site = b.site ? `<div class="m3-sec"><div class="m3-h">${esc(t("m_site_of"))}</div><b>${esc(b.siteName)}</b> <span class="mut">· ${esc(b.site)}</span>
+      <div class="m3-acts"><a class="btn" href="#site/${esc(b.site)}">${esc(t("m_open_site"))}</a></div></div>` : "";
     if (RC) { el.innerHTML = panelRC(b); el.classList.remove("hide"); el.querySelector(".m3-close").onclick = () => select(-1); return; }
     const idcClass = b.idc ? (b.idc.mj_m2 >= 800 ? "p-fossil" : b.idc.mj_m2 >= 450 ? "p-warn" : "p-ren") : "";
     const hc = b.heat ? hex(HEAT[b.heat]) : null;
     el.innerHTML = `<div class="row"><div style="min-width:0"><div class="tsub">${esc(tr(b.use) || "")}</div><h2 style="margin:2px 0 0">${esc(b.addr || "EGID " + (b.egid || "–"))}</h2>${b.npa ? `<div class="tsub">${esc(b.npa)}</div>` : ""}</div><div class="spacer"></div><button class="x m3-close" aria-label="close">×</button></div>
-      <div class="m3-sec">${row(t("m_p_year"), b.year)}${row(t("m_p_levels"), b.levels)}${row(t("m_p_height"), nf(b.h, 1) + " m")}${row(t("m_p_sre"), b.sre ? nf(b.sre) + " m²" : null)}</div>
+      ${site}<div class="m3-sec">${row(t("m_p_year"), b.year)}${row(t("m_p_levels"), b.levels)}${row(t("m_p_height"), nf(b.h, 1) + " m")}${row(t("m_p_sre"), b.sre ? nf(b.sre) + " m²" : null)}</div>
       <div class="m3-sec"><div class="m3-h">${esc(t("m_l_heat"))}</div>
         ${b.heat ? `<span class="pill" style="background:${hc}22;color:${hc}">${esc(t("m_heat_" + b.heat))}</span>` : `<span class="mut">${esc(t("m_nodata"))}</span>`}
         ${b.idc ? row(t("m_p_idc", { y: b.idc.year }), `<span class="pill ${idcClass}">${nf(b.idc.mj_m2)} MJ/m²</span> ≈ ${nf(b.idc.kwh_m2)} kWh/m²`) + row(t("m_p_carriers"), esc((b.idc.carriers || []).map(tr).join(" · "))) + row(t("m_p_heatkwh"), b.idc.kwh ? nf(b.idc.kwh / 1000) + " MWh" : null) : ""}
@@ -434,13 +448,19 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
   // ---------------------------------------------------------------- place labels
   const labWrap = root.querySelector(".m3-labels");
   const labs = (M.labels || []).map(l => { const d = document.createElement("div"); d.className = "m3-place"; d.textContent = l.name; labWrap.appendChild(d); return { d, v: new THREE.Vector3(...toV(l.x, l.y, l.z + 30)) }; });
+  const bySite = {};                                          // one label per linked site, over its tallest building
+  B.forEach((b, i) => { if (b.site && (bySite[b.site] === undefined || b.z + b.h > B[bySite[b.site]].z + B[bySite[b.site]].h)) bySite[b.site] = i; });
+  for (const i of Object.values(bySite)) {
+    const d = document.createElement("div"); d.className = "m3-place m3-site"; d.textContent = B[i].siteName; labWrap.appendChild(d);
+    labs.push({ d, site: true, v: new THREE.Vector3(centers[i].x, centers[i].y + B[i].h / 2 + 12, centers[i].z) });
+  }
   const pv = new THREE.Vector3();
   function placeLabels() {
     const w = stage.clientWidth, h = stage.clientHeight, dist = camera.position.distanceTo(controls.target);
     const pnl = root.querySelector(".m3-panel"), cut = pnl.classList.contains("hide") || w < 720 ? w : w - pnl.offsetWidth - 70;
     for (const l of labs) {
       pv.copy(l.v).project(camera);
-      const vis = pv.z < 1 && Math.abs(pv.x) < 1.05 && Math.abs(pv.y) < 1.05 && dist > 500 && ((pv.x + 1) / 2) * w < cut;
+      const vis = pv.z < 1 && Math.abs(pv.x) < 1.05 && Math.abs(pv.y) < 1.05 && (l.site || dist > 500) && ((pv.x + 1) / 2) * w < cut;
       l.d.style.opacity = vis ? 1 : 0;
       if (vis) l.d.style.transform = `translate(${((pv.x + 1) / 2) * w}px, ${((1 - pv.y) / 2) * h}px) translate(-50%, -100%)`;
     }
