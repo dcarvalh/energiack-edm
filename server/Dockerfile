@@ -6,6 +6,7 @@ COPY server/requirements.txt server/
 RUN pip install --no-cache-dir -r server/requirements.txt
 COPY tools/import_rive_claire.py tools/rc_quality.py tools/csv_detect.py tools/
 COPY rive-claire/EIAK-RC-Guide-Donnees-vf.html rive-claire/
+COPY geneve/csv/ geneve/csv/
 COPY server/ server/
 USER nobody
 EXPOSE 8000

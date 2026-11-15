@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-"""Generate a fictional Geneva municipal energy dataset.
+"""Generate the simulated "Genève (démo)" municipal energy dataset (plan item 18).
+
+Every site except public lighting is a real building of the Geneva 3D map (prototype/map/buildings.json), chosen by
+its SITG use and linked by its EGID: address, floor area, year, heating and yearly heat come from the public data.
+Meters, readings, installations and electricity/water are simulated. The climate tables (ref-climat, ref-climat-normale)
+are Geneva's real climate: checked 15 Nov 2026 against MeteoSwiss open data, station Genève-Cointrin (monthly
+tre200m0, xno000m0 = degree-days 20/12, gre000m0, sre000m0; normals = 1991-2020 means): same within rounding.
 
 Same CSV schema and conventions as the Rive-Claire dataset (see rive-claire/csv/).
 All output CSVs use ';' as delimiter, UTF-8 with BOM, empty cells = empty strings.
@@ -10,12 +16,13 @@ Writes 5 files to geneve/csv/:
 
 The ref tables geneve-ref-climat.csv, geneve-ref-climat-normale.csv, geneve-ref-co2.csv,
 geneve-ref-conversion.csv, geneve-ref-vecteurs.csv already exist (copied from Rive-Claire,
-identical physics/climate) and are NOT touched.
+same physics; the climate is Geneva's, see above) and are NOT touched.
 
 Deterministic: random.seed(42). Standard library only.
 
 Run:  python3 tools/make_geneva_fake.py
 """
+import json
 import csv
 import math
 import random
@@ -223,16 +230,11 @@ def build_sites():
     add("Logements communaux", "Champel", "Immeuble Avenue de Champel 50", "PAC", 3000, 6, logements=40,
         pv=60, annee=2016, label="Minergie")
 
-    # --- Abri PC (2, unheated) ---
-    add("Abri PC", "Plainpalais", "Abri PC de Plainpalais", None, 0, 1, annee=1982)
-    add("Abri PC", "Champel", "Abri PC de Champel", None, 0, 1, annee=1974)
-
-    # --- Cimetière (1, unheated) ---
-    add("Cimetière", "Saint-Jean", "Cimetière de Saint-Georges", None, 0, 1, annee=1968)
-
-    # --- Parking souterrain (1, unheated) ---
-    add("Parking souterrain", "Plainpalais", "Parking souterrain de Plainpalais", None, 0, 2,
-        annee=1996, remarque="Non chauffé : pas de surface de référence énergétique.")
+    # --- 4 more real buildings (replace the unheated shelters, cemetery and car park of the fictional set) ---
+    add("Administration", "Plainpalais", "Administration", "GZ", 1800, 4, annee=1970)
+    add("École primaire", "Plainpalais", "École", "GZ", 3500, 3, pv=50, annee=1960)
+    add("Bibliothèque", "Plainpalais", "Bibliothèque", "CAD", 1200, 3, annee=1980)
+    add("Installation sportive", "Plainpalais", "Salle de sport", "GZ", 1500, 2, annee=1985)
 
     # --- Éclairage public (1, city-wide) ---
     add("Éclairage public", "Tous", "Éclairage public", None, 0, None, annee="",
@@ -266,11 +268,63 @@ for s in SITES:
 
 
 # --------------------------------------------------------------------------
+# Link every site (except public lighting) to a real building of the map, by SITG use
+# --------------------------------------------------------------------------
+MAP_JSON = ROOT / "prototype" / "map" / "buildings.json"
+USES = {
+    "Administration": ["Administrations publiques"], "École primaire": ["Ecole primaire"],
+    "École avec piscine": ["Collège", "Ecole primaire"], "Crèche (EVE)": ["Jardin d'enfants"],
+    "Maison de quartier": ["Centre de loisirs"], "Salle communale": ["Salle communale"],
+    "Bibliothèque": ["Bibliothèque"], "Salle de spectacle": ["Salle de spectacle", "Théâtre"],
+    "Installation sportive": ["Salle de sport", "Centre sportif"], "Piscine couverte": ["Piscine"],
+    "Patinoire": ["Patinoire"], "Voirie et ateliers": ["Atelier", "Dépôt"],
+    "Caserne de pompiers": ["Service du feu"], "Logements communaux": ["Hab plusieurs logements"],
+}
+HEAT_CODE = {"district": "CAD", "heatpump": "PAC", "wood": "GR", "electric": "EL"}
+NOT_QUARTER = {"Gare Cornavin", "Jet d'eau", "Parc des Bastions", "Rhône"}
+
+
+def link_sites():
+    data = json.loads(MAP_JSON.read_text(encoding="utf-8"))
+    meta, used = data["meta"], set()
+    labels = [l for l in meta["labels"] if l["name"] not in NOT_QUARTER]
+    rnd = random.Random(18)
+    for s in SITES:
+        if s["typo"] not in USES:
+            continue
+        cands = [b for b in data["buildings"] if b.get("use") in USES[s["typo"]] and b.get("addr") and b.get("idc")
+                 and b["egid"] not in used and b["h"] >= 4]
+        cands.sort(key=lambda b: b["egid"])
+        b = rnd.choice(cands)
+        used.add(b["egid"])
+        ring = max(b["rings"], key=len)
+        cx, cy = sum(p[0] for p in ring) / len(ring), sum(p[1] for p in ring) / len(ring)
+        area = abs(sum(ring[i - 1][0] * ring[i][1] - ring[i][0] * ring[i - 1][1] for i in range(len(ring)))) / 2
+        sre = b.get("sre") or round(area * (b.get("levels") or max(1, round(b["h"] / 3.2))) * 0.8)
+        heat = HEAT_CODE.get(b.get("heat")) or (
+            "MZ" if any(x.get("fuel") == "HEL" for x in b.get("boilers", [])) else "GZ")
+        if s["history"] and s["history"][2] != heat:
+            s["history"] = None
+        nearest = min(labels, key=lambda l: (l["x"] - cx) ** 2 + (l["y"] - cy) ** 2)
+        s.update(egid=b["egid"], quartier=nearest["name"], heat=heat, sre=round(sre), extra=[], label="", renov="",
+                 annee=b.get("year") or "", niveaux=b.get("levels") or s["niveaux"],
+                 nom=("Immeuble " if s["typo"] == "Logements communaux" else s["typo"] + ", ") + b["addr"],
+                 heat_kwh=b["idc"]["kwh_m2"] * sre, sim=b.get("sim"),
+                 pv=(min(s["pv"], round(b["pv"]["kwp"])) or None) if s["pv"] and b.get("pv") else None,
+                 x=round(cx / 1000, 3), y=round(cy / 1000, 3))
+        if s["logements"]:
+            s["logements"] = max(4, round(sre / 75))
+
+
+link_sites()
+
+
+# --------------------------------------------------------------------------
 # BATIMENTS
 # --------------------------------------------------------------------------
 BAT_HEADER = ["id_batiment", "id_site", "nom_site", "quartier", "typologie", "nom_batiment",
               "annee_construction", "annee_renovation", "sre_m2", "niveaux", "label",
-              "logements", "ouverture", "x_km", "y_km", "remarque"]
+              "logements", "ouverture", "x_km", "y_km", "remarque", "egid"]
 
 
 def gen_batiments():
@@ -302,6 +356,7 @@ def gen_batiments():
                 "x_km": fnum(s["x"]),
                 "y_km": fnum(s["y"]),
                 "remarque": s["remarque"] if bi == 1 else "",
+                "egid": str(s["egid"]) if s.get("egid") and bi == 1 else "",
             })
     return rows
 
@@ -492,15 +547,17 @@ MES_HEADER = ["mois", "id_compteur", "id_site", "fluide", "mesure", "valeur", "u
 
 def heat_shape(mo):
     """Fraction of annual heating that falls in this month (from degree-days)."""
-    return DJ[mo] / DJ_TOTAL * N_MONTHS / 5   # normalised so a flat year sums to ~12/yr weight
+    return DJ[mo] / DJ_TOTAL * N_MONTHS / 12   # sums to ~1 per year
 
 
 def solar_shape(mo):
-    return RAD[mo] / RAD_TOTAL * N_MONTHS / 5
+    return RAD[mo] / RAD_TOTAL * N_MONTHS / 12
 
 
 def energy_for_heat(s):
-    """Target annual heat energy in kWh from SRE (specific demand kWh/m2/yr)."""
+    """Target annual heat energy in kWh: the building's public heat index x SRE, else SRE x an assumed kWh/m2/yr."""
+    if s.get("heat_kwh"):
+        return s["heat_kwh"]
     typo = s["typo"]
     base = {
         "École primaire": 85, "École avec piscine": 110, "Administration": 90,
@@ -527,6 +584,8 @@ def energy_for_elec(s):
     }.get(typo, 25)
     if typo == "Éclairage public":
         return 420000.0  # city-wide network, fixed
+    if s.get("sim"):        # the map's own simulated figure for this building, so map and site page agree
+        return max(s["sim"]["elec_kwh"], (s["sre"] or 300) * base if s.get("subs") else 0)
     if typo in ("Parking souterrain", "Abri PC", "Cimetière"):
         return base * 1000  # these have no SRE; use a flat figure
     return (s["sre"] or 300) * base
@@ -535,6 +594,8 @@ def energy_for_elec(s):
 def water_for(s):
     """Target annual water in m3."""
     typo = s["typo"]
+    if s.get("sim"):
+        return max(60, s["sim"]["water_m3"])
     base = {
         "École primaire": 0.18, "École avec piscine": 0.9, "Administration": 0.15,
         "Crèche (EVE)": 0.35, "Logements communaux": 0.55, "Piscine couverte": 2.5,
@@ -650,16 +711,19 @@ def gen_mesures(cpt):
             elif kind == "water":
                 # roughly flat, slight summer bump
                 summer = 1.0 + 0.15 * math.cos((int(mo[5:7]) - 7) / 12 * 2 * math.pi) * -1
-                shape = (1.0 / 12) * summer * N_MONTHS / 5
+                shape = summer / 12
                 trend = yearly_trend(mo, 0.0)
             else:
                 # electricity: mild seasonal (slightly higher winter), flat-ish
                 m = int(mo[5:7])
                 seas = 1.0 + 0.12 * math.cos((m - 1) / 12 * 2 * math.pi)
-                shape = (1.0 / 12) * seas * N_MONTHS / 5
+                shape = seas / 12
                 trend = yearly_trend(mo, -0.01)
 
-            val_kwh = annual / 5 * shape * trend * noise()
+            val_kwh = annual * shape * trend * noise()
+            if kind == "elec_main" and s["heat"] == "PAC":
+                # the main meter also carries the heat pump (its sub-meter): heat / COP, following the heating season
+                val_kwh += energy_for_heat(s) / 3.8 * heat_shape(mo) * yearly_trend(mo, -0.02) * noise()
 
             # convert kWh to the meter's raw unit + energy column
             if unite == "kWh":
@@ -678,7 +742,7 @@ def gen_mesures(cpt):
 
             if kind == "water":
                 # water target 'annual' is in m3 already, not kWh
-                valeur = max(1, round(annual / 5 * shape * trend * noise()))
+                valeur = max(1, round(annual * shape * trend * noise()))
                 energie = ""
 
             rows.append([mo, mid, sid, fluide, mesure, fnum(valeur), unite, fnum(energie), "mesuré"])

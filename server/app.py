@@ -123,7 +123,7 @@ def list_localities(u=Depends(current), conn=Depends(db)):
         return store.localities(conn, u)
     # Public: localities with imported data, or with a map of public buildings (Geneva); an empty one stays hidden
     return conn.execute(
-        "SELECT l.id, l.slug, l.name, l.country, l.map_config, l.demo, 'viewer' AS role "
+        "SELECT l.id, l.slug, l.name, l.country, l.map_config, l.demo, l.simulated, 'viewer' AS role "
         "FROM locality l WHERE l.map_config IS NOT NULL "
         "OR EXISTS (SELECT 1 FROM import_run WHERE locality_id = l.id AND report IS NOT NULL) "
         "ORDER BY l.id"
@@ -176,9 +176,9 @@ async def import_locality(slug: str, file: UploadFile = File(None),
             else:
                 T[name] = []
         source = f"{slug} (uploaded: {file.filename})"
-    elif loc.get("demo"):
-        # Bundled demo dataset — only available for municipalities flagged as demo
-        T = store.rc.read_guide()
+    elif loc.get("demo") and slug in store.rc.BUNDLED:
+        # Bundled demo dataset — only available for the built-in demo municipalities
+        T = store.rc.BUNDLED[slug]()
         source = f"{slug} (demo dataset reloaded)"
     else:
         raise HTTPException(422, "A ZIP file is required. Only demo municipalities can use the bundled dataset.")

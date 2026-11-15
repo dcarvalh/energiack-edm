@@ -116,7 +116,7 @@ Items 15–19 keep their numbers: their details are under "Public base layer" be
   opens the list, also reachable on phone width; show the current municipality in the page header.
 - ~~**Step 6.**~~ Done 15 Nov: Geneva addresses from SITG `CAD_ADRESSE` (`tools/geneva_addresses.py`, normal-case names): most buildings sharing one address 10 → 2. Without an address 487 → 1933: annexes, garages and building parts with their own EGID that the register gives no address (their old one was the energy record of a group); they show "EGID …". Idea: a "part of <address>" link for them. (M, item 19.) Before step 8, because Genève (démo) shows real addresses.
 - ~~**Step 7.**~~ Done 15 Nov: EGID link (item 16): optional `egid` column in `batiments` (`ALTER TABLE building ADD COLUMN IF NOT EXISTS egid`). On the Geneva map linked buildings get a blue site label, a "Municipality sites" legend filter and an "All data for this site" button; the site page gets a "Public building data" table read from the map. Tested with two fictional Geneva sites linked by hand (no committed data has EGIDs yet: step 8).
-- **Step 8.** Genève (démo) (L, item 18). Until item 17 exists, it is what the Geneva map shows with readings.
+- ~~**Step 8.**~~ Done 15 Nov: Genève (démo) (item 18), built-in municipality `geneve-demo`: 39 real buildings of the Geneva map chosen by SITG use and linked by EGID, plus public lighting; yearly heat = public heat index × floor area (2025 lands at 85-95 % of it: −2 %/yr trend, mild year), electricity and water = the map's simulated values. Permanent banner and a "simulated" tag on every reading-based figure (not on the public building data). Seeded by the server from `geneve/csv/`, static copy `prototype/data-geneve-demo.json` for Pages; `check_stack.sh` asserts both are equal. Fixed on the way: the generator's monthly split gave heat and solar 0.48× their yearly target and electricity and water 2.4×. The climate tables were already Geneva's real ones (checked against MeteoSwiss Genève-Cointrin), nothing to replace.
 - **Step 9.** Last: stability pass on the server version (S, new): every page and role on https://openedm.davidcarvalho.work/,
    FR and EN, phone width; fix what is broken or confusing (empty states, errors). Then a project entry on the
    portfolio site (`portfolio/`, separate repo) linking the server version.
@@ -186,8 +186,8 @@ builder `tools/make_map.py`, the IDC threshold applies only where the pack says 
 18. Genève (démo): about 40 real buildings on the same `map/` (chosen by use: schools, offices, sports, culture),
     each with its EGID and fully simulated meters and readings, rebuilt by `tools/make_geneva_fake.py` (today it
     makes 40 sites that are not linked to the map). Make the simulated values plausible from public attributes: floor
-    area from footprint × levels, yearly heat from the public heat index, monthly split by degree-days (the tables in `geneve/csv/` are
-    copies of Rive-Claire's fictional climate: replace with Geneva's real ones), electricity from assumed kWh/m² per use (labelled "assumed"). On screen: a permanent "simulated
+    area from footprint × levels, yearly heat from the public heat index, monthly split by degree-days (the tables in `geneve/csv/` turned
+    out to be Geneva's real climate already, checked against MeteoSwiss), electricity from assumed kWh/m² per use (labelled "assumed"). On screen: a permanent "simulated
     data" banner and a "simulated" tag on every figure, never only a footnote, because the addresses are real.
     Needs 16.
 19. Correct Geneva addresses. Today `tools/make_map.py` takes `addr` from the first energy record with the same EGID

@@ -28,14 +28,19 @@ finish() {
 }
 trap finish EXIT
 # Rows per table. Runs on both versions of the schema; import_run is left out (every start adds one run).
+# Rows of a built-in locality the base branch lacks ($NEW_LOC, set below) are left out: it gets seeded at the upgrade.
 counts() { dc exec -T db psql -U openedm -d openedm -At -c "
-  SELECT 'building', count(*) FROM building UNION ALL SELECT 'installation', count(*) FROM installation UNION ALL
-  SELECT 'meter', count(*) FROM meter UNION ALL SELECT 'reading', count(*) FROM reading UNION ALL
-  SELECT 'reference', count(*) FROM reference UNION ALL SELECT 'app_user', count(*) FROM app_user ORDER BY 1"; }
+  SELECT 'building', count(*) FROM building WHERE locality_id NOT IN (SELECT id FROM locality WHERE slug = '$NEW_LOC') UNION ALL
+  SELECT 'installation', count(*) FROM installation WHERE locality_id NOT IN (SELECT id FROM locality WHERE slug = '$NEW_LOC') UNION ALL
+  SELECT 'meter', count(*) FROM meter WHERE locality_id NOT IN (SELECT id FROM locality WHERE slug = '$NEW_LOC') UNION ALL
+  SELECT 'reading', count(*) FROM reading WHERE locality_id NOT IN (SELECT id FROM locality WHERE slug = '$NEW_LOC') UNION ALL
+  SELECT 'reference', count(*) FROM reference WHERE locality_id NOT IN (SELECT id FROM locality WHERE slug = '$NEW_LOC') UNION ALL
+  SELECT 'app_user', count(*) FROM app_user ORDER BY 1"; }
 
 echo "1. start from $BASE ($(git rev-parse --short "$BASE"))"
 mkdir "$TMP/base"
 git archive "$BASE" | tar -x -C "$TMP/base"
+NEW_LOC=""; grep -q "'geneve-demo'" "$TMP/base/server/schema.sql" || NEW_LOC=geneve-demo   # Genève (démo) is new in this branch
 dc down -v --remove-orphans >/dev/null 2>&1 || true
 old up -d --build --wait --quiet-pull
 curl -fsS "$URL/api/health" | grep -q '"ok":true'

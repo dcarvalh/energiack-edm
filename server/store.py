@@ -50,11 +50,11 @@ def localities(conn, user=None):
     """List localities accessible to user. Platform admin sees all."""
     if user and user["role"] == "admin":
         return conn.execute(
-            "SELECT l.id, l.slug, l.name, l.country, l.map_config, l.demo, 'admin' AS role "
+            "SELECT l.id, l.slug, l.name, l.country, l.map_config, l.demo, l.simulated, 'admin' AS role "
             "FROM locality l ORDER BY l.id").fetchall()
     if user:
         return conn.execute(
-            "SELECT l.id, l.slug, l.name, l.country, l.map_config, l.demo, ul.role "
+            "SELECT l.id, l.slug, l.name, l.country, l.map_config, l.demo, l.simulated, ul.role "
             "FROM locality l JOIN user_locality ul ON l.id = ul.locality_id "
             "WHERE ul.user_id = %s ORDER BY l.id", (user["id"],)).fetchall()
     return []

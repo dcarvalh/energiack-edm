@@ -16,12 +16,14 @@ from . import auth, store
 
 
 def do_import(conn):
-    loc = store.locality_by_slug(conn, "rive-claire")
-    if not loc:
-        raise SystemExit("locality 'rive-claire' not found — run seed first")
-    r = store.load(conn, store.rc.read_guide(), "rive-claire (bundled guide)", loc["id"])
-    print(f"import {r['id']}: read {r['rows_read']}, loaded {r['loaded']}, rejected {r['rejected']} · "
-          f"added {r['added']}, unchanged {r['unchanged']}, changed {r['changed']}")
+    """Load every built-in dataset (Rive-Claire, Genève démo) into its locality."""
+    for slug, read in store.rc.BUNDLED.items():
+        loc = store.locality_by_slug(conn, slug)
+        if not loc:
+            raise SystemExit(f"locality '{slug}' not found — run seed first")
+        r = store.load(conn, read(), f"{slug} (bundled dataset)", loc["id"])
+        print(f"{slug} import {r['id']}: read {r['rows_read']}, loaded {r['loaded']}, rejected {r['rejected']} · "
+              f"added {r['added']}, unchanged {r['unchanged']}, changed {r['changed']}")
 
 
 def main():
