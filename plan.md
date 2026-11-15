@@ -150,6 +150,7 @@ two layers: national sources that exist for every commune, plus cantonal extras 
 | use, year, heating type, energy source | federal register RegBL/GWR (to check: heating fields, open access) | SCANE_CHAUDIERE (boilers) |
 | solar potential | the federal roof solar layer (sonnendach.ch; to check: per-building values) | OCEN_SOLAIRE_PV_BATIMENT |
 | heat index | none known: only from the commune's own readings | SCANE_INDICE_MOYENNES_3_ANS (IDC) |
+| building addresses | swisstopo official building address directory (by EGID; to check) | CAD_ADRESSE (item 19) |
 | commune boundary | swissBOUNDARIES3D (to check) | – |
 | climate, degree-days | MeteoSwiss open data (to check: station data, licence) | – |
 
@@ -170,6 +171,17 @@ builder `tools/make_map.py`, the IDC threshold applies only where the pack says 
     copies of Rive-Claire's fictional climate: replace with Geneva's real ones), electricity from assumed kWh/m² per use (labelled "assumed"). On screen: a permanent "simulated
     data" banner and a "simulated" tag on every figure, never only a footnote, because the addresses are real.
     Needs 16.
+19. Correct Geneva addresses. Today `tools/make_map.py` takes `addr` from the first energy record with the same EGID
+    (heat index, then boilers, then solar): that is the installation's address, not the building's. In
+    `prototype/map/buildings.json` 10 buildings share "30 Quai du Mont-Blanc", formats are mixed ("40 Rue AGASSE",
+    "Rue SCHAUB 21") and 487 of 10,574 have none. Fix: read SITG `CAD_ADRESSE` (official address register, open;
+    checked 15 Nov that it answers by EGID with street type, name, number, postcode, locality, official flag, point),
+    with the existing `sitg()` helper on the map's extent, official addresses only. Group by EGID: several entrances
+    give "Rue de Bâle 28-30" (all numbers in the search index). No address on the EGID: an address point inside the
+    footprint, else "EGID …" as now. One format: street, number, then "1201 Genève" where there is room. Keep the
+    old energy-layer address only to print a before/after count and 20 random pairs, checked by hand on
+    map.geo.admin.ch. Build into a scratch folder, then copy; bump both `V`; add `CAD_ADRESSE` to `THIRD_PARTY.md`.
+    To decide: write names in normal case ("Samuel-Constant", recommended) or as the register does ("Samuel-CONSTANT").
 
 Later, after 1 Dec: a pack builder per commune from its federal statistical number (BFS number): national sources
 first, cantonal extras when present, generated once into a shared `map/<canton>/<commune>/` (a whole canton is too
