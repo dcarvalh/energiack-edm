@@ -2,6 +2,8 @@
 
 Energ-IACK 2026 · Défi 2 « EDM citoyen et souverain ».
 
+**New here? Read [`START_HERE.md`](START_HERE.md)**: what is done and not done, run it in 5 minutes, where the code lives, next steps.
+
 An open-source Energy Data Management tool (EDM) that a commune **owns**: open data format, readable code, runs on any static host
 or on its own server with a database and logins, and the same format lets communes compare and share. Built at the
 Energ-IACK hackathon, Geneva, 13–14 Nov 2026. **The project goes on after the hackathon: next presentation on Tue 1 Dec 2026.**
