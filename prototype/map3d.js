@@ -8,7 +8,7 @@ import { computeBoundsTree, acceleratedRaycast } from "./vendor/three-mesh-bvh.m
 THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
 
-const V = "16";
+const V = "21";
 const GREY = 0xb9bfbb;
 const RAMP = {
   idc:   [0x2e9e6e, 0x9cc95a, 0xf0b33c, 0xe0663a, 0xb8322a],
@@ -250,6 +250,7 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
   const col = new THREE.Color(), white = new THREE.Color(0xffffff), ghost = new THREE.Color();
   const WARN = 0xe0893a;                                 // imported map: a building not yet matched to a site
   const SITEHI = 0x2a9df4;                               // highlight: all buildings of the selected site
+  const SEL_COL = 0xff2bbf;                              // the single selected/clicked building: a vivid, unmistakable magenta
   const L = () => (RCLIKE ? layersRC : layers)(t, nf)[LAYER];
   const unmatched = bi => IMP && !B[bi].id_site;
   const selSite = () => (IMP && SEL >= 0) ? B[SEL].id_site : null;   // site of the selected building, for highlight
@@ -266,10 +267,11 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
     const site = selSite();
     const siteHi = site && B[bi].id_site === site;        // this building belongs to the selected site
     if (hidden) col.copy(ghost);
+    else if (bi === SEL) col.setHex(SEL_COL);             // the clicked/selected block: one unmistakable colour
     else if (siteHi) col.setHex(SITEHI);
     else if (un) col.setHex(WARN);
     else col.setHex(c < 0 ? GREY : lay.ramp[c]);
-    if (bi === SEL) col.lerp(white, 0.6); else if (bi === HOV) col.lerp(white, 0.35);
+    if (bi === SEL) { /* already the selection colour */ } else if (bi === HOV) col.lerp(white, 0.35);
     const [s, e] = ranges[bi];
     for (let k = s; k < e; k++) { colors[3 * k] = col.r; colors[3 * k + 1] = col.g; colors[3 * k + 2] = col.b; }
   }
@@ -483,6 +485,7 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
   function pick(ev) {
     const r = renderer.domElement.getBoundingClientRect(), t1 = performance.now();
     ndc.set(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1);
+    camera.updateMatrixWorld();                           // ensure the ray uses the camera exactly as last rendered
     ray.setFromCamera(ndc, camera);
     let bi = -1;
     if (!anyFilter()) {                                   // fast path: nearest hit (unchanged for RC/GE and unfiltered)
