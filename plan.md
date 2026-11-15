@@ -99,7 +99,7 @@ again after weeks away. Not a "polish" pass: no redesign. Effort: S = under an h
 Items 15–19 keep their numbers: their details are under "Public base layer" below.
 
 **Now, in this order**
-- **Step 1.** Licences and attribution (S): check the `THIRD_PARTY.md` lines written from memory (three-mesh-bvh,
+- ~~**Step 1.**~~ Done 15 Nov: licences and attribution (S): checked the `THIRD_PARTY.md` lines written from memory (three-mesh-bvh,
    OrbitControls, server stack) and the SITG/swisstopo credit wording against the real sources.
 - **Step 2.** "Start here" doc (S, new): what openEDM is, what is done and not done, run it in 5 minutes, where each part of the
    code lives, next steps (points here). Today that is spread across `README.md`, `plan.md`, `CLAUDE.md` and `docs/`.
