@@ -72,7 +72,7 @@ nav a.on .ic{color:var(--accent)}
 .notice::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--warn);flex:none}
 .notice.sim{color:var(--text);font-weight:550;background:color-mix(in srgb,var(--warn) 14%,var(--surface))}
 /* Simulated municipality (Genève démo): a tag on every figure computed from readings; the word comes from t("sim_tag") */
-body.sim :is(#v-gestion,#v-donnees,#v-qualite,#v-citoyens,#drawer) :is(.card:not(.pub) h2,.kpi .lab,.fact.simv > .lab)::after{content:var(--simtag);margin-left:6px;
+body.sim :is(#v-gestion,#v-donnees,#v-qualite,#v-citoyens,#drawer) :is(.card:not(.pub) h2,.card:not(.pub) > .fs-lab,.kpi .lab,.fact.simv > .lab)::after{content:var(--simtag);margin-left:6px;
   font-size:10px;font-weight:650;letter-spacing:.03em;text-transform:uppercase;color:var(--warn);border:1px solid currentColor;
   border-radius:4px;padding:0 4px;vertical-align:2px;white-space:nowrap}
 main{width:100%;max-width:1440px;padding:24px 24px 48px}
@@ -647,7 +647,7 @@ fr:{
   hi_est:"* Chaleur de la pompe à chaleur estimée (électricité de la pompe × COP mesuré sur les sites équipés d'un compteur de chaleur).",
   d_hi:"Indice de chaleur {y}", d_hi_sub:"approximatif · non corrigé du climat", d_hi_deliv:"livraisons de l'année", h_flag:"",
   alert:"Alerte", up:"hausse",
-  type_administration:"Administration", type_ecole:"École primaire", type_ecole_piscine:"École avec piscine", type_creche:"Crèche", type_maison_quartier:"Maison de quartier", type_salle_communale:"Salle communale", type_bibliotheque:"Bibliothèque", type_salle_spectacle:"Salle de spectacle", type_installation_sportive:"Installation sportive", type_piscine:"Piscine couverte", type_patinoire:"Patinoire", type_voirie:"Voirie et ateliers", type_caserne:"Caserne de pompiers", type_logements:"Logements communaux", type_abri_pc:"Abri PC", type_cimetiere:"Cimetière", type_parking:"Parking souterrain", type_eclairage_public:"Éclairage public",
+  type_administration:"Administration", type_ecole:"École primaire", type_ecole_primaire:"École primaire", type_ecole_piscine:"École avec piscine", type_creche:"Crèche", type_maison_quartier:"Maison de quartier", type_salle_communale:"Salle communale", type_bibliotheque:"Bibliothèque", type_salle_spectacle:"Salle de spectacle", type_installation_sportive:"Installation sportive", type_piscine:"Piscine couverte", type_patinoire:"Patinoire", type_voirie:"Voirie et ateliers", type_caserne:"Caserne de pompiers", type_logements:"Logements communaux", type_abri_pc:"Abri PC", type_cimetiere:"Cimetière", type_parking:"Parking souterrain", type_eclairage_public:"Éclairage public",
   car_oil:"Mazout", car_gas:"Gaz", car_district:"Chauffage à distance", car_heat_pump:"Pompe à chaleur", car_wood:"Bois (granulés)", car_electric:"Électrique direct", car_none:"Non chauffé",
   d_area:"Surface (SRE)", d_built:"Construction", d_pv:"Solaire", d_quarter:"Quartier", d_int:"Énergie par m² {y}",
   d_series:"Historique mensuel 2021–2025", fl_elec_grid:"Électricité réseau", fl_heat:"Chaleur", fl_heat_est:"pompe à chaleur : estimée", fl_pv_prod:"Solaire produit", fl_water:"Eau", fl_co2:"CO₂ (kg)",
@@ -707,7 +707,7 @@ fr:{
   m_lg_rc_idc:"Indice de chaleur approximatif, non corrigé du climat", m_lg_rc_heat:"Chauffage en service", m_lg_rc_solar:"Production solaire mesurée",
   m_lg_rc_elec:"Électricité consommée sur site", m_lg_rc_water:"Consommation d'eau",
   m_p_reno:"Rénovation", m_p_label:"Label", m_p_homes:"Logements", m_p_open:"Ouverture", m_p_under:"souterrain", m_na:"sans objet",
-  m_p_since:"depuis {d}", m_p_measured:"Mesuré en {y}", m_p_site:"valeurs du site ({n} bâtiments)", m_p_pvprod:"Solaire produit",
+  m_p_since:"depuis {d}", m_p_measured:"Mesuré en {y}", m_p_simread:"Relevés simulés, {y}", m_p_site:"valeurs du site ({n} bâtiments)", m_p_pvprod:"Solaire produit",
   m_n_deliv:"Mazout ou granulés : livraisons de l'année, pas une consommation mesurée.", m_n_common:"Logements : électricité des parties communes seulement.",
   m_p_year:"Construction", m_p_levels:"Niveaux", m_p_height:"Hauteur", m_p_sre:"Surface chauffée (SRE)", m_p_idc:"IDC {y}", m_p_carriers:"Énergies déclarées", m_p_heatkwh:"Chaleur consommée",
   m_p_boiler:"Chaudière active", m_p_pv:"Production possible", m_p_kwp:"Puissance · surface", m_src:"Sources : données SITG (OCEN, extraction nov. 2026), swisstopo",
@@ -815,7 +815,7 @@ en:{
   hi_est:"* Heat-pump heat estimated (pump electricity × the COP measured at the sites with a heat meter).",
   d_hi:"Heat index {y}", d_hi_sub:"approximate · not weather-corrected", d_hi_deliv:"year's deliveries", h_flag:"",
   alert:"Alert", up:"up",
-  type_administration:"Administration", type_ecole:"Primary school", type_ecole_piscine:"School with pool", type_creche:"Nursery", type_maison_quartier:"Community centre", type_salle_communale:"Community hall", type_bibliotheque:"Library", type_salle_spectacle:"Theatre", type_installation_sportive:"Sports facility", type_piscine:"Indoor pool", type_patinoire:"Ice rink", type_voirie:"Works depot", type_caserne:"Fire station", type_logements:"Municipal housing", type_abri_pc:"Civil-defence shelter", type_cimetiere:"Cemetery", type_parking:"Underground car park", type_eclairage_public:"Street lighting",
+  type_administration:"Administration", type_ecole:"Primary school", type_ecole_primaire:"Primary school", type_ecole_piscine:"School with pool", type_creche:"Nursery", type_maison_quartier:"Community centre", type_salle_communale:"Community hall", type_bibliotheque:"Library", type_salle_spectacle:"Theatre", type_installation_sportive:"Sports facility", type_piscine:"Indoor pool", type_patinoire:"Ice rink", type_voirie:"Works depot", type_caserne:"Fire station", type_logements:"Municipal housing", type_abri_pc:"Civil-defence shelter", type_cimetiere:"Cemetery", type_parking:"Underground car park", type_eclairage_public:"Street lighting",
   car_oil:"Heating oil", car_gas:"Gas", car_district:"District heating", car_heat_pump:"Heat pump", car_wood:"Wood pellets", car_electric:"Direct electric", car_none:"Unheated",
   d_area:"Floor area (ERA)", d_built:"Built", d_pv:"Solar", d_quarter:"District", d_int:"Energy per m² {y}",
   d_series:"Monthly history 2021–2025", fl_elec_grid:"Grid electricity", fl_heat:"Heat", fl_heat_est:"heat pump: estimated", fl_pv_prod:"Solar produced", fl_water:"Water", fl_co2:"CO₂ (kg)",
@@ -875,7 +875,7 @@ en:{
   m_lg_rc_idc:"Approximate heat index, not weather-corrected", m_lg_rc_heat:"Heating in service", m_lg_rc_solar:"Measured solar output",
   m_lg_rc_elec:"Electricity used on site", m_lg_rc_water:"Water use",
   m_p_reno:"Renovated", m_p_label:"Label", m_p_homes:"Homes", m_p_open:"Opened", m_p_under:"underground", m_na:"not applicable",
-  m_p_since:"since {d}", m_p_measured:"Measured in {y}", m_p_site:"site values ({n} buildings)", m_p_pvprod:"Solar produced",
+  m_p_since:"since {d}", m_p_measured:"Measured in {y}", m_p_simread:"Simulated readings, {y}", m_p_site:"site values ({n} buildings)", m_p_pvprod:"Solar produced",
   m_n_deliv:"Oil or pellets: the year's deliveries, not measured use.", m_n_common:"Housing: electricity of common areas only.",
   m_p_year:"Built", m_p_levels:"Floors", m_p_height:"Height", m_p_sre:"Heated area (ERA)", m_p_idc:"IDC {y}", m_p_carriers:"Declared energy", m_p_heatkwh:"Heat consumed",
   m_p_boiler:"Active boiler", m_p_pv:"Possible output", m_p_kwp:"Capacity · area", m_src:"Sources: SITG data (OCEN, extracted Nov 2026), swisstopo",
@@ -1252,7 +1252,10 @@ const isDark = () => { const a = document.documentElement.dataset.theme; return 
 const MAPS = {rc:{key:"rc", dir:"map-rc/"}, ge:{key:"ge", dir:"map/"}};
 try { localStorage.removeItem("energiack-map"); } catch(e) {}   // the old map switch's saved choice
 // EGID -> {id, name} of the site owning that public building (plan item 16): the map links and highlights them
-function egidSites(){ const o = {}; for (const s of D?.sites || []) for (const b of s.buildings) if (b.egid) o[b.egid] = {id:s.id, name:s.name[LANG]}; return o; }
+function egidSites(){ const o = {}; for (const s of D?.sites || []) for (const b of s.buildings) if (b.egid) o[b.egid] = {id:s.id, name:s.name[LANG], b:b.id, nb:s.buildings.length}; return o; }
+// The site's figures of the chosen year for the map panel (same numbers as the building sheet; plan step 8b)
+function siteYear(sid){ const c = M?.sites[sid]?.[YEAR]; if (!c) return null;
+  return {year:YEAR, hi:c.hi, hiEst:c.hiEst, int:c.int, heat:c.heat, elec:c.elec, pv:c.pv, water:c.water, sim:!!LOC?.simulated}; }
 // The site page's public building data (height, use, heating, IDC, solar), read from the municipality's map
 function sitePublic(s){
   const el = document.getElementById("d-public"), map = MAPS[LOC?.map_config?.key], eg = s.buildings.map(b=>b.egid).filter(Boolean);
@@ -1277,7 +1280,7 @@ function renderMap(){
   if (!mapCfg) { el.innerHTML = `<div class="m3-loading">${esc(t("m_nomap"))}</div>`; return; }
   if (MAP || MAP_LOADING) return;
   MAP_LOADING = true; MAP_FOR = LOC.slug;
-  import("./map3d.js?v="+V).then(m => m.initMap(el, {t, nf, esc, showTip, hideTip, dark:isDark, lang:()=>LANG, heatIndex:(sid, y)=>(M.sites[sid]||{})[y], sites:egidSites()}, mapCfg))
+  import("./map3d.js?v="+V).then(m => m.initMap(el, {t, nf, esc, showTip, hideTip, dark:isDark, lang:()=>LANG, heatIndex:(sid, y)=>(M.sites[sid]||{})[y], sites:egidSites(), siteYear}, mapCfg))
     .then(x => { MAP = x; MAP_LOADING = false; if (MAP_FOR !== LOC?.slug && VIEW === "carte") renderMap(); })
     .catch(e => { MAP_LOADING = false; MAP_FOR = null; el.innerHTML = `<div class="m3-loading">${esc(String(e))}</div>`; });
 }
@@ -1391,7 +1394,7 @@ function openSheet(bid){
   const heat = Array.from({length:12},(_,i)=>(S.heat[a0+i]||0)+(S.heat_hp?S.heat_hp[a0+i]||0:0)), elec = S.elec_grid.slice(a0,a0+12).map(v=>v||0);
   const hcol = fos ? "--heat-fossil" : "--heat-ren";
   const bars = () => { const W = 640, H = 190, L = 44, B = 22, T = 8, mx = niceMax(Math.max(1,...heat,...elec)), gw = (W-L)/12, bw = gw*0.32, y = v => T+(H-T-B)*(1-v/mx);
-    const mon = i => new Intl.DateTimeFormat(LOC(), {month:"narrow"}).format(new Date(2021, i, 1)), full = i => new Intl.DateTimeFormat(LOC(), {month:"long"}).format(new Date(2021, i, 1));
+    const mon = i => new Intl.DateTimeFormat(locale(), {month:"narrow"}).format(new Date(2021, i, 1)), full = i => new Intl.DateTimeFormat(locale(), {month:"long"}).format(new Date(2021, i, 1));
     let g = [0,.5,1].map(k=>`<line x1="${L}" x2="${W}" y1="${y(mx*k)}" y2="${y(mx*k)}" stroke="var(--line)"/><text x="${L-6}" y="${y(mx*k)+4}" text-anchor="end" font-size="11" fill="var(--muted)">${mx*k>=10000?nf(mx*k/1000)+"k":nf(mx*k)}</text>`).join("");
     for (let i=0;i<12;i++){ const x = L+gw*i+gw/2;
       g += `<rect x="${x-bw-1}" y="${y(heat[i])}" width="${bw}" height="${H-B-y(heat[i])}" rx="2" fill="var(${hcol})"><title>${esc(full(i))} · ${esc(t("fl_heat"))} ${nf(heat[i])} kWh</title></rect>`
@@ -1417,7 +1420,7 @@ function openSheet(bid){
         ${cur.hi==null?"":`<div class="fs-scale"><i style="left:${Math.min(100,cur.hi/10)}%"></i></div><div class="fs-ticks"><span style="left:45%">450</span><span style="left:80%">800</span></div>`}
         ${d==null?"":`<div style="margin-top:8px"><span class="pill ${d>0?"p-warn":"p-ren"}" style="white-space:normal">${esc(t("fs_vs",{d:(d>0?"+":d<0?"−":"")+Math.abs(d), n:peers.length}))}</span></div>`}
         <div class="fs-note">${esc(t("fs_hi_note"))}${cur.hiEst?" · "+esc(t("q_estimated")):""}</div></div>
-      <div class="card"><div class="fs-lab">${esc(t("fs_heating"))}</div>
+      <div class="card pub"><div class="fs-lab">${esc(t("fs_heating"))}</div>
         <div class="fs-mid">${esc(t("car_"+car))}</div>
         <div class="tsub">${last&&last.from_month?esc(t("fs_since",{d:monthYear(last.from_month)})):""}</div>
         ${car==="none"?"":`<div style="margin-top:8px"><span class="pill ${fos?"p-fossil":"p-ren"}">${esc(t(fos?"fs_fossil":"fs_nofossil"))}</span></div>`}
@@ -1430,7 +1433,7 @@ function openSheet(bid){
         <div class="fs-leg"><span><i style="background:var(${hcol})"></i>${esc(t("fl_heat"))}</span><span><i style="background:var(--elec)"></i>${esc(t("fl_elec_grid"))}</span></div>${bars()}</div>
       <div class="card wide"><div class="fs-lab" style="margin-bottom:10px">${esc(t("fs_solar"))}</div>
         ${selfc==null?`<div class="mut">${s.pv_kwp?na:esc(t("fs_nopv"))}</div>`:`<div class="fs-solar">${sol(selfc,"--solar","fs_selfc","fs_selfc_note")}${selfs==null?"":sol(selfs,"--accent","fs_selfs","fs_selfs_note")}</div>`}</div>
-      <div class="card wide"><div class="fs-lab" style="margin-bottom:4px">${esc(t("fs_more"))}</div>
+      <div class="card wide pub"><div class="fs-lab" style="margin-bottom:4px">${esc(t("fs_more"))}</div>
         <div class="fs-rows">${["fs_enr","fs_cop","fs_night"].map(k=>`<div><span>${esc(t(k))}</span>${na}</div>`).join("")}</div></div>
     </div>
     <div class="m3-acts"><a class="btn alt" href="#site/${esc(s.id)}">${esc(t("fs_open_site"))}</a></div>
@@ -2185,7 +2188,7 @@ let RZ, LASTW = innerWidth;
 window.addEventListener("resize", () => { clearTimeout(RZ); RZ = setTimeout(() => { if (Math.abs(innerWidth - LASTW) < 40 || !D) return; LASTW = innerWidth; const open = document.getElementById("drawer").classList.contains("open"); renderAll(); if (open) reopen(); }, 200); });
 matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", renderAll);
 
-const V = "46";
+const V = "47";
 (async () => {
   try {
     const c = await fetch("api/config.json?v="+V, {cache:"no-store"}).then(r => r.json());

@@ -126,12 +126,13 @@ Items 15–19 keep their numbers: their details are under "Public base layer" be
   of 11,869 OSM addresses inside a map footprint, 72.8 % match exactly, 2.9 % same street other number, 10.2 % another
   street (mostly second entrances of corner and Old Town buildings that SITG does not attach to that EGID; only 0.6 %
   point to a building 40 m+ away); the 35 demo sites with an OSM address in their footprint all agree.
-- **Step 8b.** Building sheets in Genève (démo) (M, David 15 Nov, new session): Rive-Claire's map panel has a
-  "Building sheet" button (`#fiche/<id>`, `openSheet()` in `prototype/index.html`, `panelRC()` in `map3d.js`) with year,
-  levels, heating and installations, measured heat index, heat / electricity / solar / water of the year; Genève
-  (démo) only shows the public SITG panel and "Open site", no sheet. Give the 39 demo buildings the same: the sheet
-  and the measured block in the map panel, from the demo readings (every figure tagged "simulated", banner kept), next
-  to the public SITG data (not tagged). Check that clicking a building opens it, FR/EN, phone width.
+- ~~**Step 8b.**~~ Done 15 Nov: building sheets in Genève (démo). On the Geneva map a linked building's panel has
+  "Building sheet" (`#fiche/<id>`) and a "Simulated readings, <year>" block (heat index, energy/m², heat, electricity,
+  solar, water of the site, each tagged "simulated"; `siteYear()` in `prototype/index.html`, same numbers as the
+  sheet) under the public SITG data (not tagged). In the sheet the reading cards carry the "simulated" tag, heating
+  and "other indicators" do not. Fixed on the way: the sheet's month chart called `LOC()` (now the municipality
+  object), so no sheet opened, Rive-Claire's included; after a municipality switch the old map's click listener and
+  a queued frame still ran (`trim` / `addr` errors); the `ecole_primaire` type had no label.
 - **Step 9.** Last: stability pass on the server version (S, new): every page and role on https://openedm.davidcarvalho.work/,
    FR and EN, phone width; fix what is broken or confusing (empty states, errors). Then a project entry on the
    portfolio site (`portfolio/`, separate repo) linking the server version.

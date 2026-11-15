@@ -8,7 +8,7 @@ import { computeBoundsTree, acceleratedRaycast } from "./vendor/three-mesh-bvh.m
 THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
 
-const V = "18";
+const V = "19";
 const GREY = 0xb9bfbb, SITE_COL = 0x1f6feb;   // SITE_COL: buildings linked to a site of the municipality
 const RAMP = {
   idc:   [0x2e9e6e, 0x9cc95a, 0xf0b33c, 0xe0663a, 0xb8322a],
@@ -136,7 +136,7 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
   }
   const SITES = (!RC && api.sites) || {};                   // EGID -> the municipality's site that owns the building (plan item 16)
   let NLINK = 0;
-  if (!RC) for (const b of B) { const s = SITES[b.egid]; if (s) { b.site = s.id; b.siteName = s.name; NLINK++; } }
+  if (!RC) for (const b of B) { const s = SITES[b.egid]; if (s) { b.site = s.id; b.siteName = s.name; b.sheet = s.b; b.nb = s.nb; NLINK++; } }
   const [terr, imgs] = await Promise.all([
     fetch(DIR + "terrain.bin?v=" + V).then(r => r.arrayBuffer()).then(b => new Int16Array(b)),
     Promise.all(Array.from({ length: NT * NT }, (_, k) => new Promise((res, rej) => {
@@ -306,7 +306,14 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
   function panel(bi) {
     const b = B[bi], el = root.querySelector(".m3-panel"), yr = t("m_yr");
     const site = b.site ? `<div class="m3-sec"><div class="m3-h">${esc(t("m_site_of"))}</div><b>${esc(b.siteName)}</b> <span class="mut">· ${esc(b.site)}</span>
-      <div class="m3-acts"><a class="btn" href="#site/${esc(b.site)}">${esc(t("m_open_site"))}</a></div></div>` : "";
+      <div class="m3-acts">${b.sheet ? `<a class="btn" href="#fiche/${esc(b.sheet)}">${esc(t("fs_title"))}</a>` : ""}<a class="btn ${b.sheet ? "alt" : ""}" href="#site/${esc(b.site)}">${esc(t("m_open_site"))}</a></div></div>` : "";
+    const r = b.site && api.siteYear ? api.siteYear(b.site) : null, mwh = v => v ? nf(v / 1000) + " MWh" : null;
+    const note = k => `<div class="mut" style="font-size:12px;margin:-2px 0 4px">${esc(t(k))}</div>`;
+    const meas = r ? `<div class="m3-sec"><div class="m3-h">${esc(t(r.sim ? "m_p_simread" : "m_p_measured", { y: r.year }))}${b.nb > 1 ? ` · ${esc(t("m_p_site", { n: b.nb }))}` : ""}</div>
+        ${row(t("m_p_hi"), r.hi == null ? esc(t("m_na")) : `<span class="pill ${r.hi >= 800 ? "p-fossil" : r.hi >= 450 ? "p-warn" : "p-ren"}">${nf(r.hi)} MJ/m²</span> ≈ ${nf(r.hi / 3.6)} kWh/m²`, r.sim && r.hi != null)}${r.hi == null ? "" : note(r.hiEst ? "m_n_hi_est" : "m_n_hi")}
+        ${row(t("m_l_int"), r.int == null ? esc(t("m_na")) : nf(r.int) + " kWh/m²", r.sim && r.int != null)}
+        ${row(t("m_p_heatkwh"), mwh(r.heat), r.sim)}${row(t("m_l_elec"), mwh(r.elec), r.sim)}
+        ${row(t("m_p_pvprod"), mwh(r.pv), r.sim)}${row(t("m_l_water"), r.water ? nf(r.water) + " m³" : null, r.sim)}</div>` : "";
     if (RC) { el.innerHTML = panelRC(b); el.classList.remove("hide"); el.querySelector(".m3-close").onclick = () => select(-1); return; }
     const idcClass = b.idc ? (b.idc.mj_m2 >= 800 ? "p-fossil" : b.idc.mj_m2 >= 450 ? "p-warn" : "p-ren") : "";
     const hc = b.heat ? hex(HEAT[b.heat]) : null;
@@ -318,7 +325,7 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
         ${(b.boilers || []).map(x => row(t("m_p_boiler"), `${esc(tr(x.fuel))}${x.year ? " · " + x.year : ""}${x.kw ? " · " + nf(x.kw) + " kW" : ""}`)).join("")}
       </div>
       <div class="m3-sec"><div class="m3-h">${esc(t("m_l_solar"))}</div>${b.pv ? row(t("m_p_pv"), nf(b.pv.kwh / 1000) + " MWh/" + yr) + row(t("m_p_kwp"), nf(b.pv.kwp, 1) + " kWp · " + nf(b.pv.m2) + " m²") : `<span class="mut">${esc(t("m_nodata"))}</span>`}</div>
-      ${b.sim ? `<div class="m3-sec">${row(t("m_l_elec"), nf(b.sim.elec_kwh / 1000) + " MWh/" + yr, true)}${row(t("m_l_water"), nf(b.sim.water_m3) + " m³/" + yr, true)}</div>` : ""}
+      ${meas || (b.sim ? `<div class="m3-sec">${row(t("m_l_elec"), nf(b.sim.elec_kwh / 1000) + " MWh/" + yr, true)}${row(t("m_l_water"), nf(b.sim.water_m3) + " m³/" + yr, true)}</div>` : "")}
       <div class="m3-src">EGID ${esc(b.egid || "–")} · ${esc(t("m_src"))}</div>`;
     el.classList.remove("hide");
     el.querySelector(".m3-close").onclick = () => select(-1);
@@ -342,6 +349,7 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
   });
   input.addEventListener("keydown", e => { if (e.key === "Enter") { const f = results.querySelector("[data-bi]"); if (f) f.click(); } if (e.key === "Escape") results.classList.add("hide"); });
 
+  const life = new AbortController();   // root outlives this map (same element for the next municipality): drop its listener in destroy()
   root.addEventListener("click", e => {
     const l = e.target.closest("[data-ml]"); if (l) { LAYER = l.dataset.ml; ONLY = ONLY0; ui(); paintAll(); return; }
     const k = e.target.closest("[data-cls]");
@@ -356,7 +364,7 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
     else if (tool === "north") orbitTo({ theta: 0 });
     else if (tool === "full") toggleFull();
     else if (tool === "home") { ONLY = ONLY0; ui(); paintAll(); animate(HOME.pos.clone(), HOME.target.clone()); }
-  });
+  }, { signal: life.signal });
 
   // ---------------------------------------------------------------- view tools: drag mode, orbit moves, full screen
   function setMode(m) {
@@ -472,8 +480,9 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
   const northSvg = root.querySelector(".m3-north svg"), topBtn = root.querySelector('[data-tool="top"]');
   let lastTop = null;
   let pending = false;
-  function request() { if (!pending) { pending = true; requestAnimationFrame(frame); } }
+  function request() { if (!pending && !life.signal.aborted) { pending = true; requestAnimationFrame(frame); } }
   function frame() {
+    if (life.signal.aborted) return;   // destroyed: a frame queued before destroy() must not touch the lost GL context
     pending = false;
     if (anim) {
       const k = Math.min(1, (performance.now() - anim.t0) / anim.ms), e = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
@@ -515,7 +524,7 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
   window.__m3 = { buildMs, lastPick: () => lastPickMs, n: B.length, cam: () => { const s = sph(); return [Math.round(s.radius), +s.phi.toFixed(3), +s.theta.toFixed(3), Math.round(controls.target.x), Math.round(controls.target.z)]; } };   // read by the headless check
   function destroy() {   // before switching map: free the GL context and the page-level listeners
     document.removeEventListener("fullscreenchange", onFull); document.removeEventListener("keydown", onEsc);
-    ro.disconnect(); controls.dispose(); api.hideTip();
+    life.abort(); ro.disconnect(); controls.dispose(); api.hideTip();
     if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
     root.classList.remove("m3-full", "is-full"); document.body.appendChild(document.getElementById("tip"));
     scene.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) { if (o.material.map) o.material.map.dispose(); o.material.dispose(); } });
