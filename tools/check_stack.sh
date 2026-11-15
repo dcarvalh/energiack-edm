@@ -95,6 +95,10 @@ L="$URL/api/localities"
 curl -fsS "$L" | grep -q '"slug":"geneve","name":"Genève"' || { echo "built-in Geneva not listed to visitors"; exit 1; }
 curl -fsS "$L" | grep -q '"dir":"map/"' || { echo "Geneva has no map"; exit 1; }
 [ "$(code "$URL/api/data.json?locality=geneve")" = 503 ]                                             # no readings yet
+# Genève (démo): seeded from geneve/csv/, must equal the static copy GitHub Pages serves
+curl -fsS "$L" | grep -q '"slug":"geneve-demo".*"simulated":true' || { echo "Genève (démo) not listed as simulated"; exit 1; }
+as technique --compressed "$URL/api/data.json?locality=geneve-demo" -o "$TMP/gdemo.json"
+"$PY" -c 'import json, sys; a, b = (json.load(open(f, encoding="utf-8")) for f in sys.argv[1:]); assert a == b, "Genève (démo) differs from prototype/data-geneve-demo.json: " + ", ".join(k for k in b if a.get(k) != b[k])' "$TMP/gdemo.json" prototype/data-geneve-demo.json
 [ "$(code -b "$TMP/admin" -H 'content-type: application/json' -d '{"slug":"x","name":"X","map":"nope"}' "$L")" = 422 ]
 NEW='{"slug":"test-fict","name":"Test (fictional)"}'
 [ "$(code -b "$TMP/technique" -H 'content-type: application/json' -d "$NEW" "$L")" = 403 ]         # admins only

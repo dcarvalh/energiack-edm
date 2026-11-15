@@ -12,6 +12,8 @@ CREATE TABLE IF NOT EXISTS locality (
     created_at timestamptz NOT NULL DEFAULT NOW()
 );
 ALTER TABLE locality ADD COLUMN IF NOT EXISTS demo boolean NOT NULL DEFAULT false;
+-- simulated: real public buildings with simulated readings (Genève démo): the app shows a permanent banner
+ALTER TABLE locality ADD COLUMN IF NOT EXISTS simulated boolean NOT NULL DEFAULT false;
 
 -- The demo locality. First, because the upgrade below attaches the existing rows to it.
 INSERT INTO locality (slug, name, map_config, demo)
@@ -28,6 +30,14 @@ VALUES ('geneve', 'Genève', '{"key":"ge","dir":"map/"}')
 ON CONFLICT (slug) DO UPDATE
   SET map_config = EXCLUDED.map_config
   WHERE locality.map_config IS NULL;
+
+-- Genève (démo): about 40 real buildings of the Geneva map (by EGID) with simulated meters and readings
+-- (tools/make_geneva_fake.py, loaded by server/cli.py seed). Separate from Genève: real and simulated never mix.
+INSERT INTO locality (slug, name, map_config, demo, simulated)
+VALUES ('geneve-demo', 'Genève (démo)', '{"key":"ge","dir":"map/"}', true, true)
+ON CONFLICT (slug) DO UPDATE
+  SET map_config = EXCLUDED.map_config, demo = true, simulated = true
+  WHERE NOT locality.simulated;
 
 -- ── upgrade from the single-municipality version ──────────────────────────────
 -- A database created before localities existed has the tables below without locality_id, and CREATE TABLE IF NOT
@@ -207,11 +217,11 @@ CREATE TABLE IF NOT EXISTS staged_file (
 CREATE INDEX IF NOT EXISTS staged_file_import ON staged_file (staged_import_id);
 
 -- ── seed ──────────────────────────────────────────────────────────────────────
--- Grant all existing (non-demo) users access to the built-in municipalities (Rive-Claire, Geneva).
+-- Grant all existing (non-demo) users access to the built-in municipalities (Rive-Claire, Geneva, Genève démo).
 -- Demo accounts are granted in cli.py AFTER auth.reset_demo() creates them.
 INSERT INTO user_locality (user_id, locality_id, role)
 SELECT u.id, l.id,
     CASE u.role WHEN 'admin' THEN 'admin' WHEN 'technique' THEN 'manager' ELSE 'viewer' END
 FROM app_user u CROSS JOIN locality l
-WHERE l.slug IN ('rive-claire', 'geneve') AND u.demo = false
+WHERE l.slug IN ('rive-claire', 'geneve', 'geneve-demo') AND u.demo = false
 ON CONFLICT DO NOTHING;

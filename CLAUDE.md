@@ -35,6 +35,10 @@ What it does and how to run it: `README.md`. Team plan, decisions and next steps
   does nothing on a table that exists. A changed column or key needs an upgrade step there (see the `DO` block), and
   `tools/check_upgrade.sh` (Stack workflow, every PR) must pass: database created by `main`, started with the PR, nothing lost.
 - Several municipalities: every data table is keyed by `locality_id`; API under `/api/localities/{slug}/…`.
+- Built-in datasets: `BUNDLED` in `tools/import_rive_claire.py` (Rive-Claire guide; `geneve-demo` from `geneve/csv/`).
+  After changing `tools/make_geneva_fake.py`, rerun it, rebuild `prototype/data-geneve-demo.json`
+  (`import_rive_claire.py --locality geneve-demo --out …`) and the zip; `check_stack.sh` compares server and static.
+  `locality.simulated` = real addresses with simulated readings: the app shows a banner and tags every figure.
 - Roles (issue #15: admin, technique, elu, public): `server/auth.py` decides, the API enforces it on the data (no raw
   readings or quality report below `technique`); `ACCESS` in `prototype/index.html` only hides menus and must mirror it.
   Change both together. On a static host `prototype/api/config.json` (`{"server": false}`) keeps every page open, no login.

@@ -53,6 +53,22 @@ def read_guide(guide=GUIDE):
     return out
 
 
+def read_csv_dir(folder, prefix):
+    """The same tables from a folder of CSV files named <prefix><table>.csv (a built-in data pack)."""
+    out = {}
+    for name in TABLES:
+        with open(Path(folder) / f"{prefix}{name}.csv", encoding="utf-8-sig") as f:
+            out[name] = list(csv.DictReader(f, delimiter=";"))
+    return out
+
+
+# Built-in datasets, by locality slug: what the server seeds and what "reload demo data" reloads
+BUNDLED = {
+    "rive-claire": read_guide,
+    "geneve-demo": lambda: read_csv_dir(ROOT / "geneve" / "csv", "geneve-"),  # tools/make_geneva_fake.py
+}
+
+
 def check(T):
     """Run the quality checks: (report, set of rejected row indexes in T["mesures"])."""
     return rc_quality.run(T)
@@ -271,8 +287,10 @@ def build(T, QUALITY, REJ):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default=str(ROOT / "prototype" / "data.json"))
+    ap.add_argument("--locality", default="rive-claire", choices=sorted(BUNDLED),
+                    help="which built-in dataset (geneve-demo: --out prototype/data-geneve-demo.json)")
     A = ap.parse_args()
-    T = read_guide()
+    T = BUNDLED[A.locality]()
     QUALITY, REJ = check(T)
     data = build(T, QUALITY, REJ)
     series, sites, meters, events = data["series"], data["sites"], data["meters"], data["events"]

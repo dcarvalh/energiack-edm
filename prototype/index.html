@@ -70,6 +70,11 @@ nav a.on .ic{color:var(--accent)}
 .seg button.on{background:var(--surface);color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.08)}
 .notice{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);padding:7px 24px;border-bottom:1px solid var(--line);background:var(--surface)}
 .notice::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--warn);flex:none}
+.notice.sim{color:var(--text);font-weight:550;background:color-mix(in srgb,var(--warn) 14%,var(--surface))}
+/* Simulated municipality (Genève démo): a tag on every figure computed from readings; the word comes from t("sim_tag") */
+body.sim :is(#v-gestion,#v-donnees,#v-qualite,#v-citoyens,#drawer) :is(.card:not(.pub) h2,.kpi .lab,.fact.simv > .lab)::after{content:var(--simtag);margin-left:6px;
+  font-size:10px;font-weight:650;letter-spacing:.03em;text-transform:uppercase;color:var(--warn);border:1px solid currentColor;
+  border-radius:4px;padding:0 4px;vertical-align:2px;white-space:nowrap}
 main{width:100%;max-width:1440px;padding:24px 24px 48px}
 footer{max-width:1440px;padding:16px 24px 32px}
 h1{font-size:22px;font-weight:650;letter-spacing:-.015em;line-height:1.25;margin:0 0 4px}
@@ -545,6 +550,8 @@ const T = {
 fr:{
   notice:"openEDM · données Energ-IA Transition (CC BY 4.0)",
   notice_demo:"Données de démonstration",
+  notice_sim:"{name} · données simulées : bâtiments réels (adresses et données publiques SITG), mais tous les compteurs et relevés sont simulés. Aucun chiffre de consommation n’est réel.",
+  sim_tag:"simulé",
   notice_server:"{name}",
   tagline:"EDM citoyen et souverain",
   nav_home:"Accueil",
@@ -711,6 +718,8 @@ fr:{
 en:{
   notice:"openEDM · data: Energ-IA Transition (CC BY 4.0)",
   notice_demo:"Demo data",
+  notice_sim:"{name} · simulated data: real buildings (addresses and SITG public data), but every meter and reading is simulated. No consumption figure is real.",
+  sim_tag:"simulated",
   notice_server:"{name}",
   tagline:"Citizen-owned, sovereign EDM",
   nav_home:"Welcome",
@@ -1251,7 +1260,7 @@ function sitePublic(s){
   import("./map3d.js?v="+V).then(m => m.publicBuildings(map.dir, eg, LANG)).then(rows => {
     if (!rows.length || !document.getElementById("d-public")) return;
     const idc = b => b.idc ? `<span class="pill ${b.idc.mj_m2>=800?"p-fossil":b.idc.mj_m2>=450?"p-warn":"p-ren"}">${nf(b.idc.mj_m2)}</span> <small class="mut">${b.idc.year}</small>` : "–";
-    el.innerHTML = `<div class="card" style="margin-top:14px"><h2>${esc(t("d_public"))}</h2><p class="sub">${esc(t("d_public_sub"))}</p>
+    el.innerHTML = `<div class="card pub" style="margin-top:14px"><h2>${esc(t("d_public"))}</h2><p class="sub">${esc(t("d_public_sub"))}</p>
       <div class="tablewrap"><table class="dtab"><thead><tr><th>${esc(t("h_bname"))}</th><th class="hide-m">${esc(t("h_use"))}</th><th class="num">${esc(t("m_p_height"))}</th>
         <th>${esc(t("m_l_heat"))}</th><th class="num">${esc(t("h_idc"))}</th><th class="num hide-m">${esc(t("h_solar"))}</th></tr></thead><tbody>
       ${rows.map(b=>`<tr><td><div class="tname">${esc(b.addr || "EGID "+b.egid)}</div><div class="tsub">EGID ${esc(b.egid)}</div></td><td class="hide-m">${esc(b.use||"–")}</td>
@@ -1323,8 +1332,8 @@ function openSite(id){
     <div class="facts">
       <div class="fact"><div class="lab">${esc(t("d_area"))}</div><div class="v">${s.area_m2?nf(s.area_m2)+" m²":esc(t("d_na"))}</div></div>
       <div class="fact"><div class="lab">${esc(t("d_built"))}</div><div class="v">${s.year_built??"–"}${reno?` <small class="mut">· ${reno}</small>`:""}</div></div>
-      <div class="fact"><div class="lab">${esc(t("d_hi",{y:YEAR}))}</div><div class="v">${cur.hi==null?esc(t("d_na")):`<span class="pill ${hiClass(cur.hi)}">${nf(cur.hi)} MJ/m²</span> <small class="mut">≈ ${nf(cur.hi/3.6)} kWh/m²</small>`}</div>${cur.hi==null?"":`<div class="lab">${esc(t("d_hi_sub"))}${cur.hiEst?" · "+esc(t("q_estimated")):""}${deliv?" · "+esc(t("d_hi_deliv")):""}</div>`}</div>
-      <div class="fact"><div class="lab">${esc(t("d_int",{y:YEAR}))}</div><div class="v">${cur.int==null?esc(t("d_na")):nf(cur.int)+" kWh/m²"}</div></div>
+      <div class="fact simv"><div class="lab">${esc(t("d_hi",{y:YEAR}))}</div><div class="v">${cur.hi==null?esc(t("d_na")):`<span class="pill ${hiClass(cur.hi)}">${nf(cur.hi)} MJ/m²</span> <small class="mut">≈ ${nf(cur.hi/3.6)} kWh/m²</small>`}</div>${cur.hi==null?"":`<div class="lab">${esc(t("d_hi_sub"))}${cur.hiEst?" · "+esc(t("q_estimated")):""}${deliv?" · "+esc(t("d_hi_deliv")):""}</div>`}</div>
+      <div class="fact simv"><div class="lab">${esc(t("d_int",{y:YEAR}))}</div><div class="v">${cur.int==null?esc(t("d_na")):nf(cur.int)+" kWh/m²"}</div></div>
       <div class="fact"><div class="lab">${esc(t("d_pv"))}</div><div class="v">${s.pv_kwp?nf(s.pv_kwp)+(LANG==="fr"?" kWc":" kWp"):"–"}</div></div>
     </div>
     <div class="card"><div class="row" style="margin-bottom:8px"><h2>${esc(FLUID.startsWith("m:")?FLUID.slice(2)+" · "+mlabel(MS.find(m=>"m:"+m.id===FLUID)):t("d_series"))}</h2><div class="spacer"></div>
@@ -1502,9 +1511,16 @@ function renderAll(){
   applyStatic();
   for (const v of VIEWS) document.getElementById("v-"+v).classList.toggle("hide", v!==VIEW);
   // Notice banner: dynamic per server/locality/demo context
-  const noticeEl = document.querySelector(".notice");
+  const noticeEl = document.querySelector(".notice"), sim = !!LOC?.simulated;
+  document.body.classList.toggle("sim", sim);
+  document.body.style.setProperty("--simtag", JSON.stringify(t("sim_tag")));
   if (noticeEl) {
-    if (SERVER && LOC) {
+    noticeEl.classList.toggle("sim", sim);
+    if (sim) {
+      // Real addresses, simulated readings: always say so, on every page (plan item 18)
+      noticeEl.textContent = t("notice_sim", {name: LOC.name});
+      noticeEl.style.display = "";
+    } else if (SERVER && LOC) {
       if (LOC.demo) {
         noticeEl.textContent = `${LOC.name} · ${t("notice_demo")}`;
         noticeEl.style.display = "";
@@ -2169,7 +2185,7 @@ let RZ, LASTW = innerWidth;
 window.addEventListener("resize", () => { clearTimeout(RZ); RZ = setTimeout(() => { if (Math.abs(innerWidth - LASTW) < 40 || !D) return; LASTW = innerWidth; const open = document.getElementById("drawer").classList.contains("open"); renderAll(); if (open) reopen(); }, 200); });
 matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", renderAll);
 
-const V = "43";
+const V = "44";
 (async () => {
   try {
     const c = await fetch("api/config.json?v="+V, {cache:"no-store"}).then(r => r.json());

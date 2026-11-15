@@ -20,6 +20,17 @@
     "dir": "map/"
    },
    "demo": false
+  },
+  {
+   "slug": "geneve-demo",
+   "name": "Genève (démo)",
+   "map_config": {
+    "key": "ge",
+    "dir": "map/"
+   },
+   "demo": true,
+   "simulated": true,
+   "data": "data-geneve-demo.json"
   }
  ]
 }
