@@ -231,7 +231,7 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;ba
 .m3-ui{position:absolute;top:12px;left:12px;max-width:360px}
 .m3-card,.m3-hint,.m3-attr{background:color-mix(in srgb,var(--surface) 90%,transparent);backdrop-filter:blur(8px);border:1px solid var(--line);box-shadow:var(--shadow)}
 .m3-card{border-radius:12px;padding:12px 14px;max-height:calc(100vh - 190px);overflow:auto}
-.m3-maps{margin-bottom:8px} .m3-title{font-weight:680;letter-spacing:-.01em;font-size:16px} .m3-sub{font-size:12.5px;color:var(--muted);margin-bottom:10px}
+.m3-title{font-weight:680;letter-spacing:-.01em;font-size:16px} .m3-sub{font-size:12.5px;color:var(--muted);margin-bottom:10px}
 .m3-legend{margin-top:10px;font-size:12px;color:var(--muted)} .m3-unit{font-weight:600;color:var(--text);margin-bottom:6px}
 .m3-key{display:inline-flex;align-items:center;gap:5px;margin:0 10px 4px 0} .m3-key i{width:10px;height:10px;border-radius:3px;display:inline-block}
 .m3-panel{position:absolute;top:12px;right:12px;bottom:40px;width:340px;overflow-y:auto;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;box-shadow:var(--shadow)}
@@ -685,7 +685,7 @@ fr:{
   m_nodata:"Pas de donnée", m_yr:"an", m_sim:"simulé",
   m_hint:"Glisser : déplacer · Clic droit : pivoter · Molette : zoom · Flèches : déplacer · Clic : détails", m_hint_touch:"1 doigt : déplacer · 2 doigts : zoom et rotation · Toucher : détails",
   m_reset:"Recentrer", m_attr:"© swisstopo · © SITG / OCEN · électricité et eau simulées",
-  m_map_rc:"Rive-Claire", m_map_ge:"Genève", m_map_title_rc:"Rive-Claire · patrimoine communal",
+  m_map_title_rc:"Rive-Claire · patrimoine communal",
   m_sub_rc:"{n} bâtiments · {s} sites · relevés {y} · plan fictif, volumes schématiques", m_search_rc:"Rechercher un site…",
   m_attr_rc:"Données : Energ-IA Transition, Energ-IACK 2026 (CC BY 4.0) · volumes déduits de la SRE et des niveaux, agrandis ×{k} · lac, routes et arbres inventés",
   m_map_title_imp:"Carte 3D importée", m_sub_imp:"{n} bâtiments · {m} rattachés · {u} à rattacher",
@@ -864,7 +864,7 @@ en:{
   m_nodata:"No data", m_yr:"yr", m_sim:"simulated",
   m_hint:"Drag: move · Right-drag: rotate · Wheel: zoom · Arrow keys: move · Click: details", m_hint_touch:"1 finger: move · 2 fingers: zoom and rotate · Tap: details",
   m_reset:"Reset view", m_attr:"© swisstopo · © SITG / OCEN · electricity and water simulated",
-  m_map_rc:"Rive-Claire", m_map_ge:"Geneva", m_map_title_rc:"Rive-Claire · municipal buildings",
+  m_map_title_rc:"Rive-Claire · municipal buildings",
   m_sub_rc:"{n} buildings · {s} sites · {y} readings · fictional plan, schematic volumes", m_search_rc:"Search a site…",
   m_attr_rc:"Data: Energ-IA Transition, Energ-IACK 2026 (CC BY 4.0) · volumes from floor area and levels, enlarged ×{k} · lake, roads and trees invented",
   m_map_title_imp:"Imported 3D map", m_sub_imp:"{n} buildings · {m} matched · {u} to match",
@@ -1262,15 +1262,9 @@ function renderAbout(){
 /* ---------------------------------------------------------------- 3D map (loaded on first visit) */
 let MAP = null, MAP_LOADING = false;
 const isDark = () => { const a = document.documentElement.dataset.theme; return a ? a === "dark" : matchMedia("(prefers-color-scheme: dark)").matches; };
+// Built-in demo maps; which one a locality shows is driven by its map_config (set via the left-menu locality),
+// not by an in-map switcher. Localities with no map_config fall back to Rive-Claire.
 const MAPS = {rc:{key:"rc", dir:"map-rc/"}, ge:{key:"ge", dir:"map/"}};
-let MAPKEY = "rc";
-try { if (MAPS[localStorage.getItem("energiack-map")]) MAPKEY = localStorage.getItem("energiack-map"); } catch(e) {}
-function switchMap(k){
-  if (MAP_LOADING || !MAPS[k] || k===MAPKEY) return;
-  MAPKEY = k; try { localStorage.setItem("energiack-map", k); } catch(e) {}
-  if (MAP) { MAP.destroy(); MAP = null; }
-  renderMap();
-}
 // Carrier (oil/gas/district/heat_pump/wood/electric/none) -> the 5 map heat kinds
 const CARRIER_KIND = {oil:"fossil", gas:"fossil", district:"district", heat_pump:"heatpump", wood:"wood", electric:"electric"};
 // Per-site figures in the shape the 3D map expects as b.rc (matches make_rive_claire_map output)
@@ -1289,9 +1283,9 @@ function renderMap(){
   const mc = LOC?.map_config;
   const imported = mc?.key === "imported";
   const mapCfg = imported ? {key:"imported", dir:`api/localities/${LOC.slug}/map/`}
-    : (mc?.key && MAPS[mc.key]) ? {key: mc.key, dir: mc.dir} : MAPS[MAPKEY];
+    : (mc?.key && MAPS[mc.key]) ? {key: mc.key, dir: mc.dir} : MAPS.rc;
   const canMatch = SERVER && USER && (USER.role==="admin" || USER.role==="technique");
-  const apiObj = {t, nf, esc, showTip, hideTip, dark:isDark, lang:()=>LANG, switchMap,
+  const apiObj = {t, nf, esc, showTip, hideTip, dark:isDark, lang:()=>LANG,
     heatIndex:(sid, y)=>(M.sites[sid]||{})[y], siteData:mapSiteData, siteName:mapSiteName, canMatch,
     matchBuilding: (b, done) => mapPickSite(b, done),
     registerBuilding: (b, done) => mapRegisterDialog(b, done),
@@ -2394,7 +2388,7 @@ let RZ, LASTW = innerWidth;
 window.addEventListener("resize", () => { clearTimeout(RZ); RZ = setTimeout(() => { if (Math.abs(innerWidth - LASTW) < 40 || !D) return; LASTW = innerWidth; const open = document.getElementById("drawer").classList.contains("open"); renderAll(); if (open) reopen(); }, 200); });
 matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", renderAll);
 
-const V = "48";
+const V = "49";
 (async () => {
   try {
     const c = await fetch("api/config.json?v="+V, {cache:"no-store"}).then(r => r.json());

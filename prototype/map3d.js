@@ -8,7 +8,7 @@ import { computeBoundsTree, acceleratedRaycast } from "./vendor/three-mesh-bvh.m
 THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
 
-const V = "30";
+const V = "31";
 const GREY = 0xb9bfbb;
 const SEL_COL = 0xff2bbf;   // selected/clicked building: a vivid magenta outline rim
 const SITEHI = 0x2a9df4;    // the other blocks of the selected building's site: a thinner blue outline rim
@@ -110,7 +110,6 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
     <div class="m3-labels"></div>
     <div class="m3-ui">
       <div class="m3-card">
-        <div class="seg m3-maps"><button data-map="rc"></button><button data-map="ge"></button></div>
         <div class="m3-title"></div><div class="m3-sub"></div>
         <div class="m3-search"><input type="search" autocomplete="off"><div class="m3-results hide"></div></div>
         <div class="chips m3-layers"></div>
@@ -324,9 +323,6 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
       + `<div class="m3-fhint">${esc(ONLY === null ? t("m_filter_hint") : t("m_filter_clear"))}</div>`;
   }
   function ui() {
-    const maps = root.querySelector(".m3-maps");
-    if (maps) maps.classList.toggle("hide", IMP);        // the rc/ge switcher does not apply to an imported map
-    for (const b of root.querySelectorAll("[data-map]")) { b.textContent = t("m_map_" + b.dataset.map); b.classList.toggle("on", b.dataset.map === cfg.key); }
     root.querySelector(".m3-title").textContent = IMP ? (M.area || t("m_map_title_imp")) : t(RC ? "m_map_title_rc" : "m_map_title");
     const nMatched = IMP ? B.filter(b => b.id_site).length : 0;
     root.querySelector(".m3-sub").textContent = IMP ? t("m_sub_imp", { n: nf(B.length), m: nf(nMatched), u: nf(B.length - nMatched) })
@@ -442,7 +438,6 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
     const k = e.target.closest("[data-cls]");
     if (k) { const v = (k.dataset.cls === "nd" || k.dataset.cls === "un") ? k.dataset.cls : +k.dataset.cls; ONLY = ONLY === v ? null : v; root.querySelector(".m3-legend").innerHTML = legendHtml(); paintAll(); return; }
     const r = e.target.closest("[data-bi]"); if (r) { results.classList.add("hide"); input.value = B[+r.dataset.bi].addr; select(+r.dataset.bi, true); return; }
-    const mp = e.target.closest("[data-map]"); if (mp) { if (mp.dataset.map !== cfg.key) api.switchMap(mp.dataset.map); return; }
     const tb = e.target.closest("[data-tool]"); if (!tb) return;
     const tool = tb.dataset.tool;
     if (tool === "pan" || tool === "orbit") setMode(tool);
