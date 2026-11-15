@@ -8,7 +8,7 @@ import { computeBoundsTree, acceleratedRaycast } from "./vendor/three-mesh-bvh.m
 THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
 
-const V = "15";
+const V = "16";
 const GREY = 0xb9bfbb;
 const RAMP = {
   idc:   [0x2e9e6e, 0x9cc95a, 0xf0b33c, 0xe0663a, 0xb8322a],
@@ -253,11 +253,16 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
   const L = () => (RCLIKE ? layersRC : layers)(t, nf)[LAYER];
   const unmatched = bi => IMP && !B[bi].id_site;
   const selSite = () => (IMP && SEL >= 0) ? B[SEL].id_site : null;   // site of the selected building, for highlight
+  const anyFilter = () => ONLY !== null || (IMP && MFILTER !== "all");
+  function isHidden(bi, lay = L()) {                     // currently filtered out of view (ghosted) -> not pickable
+    const c = lay.cls(B[bi]), un = unmatched(bi);
+    const mfHidden = IMP && (MFILTER === "matched" ? un : MFILTER === "unmatched" ? !un : false);
+    return mfHidden || (ONLY !== null && (ONLY === "un" ? !un : ONLY === "nd" ? (un || c !== -1) : c !== ONLY));
+  }
   function paint(bi, lay = L()) {
     const c = lay.cls(B[bi]);
     const un = unmatched(bi);
-    const mfHidden = IMP && (MFILTER === "matched" ? un : MFILTER === "unmatched" ? !un : false);
-    const hidden = mfHidden || (ONLY !== null && (ONLY === "un" ? !un : ONLY === "nd" ? (un || c !== -1) : c !== ONLY));
+    const hidden = isHidden(bi, lay);
     const site = selSite();
     const siteHi = site && B[bi].id_site === site;        // this building belongs to the selected site
     if (hidden) col.copy(ghost);
@@ -479,9 +484,19 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
     const r = renderer.domElement.getBoundingClientRect(), t1 = performance.now();
     ndc.set(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1);
     ray.setFromCamera(ndc, camera);
-    const hit = ray.intersectObject(bMesh, false)[0];
+    let bi = -1;
+    if (!anyFilter()) {                                   // fast path: nearest hit (unchanged for RC/GE and unfiltered)
+      const hit = ray.intersectObject(bMesh, false)[0];
+      bi = hit ? tri2b[hit.faceIndex] : -1;
+    } else {                                              // a filter is active: skip ghosted buildings, pick the first visible one
+      ray.firstHitOnly = false;
+      const hits = ray.intersectObject(bMesh, false);
+      ray.firstHitOnly = true;
+      const lay = L();
+      for (const h of hits) { const b = tri2b[h.faceIndex]; if (b >= 0 && !isHidden(b, lay)) { bi = b; break; } }
+    }
     lastPickMs = performance.now() - t1;
-    return hit ? tri2b[hit.faceIndex] : -1;
+    return bi;
   }
   let down = null;
   renderer.domElement.tabIndex = 0;
