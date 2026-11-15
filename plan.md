@@ -129,6 +129,29 @@ demo (energy manager → council → citizen). The demo link is the server versi
 14. Check the licence lines in `THIRD_PARTY.md` (three-mesh-bvh, OrbitControls, server stack: written from memory) and
     the SITG/swisstopo attribution wording; test the 3D map on a real phone.
 
+**Geneva as a shared public base layer** (David, 15 Nov). Idea: public building data (Geneva first) is the starting
+point every municipality reuses without copying it; what a municipality imports stays its own, linked to the public
+buildings by **EGID** (the federal building ID, already in `prototype/map/buildings.json`). Maps are already shared:
+`map_config` points to a folder, so several municipalities can use `map/` today.
+Decided: a portfolio is a list of EGIDs in the import, not an area drawn on the map (a commune's buildings are
+scattered, and the 3D map is slow without a GPU); the map's extent comes from the commune boundary. The public demo
+links only a few public-owned buildings to fictional readings, under a permanent "fictional readings" banner, so
+invented figures are never taken for real ones at a real address. Keep it generic (a regional data pack, Geneva first),
+not hard-wired to Geneva.
+15. Geneva as a built-in municipality: seeded in `server/schema.sql` like Rive-Claire, `map_config` → `map/`; the admin
+    chooses the map when creating a municipality (`POST /api/localities` takes slug, name and country only today).
+16. EGID link: optional `egid` column in the `building` import (upgrade step in `schema.sql`, `check_upgrade.sh` must
+    pass; `build()` stays the single format). Linked buildings are highlighted on the map and open their site; the
+    site page shows the public attributes (height, use, heating, heat index, solar). Buildings without EGID work as now.
+17. A public-data view for a municipality with no readings yet (map, heat-index classes, heating mix, solar), since
+    Manage and Citizens need readings. The public municipality list hides a municipality with no import today.
+
+Later, after 1 Dec: one map extent per Geneva commune, generated once into a shared `map/ge/<commune>/` (the
+whole canton is too heavy for the browser); add or remove buildings by clicking the map; sharing between
+municipalities (e.g. commune → canton; accounts already get a role per municipality). Not checked: whether the federal
+building register (RegBL/GWR) gives heating type and energy source for all of Switzerland, which would make the same
+link work outside Geneva.
+
 **Ideas, not planned:** consumption breaks after renovations, synergies between buildings, price scenarios, indirect CO₂,
 DE/IT, place Rive-Claire in a recognisable Geneva neighbourhood on the map.
 
