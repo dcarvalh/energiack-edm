@@ -225,14 +225,14 @@ def _aerial(bbox, tiles, px):
     out = []
     tpx = int(round(max(W, H) / tiles / px))
     tpx = max(256, min(tpx, 1024))
-    for j in range(tiles):                               # j = row from the bottom (north-up handled on client)
-        for i in range(tiles):
-            bx = (xmin + i * W / tiles, ymin + j * H / tiles,
-                  xmin + (i + 1) * W / tiles, ymin + (j + 1) * H / tiles)
+    for i in range(tiles):                               # i = column, west -> east
+        for j in range(tiles):                           # j = row, north -> south (so j=0 sits at terrain row 0 = north)
+            x0, x1 = xmin + i * W / tiles, xmin + (i + 1) * W / tiles
+            y1, y0 = ymax - j * H / tiles, ymax - (j + 1) * H / tiles
             q = urllib.parse.urlencode({
                 "SERVICE": "WMS", "VERSION": "1.3.0", "REQUEST": "GetMap",
                 "LAYERS": "ch.swisstopo.swissimage", "STYLES": "", "CRS": "EPSG:2056",
-                "BBOX": f"{bx[0]},{bx[1]},{bx[2]},{bx[3]}",
+                "BBOX": f"{x0},{y0},{x1},{y1}",
                 "WIDTH": str(tpx), "HEIGHT": str(tpx), "FORMAT": "image/jpeg",
             })
             try:
