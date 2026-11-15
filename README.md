@@ -13,7 +13,8 @@ municipalities, file imports through a staging area, and four roles (admin, tech
 server. "Log in" (top right) shows one-click demo accounts for each role. Fictional data only.
 
 **Open static copy: https://dcarvalh.github.io/energiack-edm/** (FR/EN toggle top right, also `?lang=en`). GitHub
-Pages, no login, every page visible; the server-only views (Data, Municipalities, Users) are not there.
+Pages, no login, every page visible; Data and Municipalities (upload, manage municipalities) say they need the
+server version, with a link.
 
 **Pitch deck: [French](https://dcarvalh.github.io/energiack-edm/pitch/) · [English](https://dcarvalh.github.io/energiack-edm/pitch/en.html)**
 Seven slides in the browser; it also runs offline from `prototype/pitch/` (see "Pitch deck" below).
@@ -24,8 +25,8 @@ Seven slides in the browser; it also runs offline from `prototype/pitch/` (see "
 |---|---|---|
 | **Accueil / Welcome** | everyone | the idea, who it is for (planned indicators per audience), what is online, next steps |
 | **Gestion / Manage** | the commune's energy service | KPIs (energy, estimated cost, CO₂ vs 2030 target, fossil-heated sites, solar), monthly chart by fluid, CO₂ trajectory to 2030, site table with alerts incl. data defects. A site page has its monthly history per fluid, every meter with raw readings and quality flags, buildings, installations, heating history and a CSV download |
-| **Citoyen·ne·s / Citizens** | residents | the year in one sentence, progress to the 2030 targets, numbers per resident, what changed |
-| **Carte 3D / 3D map** | everyone | **Rive-Claire** (default): the challenge's fictional commune as schematic 3D blocks coloured by measured 2025 readings; scenery (lake, roads, trees) is generated. **Geneva**: 10,574 real buildings in central Geneva (SITG footprints and heights) on swisstopo terrain and aerial photo, coloured by heat index, heating energy, solar potential (real) or electricity and water (simulated, flagged) |
+| **Citoyen·ne·s / Citizens** | residents | the year in one sentence, progress to the 2030 targets, numbers per resident (totals when the population is unknown), what changed |
+| **Carte 3D / 3D map** | everyone | **Rive-Claire** (default): the challenge's fictional commune as schematic 3D blocks coloured by measured 2025 readings; scenery (lake, roads, trees) is generated. **Geneva**: 10,574 real buildings in central Geneva (SITG footprints and heights) on swisstopo terrain and aerial photo, coloured by heat index, heating energy, solar potential (real) or electricity and water (simulated, flagged). In Genève (démo) its sites are highlighted; a site's building panel shows its simulated readings and opens its building sheet |
 | **Qualité / Data quality** | energy service, other communes | the import report: rows read, loaded, rejected; re-import of the same file adds 0 rows; 17 checks (reference IDs and links, unknown meter, month, unit, value, duplicates, gaps, estimated, negative, spikes, unusual zeros, two-monthly readings, kWh conversion, sub-meter vs parent, meter dates) with every finding, a link to the site and a CSV |
 | **Comment ça marche / How it works** | jury, other communes | why sovereign, the Geneva context with sources, the open data model |
 | **Données / Data** | energy service (server version only) | upload a ZIP of CSV files for the selected municipality: each table is recognised by its columns, the upload waits in a staging area with its quality report, rows can be corrected or removed, then it is committed or discarded. Also the loaded tables, row by row |
