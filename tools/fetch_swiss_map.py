@@ -4,8 +4,8 @@ No SITG / canton dependency, no GDAL/rasterio/PIL: pure standard library.
   - buildings + EGID: GWR  ch.bfs.gebaeude_wohnungs_register  (identify, GeoJSON, LV95)
                       point + area (GAREA) + floors (GASTW) -> extruded square block
   - aerial photo:     swisstopo SWISSIMAGE (WMS GetMap), one JPEG per tile, passed through as-is
-  - terrain:          flat for now (buildings sit on the aerial-textured ground plane).
-                      swissALTI3D is a later upgrade (needs GeoTIFF reading).
+  - terrain:          swisstopo swissALTI3D 2 m, read from the ASCII XYZ asset (zip of "E N Z" lines),
+                      sampled to a grid; the aerial is draped over the relief and buildings sit on the ground.
 
 fetch(bbox, step, px, tiles) -> {meta, buildings, terrain (bytes), tiles: [(i, j, jpg_bytes)]}
 matching the buildings.json / terrain.bin / aerial schema that prototype/map3d.js already reads.
@@ -13,27 +13,139 @@ matching the buildings.json / terrain.bin / aerial schema that prototype/map3d.j
 bbox = (xmin, ymin, xmax, ymax) in LV95 (EPSG:2056).
 geocode(text) -> [{label, x, y, bbox}] to turn a place name into a zone.
 """
+import array
+import io
 import json
 import math
 import struct
 import urllib.parse
 import urllib.request
+import zipfile
 
 UA = {"User-Agent": "openedm/1.0 (energiack prototype)"}
 IDENTIFY = "https://api3.geo.admin.ch/rest/services/ech/MapServer/identify"
 SEARCH = "https://api3.geo.admin.ch/rest/services/ech/SearchServer"
 WMS = "https://wms.geo.admin.ch/"
+STAC_ALTI = "https://data.geo.admin.ch/api/stac/v0.9/collections/ch.swisstopo.swissalti3d/items"
 GWR_LAYER = "ch.bfs.gebaeude_wohnungs_register"
 IDENTIFY_CAP = 200          # the identify endpoint returns at most ~200 features per call
 MAX_TILES = 3               # aerial tiles per side (bounds the fetch)
 STOREY_M = 3.0              # metres per floor when GASTW is present
+ALTI_RES = 2                # swissALTI3D XYZ grid step (m); one .xyz.zip per 1 km square
+ALTI_N = 1000 // ALTI_RES   # samples per side in a 1 km tile (500)
+TERRAIN_STEP = 10.0         # target output terrain grid step (m) — relief without a huge grid
 
 
-def _get(url, binary=False, timeout=60):
+def _get(url, binary=False, timeout=90):
     req = urllib.request.Request(url, headers=UA)
     with urllib.request.urlopen(req, timeout=timeout) as r:
         data = r.read()
     return data if binary else json.loads(data)
+
+
+def _lv95_to_wgs(e, n):
+    """swisstopo approximate formulas (~1 m), enough for a STAC bbox query. Returns (lon, lat)."""
+    y, x = (e - 2600000) / 1e6, (n - 1200000) / 1e6
+    lam = 2.6779094 + 4.728982 * y + 0.791484 * y * x + 0.1306 * y * x * x - 0.0436 * y ** 3
+    phi = 16.9023892 + 3.238272 * x - 0.270978 * y * y - 0.002528 * x * x - 0.0447 * y * y * x - 0.0140 * x ** 3
+    return lam * 100 / 36, phi * 100 / 36
+
+
+def _alti_tiles(bbox):
+    """Download the swissALTI3D 2 m XYZ tiles covering bbox -> {(tileE,tileN): array('f', 500*500)} (NaN = gap)."""
+    xmin, ymin, xmax, ymax = bbox
+    lo0, la0 = _lv95_to_wgs(xmin - 50, ymin - 50)
+    lo1, la1 = _lv95_to_wgs(xmax + 50, ymax + 50)
+    items, url = [], f"{STAC_ALTI}?bbox={lo0:.5f},{la0:.5f},{lo1:.5f},{la1:.5f}&limit=100"
+    while url:
+        d = _get(url)
+        items += d.get("features", [])
+        url = next((l["href"] for l in d.get("links", []) if l.get("rel") == "next"), None)
+    newest = {}                                           # keep the newest asset per 1 km square
+    for it in items:
+        href = next((a["href"] for k, a in it["assets"].items()
+                     if k.endswith(f"_{ALTI_RES}_2056_5728.xyz.zip")), None)
+        if not href:
+            continue
+        sq = it["id"].rsplit("_", 1)[-1]
+        if sq not in newest or it["id"] > newest[sq][0]:
+            newest[sq] = (it["id"], href)
+    grids = {}
+    nan = float("nan")
+    for _, href in newest.values():
+        try:
+            raw = _get(href, binary=True)
+            zf = zipfile.ZipFile(io.BytesIO(raw))
+            with zf.open(zf.namelist()[0]) as f:
+                g = None
+                for line in f:
+                    parts = line.split()
+                    if len(parts) != 3 or parts[0] in (b"X", b"x"):
+                        continue
+                    e = int(float(parts[0])); n = int(float(parts[1])); z = float(parts[2])
+                    te, tn = (e // 1000) * 1000, (n // 1000) * 1000
+                    if g is None:
+                        key = (te, tn); g = array.array("f", [nan]) * (ALTI_N * ALTI_N)
+                    col = min(max((e - te) // ALTI_RES, 0), ALTI_N - 1)
+                    row = min(max((n - tn) // ALTI_RES, 0), ALTI_N - 1)
+                    g[row * ALTI_N + col] = z
+                if g is not None:
+                    grids[key] = g
+        except Exception:
+            continue
+    return grids
+
+
+def _terrain(bbox, tiles):
+    """Real swissALTI3D terrain for bbox. Returns (terrain_bytes, nx, ny, step, zmin, ground(E,N))."""
+    xmin, ymin, xmax, ymax = bbox
+    W, H = xmax - xmin, ymax - ymin
+    grids = _alti_tiles(bbox)
+
+    def sample(e, n):                                     # nearest 2 m post, with a tiny spiral to fill gaps
+        te, tn = (int(e) // 1000) * 1000, (int(n) // 1000) * 1000
+        g = grids.get((te, tn))
+        if g is None:
+            return None
+        c0 = min(max((int(e) - te) // ALTI_RES, 0), ALTI_N - 1)
+        r0 = min(max((int(n) - tn) // ALTI_RES, 0), ALTI_N - 1)
+        for rad in range(0, 4):
+            for dr in range(-rad, rad + 1):
+                for dc in range(-rad, rad + 1):
+                    r, c = r0 + dr, c0 + dc
+                    if 0 <= r < ALTI_N and 0 <= c < ALTI_N:
+                        v = g[r * ALTI_N + c]
+                        if v == v:                        # not NaN
+                            return v
+        return None
+
+    if not grids:                                         # fetch failed -> flat fallback
+        nx = ny = tiles + 1
+        return struct.pack(f"<{nx * ny}h", *([0] * (nx * ny))), nx, ny, W / (nx - 1), 0.0, (lambda e, n: 0.0)
+
+    cells = max(tiles, round(max(W, H) / TERRAIN_STEP))   # divisible by tiles -> integer plane segments per tile
+    cells = math.ceil(cells / tiles) * tiles
+    nx = ny = cells + 1
+    step = W / (nx - 1)
+    heights, grid = [], []                                # row 0 = north (N = ymax), to match make_map / terrain.bin
+    last = 0.0
+    for r in range(ny):
+        n = ymax - r * step
+        for c in range(nx):
+            e = xmin + c * step
+            v = sample(e, n)
+            if v is None:
+                v = last
+            last = v
+            grid.append(v); heights.append(v)
+    zmin = math.floor(min(heights))
+
+    def ground(e, n):
+        v = sample(e, n)
+        return (v if v is not None else zmin) - zmin
+
+    terrain = struct.pack(f"<{nx * ny}h", *[int(round((v - zmin) * 10)) for v in grid])
+    return terrain, nx, ny, step, float(zmin), ground
 
 
 def geocode(text, limit=6):
@@ -137,7 +249,10 @@ def fetch(bbox, step=16, px=1.0, tiles=1, name=None):
     xmin, ymin, xmax, ymax = (float(v) for v in bbox)
     W, H = xmax - xmin, ymax - ymin
 
-    # buildings -> extruded square blocks in map-local metres
+    # real swissALTI3D terrain (relief); buildings then sit on the ground at their base elevation
+    terrain, nx, ny, step, zmin, ground = _terrain((xmin, ymin, xmax, ymax), tiles)
+
+    # buildings -> extruded square blocks in map-local metres, raised to the terrain
     raw = _buildings((xmin, ymin, xmax, ymax))
     buildings = []
     for b in raw:
@@ -153,23 +268,21 @@ def fetch(bbox, step=16, px=1.0, tiles=1, name=None):
                 [round(x + hs, 1), round(y + hs, 1)], [round(x - hs, 1), round(y + hs, 1)],
                 [round(x - hs, 1), round(y - hs, 1)]]
         buildings.append({
-            "egid": b["egid"], "rings": [ring], "h": round(height, 1), "z": 0.0,
+            "egid": b["egid"], "rings": [ring], "h": round(height, 1), "z": round(ground(b["e"], b["n"]), 1),
             "use": None, "year": b["year"], "levels": floors, "addr": b["addr"],
         })
 
-    # flat terrain: a tiny Int16 grid of zeros (nx,ny chosen so (n-1) is divisible by tiles)
-    nx = ny = tiles + 1
-    terrain = struct.pack(f"<{nx * ny}h", *([0] * (nx * ny)))
-
     tiles_out, tpx = _aerial((xmin, ymin, xmax, ymax), tiles, px)
+    flat = all(v == 0 for v in struct.unpack(f"<{nx * ny}h", terrain))
 
     meta = {
         "kind": "imported", "area": name or f"{xmin:.0f},{ymin:.0f}",
         "crs": "EPSG:2056", "origin": [xmin, ymin], "size": [round(W), round(H)],
-        "zmin": 0.0, "terrain": {"nx": nx, "ny": ny, "step": W / (nx - 1), "scale": 0.1},
+        "zmin": zmin, "terrain": {"nx": nx, "ny": ny, "step": step, "scale": 0.1},
         "tiles": tiles, "labels": [],
         "sources": {"buildings": "GWR ch.bfs.gebaeude_wohnungs_register (swisstopo/BFS)",
-                    "aerial": "swisstopo SWISSIMAGE (WMS)", "terrain": "flat"},
+                    "aerial": "swisstopo SWISSIMAGE (WMS)",
+                    "terrain": "flat" if flat else "swisstopo swissALTI3D (2 m, XYZ)"},
     }
     return {"meta": meta, "buildings": buildings, "terrain": terrain, "tiles": tiles_out}
 
