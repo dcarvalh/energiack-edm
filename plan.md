@@ -79,7 +79,7 @@ hosting, and it **complements** existing tools as an aggregator instead of repla
 | Heat index per site in MJ/m²·yr (#7): Manage table, site page, Rive-Claire map layer with the Geneva IDC classes | done 14 Nov. Approximate, **not weather-corrected**, never called the IDC. Heat-pump heat: heat meter at S09/S12, elsewhere pump electricity × the COP measured that month at S09/S12, marked estimated. No index where heating is direct electric (not metered apart) |
 | Server stack: PostgreSQL + API + Caddy (`compose.yaml`, `server/`, `docs/deploy.md`) | merged 13 Nov night (#23); live since 13 Nov night on one small cloud server (EU), with its own domain and HTTPS since 14 Nov. `data.json` comes from the database, identical to the static build |
 | Logins and roles (#15): admin, technique, élu·e, public; menus filtered, data filtered by the server, Users page, one-click demo accounts | done 14 Nov (#25), live on the server version with demo accounts on; GitHub Pages stays open without login |
-| Several municipalities on one server (#43): municipality selector, Municipalities page, ZIP upload into a staging area, row review/edit, commit; 3D map per municipality | merged 14 Nov; checked by CI (`tools/check_stack.sh`, #45). Whether the live server runs it: not checked on 15 Nov |
+| Several municipalities on one server (#43): municipality selector, Municipalities page, ZIP upload into a staging area, row review/edit, commit; 3D map per municipality | merged 14 Nov; checked by CI (`tools/check_stack.sh`, #45). Live: the server answers `/api/localities` with `map_config` (checked 15 Nov) |
 | Pitch deck (`prototype/pitch/`, French only, runs offline) with app clips and two QR codes | done 14 Nov (#33–#46) |
 
 **Main link: the server version** https://openedm.davidcarvalho.work/ (database, logins, roles, one-click demo
@@ -120,11 +120,11 @@ demo (energy manager → council → citizen). The demo link is the server versi
 11. Corrections by an authorised person with a trace (who, when, why); median replacements today are automatic.
 
 **Server version**
-12. Check the live server runs the current `main` (#43 municipalities); deploys on merge (the Stack workflow's deploy job
+12. Live server runs #43 (municipalities API answers, checked 15 Nov). Still open: deploys on merge (the Stack workflow's deploy job
     needs SSH secrets); a budget alert on the cloud account; David's admin account; reset passwords in the app.
 
 **Housekeeping**
-13. Close issue #4 ("test") if nobody uses it; go through P1/P2 issues (#12–#20) and the audience views (#26–#29),
+13. Go through P1/P2 issues (#12–#20) and the audience views (#26–#29),
     close what is covered.
 14. Check the licence lines in `THIRD_PARTY.md` (three-mesh-bvh, OrbitControls, server stack: written from memory) and
     the SITG/swisstopo attribution wording; test the 3D map on a real phone.
@@ -193,7 +193,7 @@ verified: check it before building a non-Geneva pack.
 **Ideas, not planned:** consumption breaks after renovations, synergies between buildings, price scenarios, indirect CO₂,
 DE/IT, place Rive-Claire in a recognisable Geneva neighbourhood on the map.
 
-## Buyer review (13 Nov evening; since then: login, roles and a ZIP upload are done)
+## Buyer review (13 Nov evening; since then: login, roles and a ZIP upload are done, so deal-breakers 1 and 4 are partly met)
 A review of the app as a buyer would see it: the commune's energy manager, plus the council, IT and procurement who sign.
 Checked in the code: the degree-day data (`meta.climate`, `meta.climate_normal`) is in `data.json` but no calculation uses it.
 Comparisons with commercial tools are from memory, not researched.
