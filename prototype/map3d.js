@@ -8,7 +8,7 @@ import { computeBoundsTree, acceleratedRaycast } from "./vendor/three-mesh-bvh.m
 THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
 
-const V = "19";
+const V = "20";
 const GREY = 0xb9bfbb, SITE_COL = 0x1f6feb;   // SITE_COL: buildings linked to a site of the municipality
 const RAMP = {
   idc:   [0x2e9e6e, 0x9cc95a, 0xf0b33c, 0xe0663a, 0xb8322a],
