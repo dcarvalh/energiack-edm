@@ -103,12 +103,19 @@ Items 15–19 keep their numbers: their details are under "Public base layer" be
    OrbitControls, server stack) and the SITG/swisstopo credit wording against the real sources.
 - **Step 2.** "Start here" doc (S, new): what openEDM is, what is done and not done, run it in 5 minutes, where each part of the
    code lives, next steps (points here). Today that is spread across `README.md`, `plan.md`, `CLAUDE.md` and `docs/`.
-   Refresh it at step 7.
+   Refresh it at step 9.
 - **Step 3.** Geneva as a built-in municipality (S–M, item 15).
-- **Step 4.** Correct Geneva addresses (M, item 19). Before step 6, because Genève (démo) shows real addresses.
-- **Step 5.** EGID link (M–L, item 16). Needed by step 6.
-- **Step 6.** Genève (démo) (L, item 18). Until item 17 exists, it is what the Geneva map shows with readings.
-- **Step 7.** Last: stability pass on the server version (S, new): every page and role on https://openedm.davidcarvalho.work/,
+- **Step 4.** One map per municipality (S, David 15 Nov): once Geneva is its own municipality, drop the Rive-Claire /
+  Geneva switch on the 3D tab (`MAPS`, `switchMap` in `prototype/index.html`, the switch in `map3d.js`); the map is
+  the municipality's `map_config`. Clear the old `energiack-map` choice saved in `localStorage`.
+- **Step 5.** A clearer municipality switch (S, David 15 Nov): today it is a small uppercase label over a borderless
+  dropdown at the top of the sidebar (`#loc-select` in `prototype/index.html`), easy to miss; with one municipality
+  it is only a name. Make it visible and explicit: e.g. a labelled button "Municipality: Rive-Claire ▾" (FR/EN) that
+  opens the list, also reachable on phone width; show the current municipality in the page header.
+- **Step 6.** Correct Geneva addresses (M, item 19). Before step 8, because Genève (démo) shows real addresses.
+- **Step 7.** EGID link (M–L, item 16). Needed by step 8.
+- **Step 8.** Genève (démo) (L, item 18). Until item 17 exists, it is what the Geneva map shows with readings.
+- **Step 9.** Last: stability pass on the server version (S, new): every page and role on https://openedm.davidcarvalho.work/,
    FR and EN, phone width; fix what is broken or confusing (empty states, errors). Then a project entry on the
    portfolio site (`portfolio/`, separate repo) linking the server version.
 
