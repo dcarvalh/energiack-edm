@@ -600,7 +600,7 @@ def data(request: Request, locality: str = None, u=Depends(current), conn=Depend
     cache_key = (loc["id"], full)
     c = _cache.get(cache_key)
     if not c or c["run"] != run:
-        d = store.dataset(conn, loc["id"])
+        d = store.dataset(conn, loc["id"], loc["slug"])
         if not full:
             d["meters"], d["quality"] = {}, None
             d["meta"]["restricted"] = ["meters", "quality"]

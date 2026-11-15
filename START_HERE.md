@@ -15,13 +15,14 @@ building data (SITG, swisstopo). Nothing confidential, ever (see "Rules" in `CLA
 
 - **Server version (main link):** https://openedm.davidcarvalho.work/ (logins, roles, several municipalities;
   "Log in" shows one-click demo accounts)
-- **Static copy:** https://dcarvalh.github.io/energiack-edm/ (GitHub Pages, no login)
+- **Static copy:** https://dcarvalh.github.io/energiack-edm/ (GitHub Pages, no login; uploading data and managing
+  municipalities need the server version, and those pages say so)
 
 ## Done and not done
 
 | | |
 |---|---|
-| **Done** | Manage (KPIs, monthly chart, CO₂ path to 2030, site table with alerts), site pages with every meter, Citizens, data quality report (17 checks), 3D maps (Rive-Claire, Geneva), FR/EN, logins and 4 roles, several municipalities, ZIP import through a staging area, pitch deck |
+| **Done** | Manage (KPIs, monthly chart, CO₂ path to 2030, site table with alerts), site pages with every meter, Citizens, data quality report (17 checks), 3D maps (Rive-Claire, Geneva), FR/EN, logins and 4 roles, several municipalities, ZIP import through a staging area, Genève (démo): real Geneva buildings with simulated readings, linked to their building sheets on the map, pitch deck |
 | **Not done** | council summary (#10), hand-over pack (#11), weather-corrected heat, traced manual corrections, public-data view for a municipality without readings, deploys on merge (the server is updated by hand), password reset |
 
 The full state table is in `plan.md` › "State"; the ordered to-do list in `plan.md` › "To do".

@@ -187,8 +187,8 @@ def tables(conn, locality_id):
     return T, report, {n for n, m in enumerate(mes) if m[2]}
 
 
-def dataset(conn, locality_id):
-    return rc.build(*tables(conn, locality_id))
+def dataset(conn, locality_id, slug=None):
+    return rc.build(*tables(conn, locality_id), slug)
 
 
 # ── staging (sas de chargement) ───────────────────────────────────────────────

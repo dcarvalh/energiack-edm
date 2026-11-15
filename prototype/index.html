@@ -577,7 +577,7 @@ fr:{
   dm_viewer_rows:"{n} lignes", dm_del_row:"Supprimer", dm_del_ok:"Ligne supprimée.", dm_del_err:"Erreur.",
   dm_replace_ok:"Table remplacée.", dm_replace_err:"Erreur de remplacement.",
   dm_prev:"← Préc.", dm_next:"Suiv. →", dm_all_rows:"Toutes les lignes",
-  nav_localities:"Localités",
+  nav_localities:"Localités", static_h:"Disponible sur la version serveur", static_p:"Cette copie statique montre les données de démonstration. Charger des données et gérer les localités demandent la version serveur (base de données, comptes et rôles).", static_btn:"Ouvrir la version serveur",
   nd_title:"Aucun relevé pour {name}", nd_load:"Chargez des données via le module Données pour commencer.", nd_none:"Cette commune n'a pas encore publié de relevés.", nd_map:"La carte 3D montre déjà ses bâtiments (données publiques).", nd_go_map:"Voir la carte 3D", nd_go_data:"Aller aux Données",
   loc_lede:"Chaque localité possède ses propres bâtiments, compteurs et données. L'administrateur voit toutes les localités.",
   loc_list:"Localités disponibles", loc_create_btn:"+ Nouvelle localité",
@@ -634,7 +634,7 @@ fr:{
   qc_conversion:"Conversion en kWh", qd_conversion:"Le kWh du fichier ne correspond pas à la valeur × le facteur de conversion du mois.",
   qc_submeter:"Sous-compteurs plus grands que le parent", qd_submeter:"La somme des sous-compteurs dépasse la consommation sur site du parent (soutirage + solaire − injection).",
   qc_out_of_window:"Hors des dates du compteur", qd_out_of_window:"Relevé avant la mise en service ou après le retrait du compteur.",
-  m_title:"Patrimoine communal", m_lede:"48 sites, 172 compteurs, tous les fluides au même endroit. Cliquez sur un site pour toutes ses données.",
+  m_title:"Patrimoine communal", m_lede:"{n} sites, tous les fluides au même endroit. Cliquez sur un site pour toutes ses données.",
   k_energy:"Énergie achetée", k_cost:"Coût estimé", k_co2:"CO₂ direct sur site", k_fossil:"Sites chauffés au fossile", k_solar:"Solaire produit",
   vs_prev:"vs {y}", vs_base:"vs {y} (objectif 2030 : −60 %)", selfuse:"{p} consommé sur place", of_sites:"sur {n}",
   c_monthly:"Consommation mensuelle", c_monthly_sub:"Énergie achetée par mois, en MWh",
@@ -670,12 +670,12 @@ fr:{
   d_events:"Journal du site", d_noevents:"Rien à signaler sur la période.",
   d_onsite:"Électricité réellement consommée sur place ({y})", d_onsite_eq:"soutirage réseau + production solaire − injection = consommation sur place",
   d_history:"Chauffage", unit_kwh:"kWh", unit_mwh:"MWh", unit_m3:"m³",
-    c_kicker:"{commune} · {n} habitant·e·s · bâtiments communaux",
+    c_kicker:"{commune} · {n} habitant·e·s · bâtiments communaux", c_kicker0:"{commune} · bâtiments communaux",
   c_hero:"En {y}, nos bâtiments publics ont émis <em>{co2} t de CO₂</em> sur place, soit {pc} de moins qu'en {b}.",
   g_co2:"CO₂ : objectif −60 % d'ici 2030", g_energy:"Énergie : objectif −30 % d'ici 2030", g_fossil:"Sortir du chauffage fossile",
   g_done:"{p} du chemin parcouru", g_left:"{n} sites encore au mazout ou au gaz",
   c_numbers:"Les chiffres de l'année, en clair",
-  cs_inhab:"kWh par habitant·e pour les bâtiments communaux", cs_solar:"MWh d'électricité solaire produits sur les toits communaux", cs_cost:"CHF par habitant·e de facture énergétique (prix estimés)",
+  cs_inhab:"kWh par habitant·e pour les bâtiments communaux", cs_energy:"MWh consommés par les bâtiments communaux", cs_cost_k:"milliers de CHF de facture énergétique (prix estimés)", cs_solar:"MWh d'électricité solaire produits sur les toits communaux", cs_cost:"CHF par habitant·e de facture énergétique (prix estimés)",
   c_changes:"Ce qui a changé", c_changes_sub:"Les chantiers qui font baisser les émissions",
   a_title:"Un EDM que la commune possède", a_lede:"Pas de licence, pas de boîte noire : des fichiers ouverts, un code lisible, et une IA seulement si la commune le veut.",
   fl1:"Compteurs et factures", fl1s:"Électricité, chaleur, solaire, eau : télérelève, portail du distributeur, CSV, Excel",
@@ -745,7 +745,7 @@ en:{
   dm_viewer_rows:"{n} rows", dm_del_row:"Delete", dm_del_ok:"Row deleted.", dm_del_err:"Error.",
   dm_replace_ok:"Table replaced.", dm_replace_err:"Replace error.",
   dm_prev:"← Prev", dm_next:"Next →", dm_all_rows:"All rows",
-  nav_localities:"Localities",
+  nav_localities:"Localities", static_h:"Available on the server version", static_p:"This static copy shows the demo data. Uploading data and managing municipalities need the server version (database, accounts and roles).", static_btn:"Open the server version",
   nd_title:"No readings for {name}", nd_load:"Load data via the Data module to get started.", nd_none:"This municipality has not published readings yet.", nd_map:"The 3D map already shows its buildings (public data).", nd_go_map:"Open the 3D map", nd_go_data:"Go to Data",
   loc_lede:"Each locality has its own buildings, meters and data. Administrators see all localities.",
   loc_list:"Available localities", loc_create_btn:"+ New locality",
@@ -802,7 +802,7 @@ en:{
   qc_conversion:"Conversion to kWh", qd_conversion:"The file's kWh does not match the value × the month's conversion factor.",
   qc_submeter:"Sub-meters larger than their parent", qd_submeter:"Sub-meters add up to more than the parent's on-site use (grid + solar − export).",
   qc_out_of_window:"Outside the meter's dates", qd_out_of_window:"Reading before the meter was installed or after it was removed.",
-  m_title:"Municipal buildings", m_lede:"48 sites, 172 meters, every utility in one place. Click a site for all its data.",
+  m_title:"Municipal buildings", m_lede:"{n} sites, every utility in one place. Click a site for all its data.",
   k_energy:"Energy purchased", k_cost:"Estimated cost", k_co2:"Direct on-site CO₂", k_fossil:"Sites heated by fossil fuel", k_solar:"Solar produced",
   vs_prev:"vs {y}", vs_base:"vs {y} (2030 target: −60%)", selfuse:"{p} used on site", of_sites:"of {n}",
   c_monthly:"Monthly consumption", c_monthly_sub:"Energy purchased per month, in MWh",
@@ -838,12 +838,12 @@ en:{
   d_events:"Site log", d_noevents:"Nothing to report over the period.",
   d_onsite:"Electricity actually used on site ({y})", d_onsite_eq:"grid draw + solar production − feed-in = on-site use",
   d_history:"Heating", unit_kwh:"kWh", unit_mwh:"MWh", unit_m3:"m³",
-    c_kicker:"{commune} · {n} residents · municipal buildings",
+    c_kicker:"{commune} · {n} residents · municipal buildings", c_kicker0:"{commune} · municipal buildings",
   c_hero:"In {y}, our public buildings emitted <em>{co2} t of CO₂</em> on site, {pc} less than in {b}.",
   g_co2:"CO₂: −60% target by 2030", g_energy:"Energy: −30% target by 2030", g_fossil:"Phase out fossil heating",
   g_done:"{p} of the way there", g_left:"{n} sites still on oil or gas",
   c_numbers:"This year's numbers, in plain words",
-  cs_inhab:"kWh per resident for municipal buildings", cs_solar:"MWh of solar electricity from municipal roofs", cs_cost:"CHF per resident in energy bills (estimated prices)",
+  cs_inhab:"kWh per resident for municipal buildings", cs_energy:"MWh used by municipal buildings", cs_cost_k:"thousand CHF in energy bills (estimated prices)", cs_solar:"MWh of solar electricity from municipal roofs", cs_cost:"CHF per resident in energy bills (estimated prices)",
   c_changes:"What changed", c_changes_sub:"The projects bringing emissions down",
   a_title:"An EDM the municipality owns", a_lede:"No licence, no black box: open files, readable code, and AI only if the municipality wants it.",
   fl1:"Meters and bills", fl1s:"Electricity, heat, solar, water: smart meters, utility portal, CSV, Excel",
@@ -1051,6 +1051,7 @@ function noData(view){
 
 function renderManager(){
   if (noData("gestion")) return;
+  const lede = document.querySelector('[data-t="m_lede"]'); if (lede) lede.textContent = t("m_lede", {n: nf(D.sites.length)});
   const Y = M.years[YEAR], P = M.years[YEAR-1], B0 = M.years[D.meta.baseline_year];
   document.getElementById("years").innerHTML = YEARS.map(y=>`<button data-y="${y}" class="${y===YEAR?'on':''}">${y}</button>`).join("");
   const k = [
@@ -1119,11 +1120,11 @@ function renderAI(elId, part){
 function renderCitizen(){
   if (noData("citoyens")) return;
   const CY = YEARS[YEARS.length-1], Y = M.years[CY], B0 = M.years[D.meta.baseline_year];
-  const inhab = D.meta?.inhabitants || 25000;
+  const inhab = D.meta?.inhabitants || null;   // null: population unknown (Genève démo, uploaded data)
   const commune = LOC?.name || D.meta?.commune || "";
   // set c_kicker dynamically since it uses {commune} and {n} placeholders
   const kicker = document.querySelector('[data-t="c_kicker"]');
-  if (kicker) kicker.textContent = t("c_kicker", {commune, n: inhab.toLocaleString(LANG)});
+  if (kicker) kicker.textContent = inhab ? t("c_kicker", {commune, n: nf(inhab)}) : t("c_kicker0", {commune});
   const dco2 = 1 - Y.co2/B0.co2, den = 1 - Y.energy/B0.energy;
   document.getElementById("c-hero").innerHTML = t("c_hero",{y:CY, co2:nf(Y.co2/1000), pc:pct0(dco2), b:D.meta.baseline_year});
   const fos0 = M.years[D.meta.baseline_year].fossilSites;
@@ -1133,7 +1134,8 @@ function renderCitizen(){
     [t("g_fossil"), (fos0-Y.fossilSites)/fos0, `${Y.fossilSites}/${D.sites.length}`, t("g_left",{n:Y.fossilSites})],
   ];
   document.getElementById("goals").innerHTML = goals.map(([l,p,big,foot])=>`<div class="card goal"><div class="lab mut" style="font-size:13px;font-weight:550">${esc(l)}</div><div class="big">${esc(big)}</div><div class="track"><span style="width:${Math.max(2,Math.min(100,p*100))}%"></span></div><div class="foot">${esc(foot)}</div></div>`).join("");
-  const st = [[nf(Y.energy/inhab), t("cs_inhab")],[nf(Y.pv/1000), t("cs_solar")],[nf(Y.cost/inhab), t("cs_cost")]];
+  const st = inhab ? [[nf(Y.energy/inhab), t("cs_inhab")],[nf(Y.pv/1000), t("cs_solar")],[nf(Y.cost/inhab), t("cs_cost")]]
+    : [[nf(Y.energy/1000), t("cs_energy")],[nf(Y.pv/1000), t("cs_solar")],[nf(Y.cost/1000), t("cs_cost_k")]];
   document.getElementById("cstats").innerHTML = st.map(([n,l])=>`<div class="card stat"><div class="n">${n}</div><div class="t">${esc(l)}</div></div>`).join("");
   const ch = D.events.filter(e=>e.kind==="heating_change"||e.kind==="installation"||e.kind==="opening").sort((a,b)=>b.month-a.month);
   const byId = Object.fromEntries(D.sites.map(s=>[s.id,s]));
@@ -1362,7 +1364,7 @@ function openSite(id){
     <div class="card" style="margin-top:14px"><h2 style="margin-bottom:8px">${esc(t("d_events"))}</h2>
       ${ev.length?`<ul class="timeline">${ev.map(e=>`<li><span class="d">${esc(monthYear(e.month))}</span><span>${e.kind==="anomaly"||e.kind==="quality"?`<span class="pill p-warn">${ic("triangle-alert")}</span> `:''}${esc(e.text[LANG])}</span></li>`).join("")}</ul>`:`<div class="mut">${esc(t("d_noevents"))}</div>`}
     </div>
-    <p class="sub" style="margin-top:14px">${esc(D.meta.source)}</p>`;
+    ${D.meta.source ? `<p class="sub" style="margin-top:14px">${esc(D.meta.source)}</p>` : ""}`;
   const labels = Array.from({length:60},(_,i)=>i%12===0?String(2021+i/12):"");
   let values, unit, color, name;
   if (FLUID.startsWith("m:")) { const m = MS.find(x=>"m:"+x.id===FLUID); values = m.v; unit = " "+unitOf(m.unit); color = {"eau":"--water","électricité solaire":"--solar"}[m.fluid] || (m.fluid.startsWith("électricité")?"--elec":"--heat-fossil"); name = m.id; }
@@ -1437,7 +1439,7 @@ function openSheet(bid){
         <div class="fs-rows">${["fs_enr","fs_cop","fs_night"].map(k=>`<div><span>${esc(t(k))}</span>${na}</div>`).join("")}</div></div>
     </div>
     <div class="m3-acts"><a class="btn alt" href="#site/${esc(s.id)}">${esc(t("fs_open_site"))}</a></div>
-    <p class="sub" style="margin-top:14px">${esc(D.meta.source)}</p>`;
+    ${D.meta.source ? `<p class="sub" style="margin-top:14px">${esc(D.meta.source)}</p>` : ""}`;
   document.getElementById("dx").onclick = closeSite;
   document.getElementById("drawer").classList.add("open"); document.getElementById("scrim").classList.add("open"); document.getElementById("drawer").scrollTop = 0;
   if (location.hash !== "#fiche/"+bid) history.replaceState(null,"","#fiche/"+bid);
@@ -1636,7 +1638,16 @@ function openLogin(want){
   document.querySelectorAll("[data-demo]").forEach(b => b.onclick = () => api("api/demo-login", {role:b.dataset.demo}).then(u => setUser(u, want)).catch(() => {}));
 }
 function closeLogin(){ document.getElementById("login").classList.remove("open"); }
+// Static copy (GitHub Pages): no server, so no upload and no municipality management; say so instead of failing
+const SERVER_URL = "https://openedm.davidcarvalho.work/";
+function staticOnly(view, title){
+  if (SERVER) return false;
+  document.getElementById("v-"+view).innerHTML = `<h1>${esc(t(title))}</h1><div class="card" style="max-width:640px"><h2>${esc(t("static_h"))}</h2>
+    <p class="sub" style="margin:6px 0 12px">${esc(t("static_p"))}</p><a class="btn" href="${SERVER_URL}" target="_blank" rel="noopener">${esc(t("static_btn"))}</a></div>`;
+  return true;
+}
 function renderLocalities(){
+  if (staticOnly("localites", "nav_localities")) return;
   const tb = document.getElementById("loc-table");
   const msg = (s, err=false) => { const el = document.getElementById("loc-msg"); el.textContent = s; el.style.color = err ? "var(--c-fossil,#c00)" : "var(--c-mut,#888)"; };
   applyT(document.getElementById("v-localites"));
@@ -1791,6 +1802,7 @@ function dmIssueStyle(issues){
 }
 
 function renderData(){
+  if (staticOnly("donnees", "nav_data")) return;
   applyT(document.getElementById("v-donnees"));
   document.getElementById("dm-viewer-card").classList.add("hide");
 
@@ -2188,7 +2200,7 @@ let RZ, LASTW = innerWidth;
 window.addEventListener("resize", () => { clearTimeout(RZ); RZ = setTimeout(() => { if (Math.abs(innerWidth - LASTW) < 40 || !D) return; LASTW = innerWidth; const open = document.getElementById("drawer").classList.contains("open"); renderAll(); if (open) reopen(); }, 200); });
 matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", renderAll);
 
-const V = "47";
+const V = "48";
 (async () => {
   try {
     const c = await fetch("api/config.json?v="+V, {cache:"no-store"}).then(r => r.json());

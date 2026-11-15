@@ -133,9 +133,15 @@ Items 15–19 keep their numbers: their details are under "Public base layer" be
   and "other indicators" do not. Fixed on the way: the sheet's month chart called `LOC()` (now the municipality
   object), so no sheet opened, Rive-Claire's included; after a municipality switch the old map's click listener and
   a queued frame still ran (`trim` / `addr` errors); the `ecole_primaire` type had no label.
-- **Step 9.** Last: stability pass on the server version (S, new): every page and role on https://openedm.davidcarvalho.work/,
-   FR and EN, phone width; fix what is broken or confusing (empty states, errors). Then a project entry on the
-   portfolio site (`portfolio/`, separate repo) linking the server version.
+- ~~**Step 9.**~~ Done 15 Nov: stability pass. On the server version every page works for every role and
+  municipality, FR and EN, desktop and phone width (`tools/check_roles.py` passed; no JS errors). Fixed: every dataset
+  carried Rive-Claire's meta (Genève (démo)'s citizen page said "25,000 residents"): `META` per built-in dataset in
+  `tools/import_rive_claire.py`, none for uploads, and the citizen page shows totals instead of per-resident figures
+  when the population is unknown; the Manage subtitle said "48 sites, 172 meters" for every municipality; the committed
+  `prototype/data.json` was stale (no coverage KPI on Pages); on the static copy Data and Localities showed "Select a
+  municipality" / "Error creating locality": they now say these need the server version, with a link. Left as is:
+  `api/data.json?locality=geneve` answers 503 (no readings yet), which the app reads as "no data yet".
+  Then a project entry on the portfolio site (`portfolio/`, separate repo) linking the server version.
 
 **Before 1 Dec, after "Now"**
 - #10 council summary (S–M): choose the year, printable page, quality and limits in it; same numbers as Manage.

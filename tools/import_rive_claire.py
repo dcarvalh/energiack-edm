@@ -69,6 +69,17 @@ BUNDLED = {
 }
 
 
+# Who the data describes, per built-in dataset. Any other (uploaded) municipality gets META_NONE: no invented
+# population or source; the app then uses the municipality's own name and leaves out per-resident figures.
+META = {
+    "rive-claire": {"commune": "Rive-Claire", "fictional": True, "inhabitants": 25000,
+                    "source": "Energ-IA Transition, Energ-IACK 2026 · Rive-Claire v2 (CC BY 4.0)"},
+    "geneve-demo": {"commune": "Genève (démo)", "fictional": True, "inhabitants": None,
+                    "source": "Simulated readings (tools/make_geneva_fake.py) on real Geneva buildings: SITG public data"},
+}
+META_NONE = {"commune": None, "fictional": False, "inhabitants": None, "source": None}
+
+
 def check(T):
     """Run the quality checks: (report, set of rejected row indexes in T["mesures"])."""
     return rc_quality.run(T)
@@ -99,7 +110,7 @@ PRICE = {"elec": 0.27, "gas": 0.14, "oil": 0.13, "district": 0.12, "wood": 0.09,
 HEAT_PRICE = {"GZ": "gas", "MZ": "oil", "GR": "wood", "CAD": "district"}
 
 
-def build(T, QUALITY, REJ):
+def build(T, QUALITY, REJ, locality="rive-claire"):
     """data.json as a dict, from the tables (rows as csv.DictReader gives them), the quality report and the rejected
     row indexes. Used by the static build below and by the server (server/store.py), which reads the rows from Postgres."""
     BAT, INST, CPT, MES = T["batiments"], T["installations"], T["compteurs"], T["mesures"]
@@ -259,8 +270,7 @@ def build(T, QUALITY, REJ):
 
     data = {
         "meta": {
-            "commune": "Rive-Claire", "fictional": True, "inhabitants": 25000,
-            "source": "Energ-IA Transition, Energ-IACK 2026 · Rive-Claire v2 (CC BY 4.0)",
+            **META.get(locality, META_NONE),
             "generated_by": "tools/import_rive_claire.py",
             "start": "2021-01", "months": MONTHS,
             "units": {"energy": "kWh", "water": "m3", "co2": "kg", "money": "CHF"},
@@ -292,7 +302,7 @@ def main():
     A = ap.parse_args()
     T = BUNDLED[A.locality]()
     QUALITY, REJ = check(T)
-    data = build(T, QUALITY, REJ)
+    data = build(T, QUALITY, REJ, A.locality)
     series, sites, meters, events = data["series"], data["sites"], data["meters"], data["events"]
     out = Path(A.out)
     out.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")))
