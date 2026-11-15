@@ -129,16 +129,32 @@ demo (energy manager → council → citizen). The demo link is the server versi
 14. Check the licence lines in `THIRD_PARTY.md` (three-mesh-bvh, OrbitControls, server stack: written from memory) and
     the SITG/swisstopo attribution wording; test the 3D map on a real phone.
 
-**Geneva as a shared public base layer** (David, 15 Nov). Idea: public building data (Geneva first) is the starting
-point every municipality reuses without copying it; what a municipality imports stays its own, linked to the public
+**Public base layer, Switzerland-wide, Geneva first** (David, 15 Nov). Idea: public building data is the starting point
+every municipality reuses without copying it; what a municipality imports stays its own, linked to the public
 buildings by **EGID** (the federal building ID, already in `prototype/map/buildings.json`). Maps are already shared:
 `map_config` points to a folder, so several municipalities can use `map/` today.
 Decided: a portfolio is a list of EGIDs in the import, not an area drawn on the map (a commune's buildings are
 scattered, and the 3D map is slow without a GPU); the map's extent comes from the commune boundary. Real and
 simulated data never mix in one municipality (David, 15 Nov): the default **Genève** shows only public, true values;
 a separate **Genève (démo)** has a set of real buildings where every reading is simulated, to show the features
-Rive-Claire has (site sheet, meters, history, alerts). Keep it generic (a regional data pack, Geneva first), not
-hard-wired to Geneva.
+Rive-Claire has (site sheet, meters, history, alerts).
+Goal: adaptable anywhere in Switzerland (David, 15 Nov). Geneva is the first **data pack**, not a special case: a
+municipality points to a pack, the app reads the same map schema whatever the source, and Geneva-only fields are
+optional (the page hides what a pack lacks). EGID is national, so the link in 16 works everywhere. Build each pack in
+two layers: national sources that exist for every commune, plus cantonal extras where a canton publishes them.
+
+| Data | National (every commune) | Geneva extra (SITG, used today) |
+|---|---|---|
+| terrain, aerial photo | swissALTI3D, SWISSIMAGE (used today) | – |
+| footprints, heights | swissBUILDINGS3D (to check: EGID on each building) | CAD_BATIMENT_HORSOL |
+| use, year, heating type, energy source | federal register RegBL/GWR (to check: heating fields, open access) | SCANE_CHAUDIERE (boilers) |
+| solar potential | the federal roof solar layer (sonnendach.ch; to check: per-building values) | OCEN_SOLAIRE_PV_BATIMENT |
+| heat index | none known: only from the commune's own readings | SCANE_INDICE_MOYENNES_3_ANS (IDC) |
+| commune boundary | swissBOUNDARIES3D (to check) | – |
+| climate, degree-days | MeteoSwiss open data (to check: station data, licence) | – |
+
+For 1 Dec only Geneva; the code must not assume it (no Geneva names or SITG fields hard-coded outside the pack
+builder `tools/make_map.py`, the IDC threshold applies only where the pack says so).
 15. Geneva as a built-in municipality: seeded in `server/schema.sql` like Rive-Claire, `map_config` → `map/`; the admin
     chooses the map when creating a municipality (`POST /api/localities` takes slug, name and country only today).
 16. EGID link: optional `egid` column in the `building` import (upgrade step in `schema.sql`, `check_upgrade.sh` must
@@ -150,16 +166,17 @@ hard-wired to Geneva.
 18. Genève (démo): about 40 real buildings on the same `map/` (chosen by use: schools, offices, sports, culture),
     each with its EGID and fully simulated meters and readings, rebuilt by `tools/make_geneva_fake.py` (today it
     makes 40 sites that are not linked to the map). Make the simulated values plausible from public attributes: floor
-    area from footprint × levels, yearly heat from the public heat index, monthly split by degree-days (already in the
-    reference tables), electricity from assumed kWh/m² per use (labelled "assumed"). On screen: a permanent "simulated
+    area from footprint × levels, yearly heat from the public heat index, monthly split by degree-days (the tables in `geneve/csv/` are
+    copies of Rive-Claire's fictional climate: replace with Geneva's real ones), electricity from assumed kWh/m² per use (labelled "assumed"). On screen: a permanent "simulated
     data" banner and a "simulated" tag on every figure, never only a footnote, because the addresses are real.
     Needs 16.
 
-Later, after 1 Dec: one map extent per Geneva commune, generated once into a shared `map/ge/<commune>/` (the
-whole canton is too heavy for the browser); add or remove buildings by clicking the map; sharing between
-municipalities (e.g. commune → canton; accounts already get a role per municipality). Not checked: whether the federal
-building register (RegBL/GWR) gives heating type and energy source for all of Switzerland, which would make the same
-link work outside Geneva.
+Later, after 1 Dec: a pack builder per commune from its federal statistical number (BFS number): national sources
+first, cantonal extras when present, generated once into a shared `map/<canton>/<commune>/` (a whole canton is too
+heavy for the browser); DE/IT UI (Swiss-wide means German and Italian communes); CO₂ factors and prices per pack
+or commune (see 8); add or remove buildings by clicking the map; sharing between
+municipalities (e.g. commune → canton; accounts already get a role per municipality). Every "to check" in the table above is from memory, not
+verified: check it before building a non-Geneva pack.
 
 **Ideas, not planned:** consumption breaks after renovations, synergies between buildings, price scenarios, indirect CO₂,
 DE/IT, place Rive-Claire in a recognisable Geneva neighbourhood on the map.
