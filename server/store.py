@@ -45,6 +45,30 @@ def init(conn):
     conn.commit()
 
 
+# --- admin settings (map import preferences) ---
+
+SETTINGS_DEFAULTS = {"osm_footprints": True, "country_ch": True, "country_fr": False}
+
+
+def get_settings(conn):
+    """All admin settings, with defaults filled in."""
+    out = dict(SETTINGS_DEFAULTS)
+    for r in conn.execute("SELECT key, value FROM setting").fetchall():
+        out[r["key"]] = r["value"]
+    return out
+
+
+def set_settings(conn, updates):
+    """Upsert the given settings (only known keys)."""
+    with conn.cursor() as cur:
+        for k, v in updates.items():
+            if k in SETTINGS_DEFAULTS:
+                cur.execute("INSERT INTO setting (key, value) VALUES (%s, %s) "
+                            "ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value", (k, Jsonb(v)))
+    conn.commit()
+    return get_settings(conn)
+
+
 # --- locality helpers ---
 
 def localities(conn, user=None):
@@ -315,10 +339,10 @@ def reimport_bundled(conn, locality_id):
 
 # ── imported 3D map (Swiss geo platform) ──────────────────────────────────────
 
-def map_import(conn, locality_id, bbox, step=16, px=1.0, tiles=1, name=None, progress=None):
+def map_import(conn, locality_id, bbox, step=16, px=1.0, tiles=1, name=None, progress=None, osm=True):
     """Fetch a zone from geo.admin.ch, store it (replacing any existing map), auto-match, return a summary.
     progress(pct, step) is called through the fetch (2..96 %) and the save (97..100 %)."""
-    result = geomap.fetch(bbox, step=step, px=px, tiles=tiles, name=name, progress=progress)
+    result = geomap.fetch(bbox, step=step, px=px, tiles=tiles, name=name, progress=progress, osm=osm)
     if progress:
         progress(97, "save")
     with conn.transaction(), conn.cursor() as cur:

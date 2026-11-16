@@ -146,6 +146,23 @@ def list_localities(u=Depends(current), conn=Depends(db)):
     ).fetchall()
 
 
+class Settings(BaseModel):
+    osm_footprints: bool | None = None
+    country_ch: bool | None = None
+    country_fr: bool | None = None
+
+
+@app.get("/api/settings")
+def get_settings(u=Depends(current), conn=Depends(db)):
+    """Admin map-import preferences (any logged-in user may read; only admins may change)."""
+    return store.get_settings(conn)
+
+
+@app.put("/api/settings")
+def put_settings(body: Settings, u=Depends(need("admin")), conn=Depends(db)):
+    return store.set_settings(conn, {k: v for k, v in body.model_dump().items() if v is not None})
+
+
 @app.post("/api/localities")
 def create_locality(body: NewLocality, u=Depends(need("admin")), conn=Depends(db)):
     return store.create_locality(conn, body.slug, body.name, body.country)
@@ -271,8 +288,9 @@ def map_import(slug: str, body: MapImport, u=Depends(need(*auth.FULL)), conn=Dep
     if span > MAX_SPAN_M:
         raise HTTPException(422, f"zone too large (max {MAX_SPAN_M} m per side)")
     tiles = max(1, min(round(span / 1000), 6))            # ~1 km aerial block per tile, so large zones stay detailed
+    osm = bool(store.get_settings(conn).get("osm_footprints", True))   # admin preference: real OSM footprints on/off
     # The fetch is slow: run it in the background and report progress over SSE instead of blocking the request.
-    started = mapjobs.start(loc["id"], slug, bbox, tiles, body.px, body.name)
+    started = mapjobs.start(loc["id"], slug, bbox, tiles, body.px, body.name, osm=osm)
     if not started:
         raise HTTPException(409, "an import is already running for this locality")
     return {"state": "started", "slug": slug}

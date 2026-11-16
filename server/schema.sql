@@ -215,3 +215,9 @@ SELECT u.id, l.id,
 FROM app_user u CROSS JOIN locality l
 WHERE l.slug = 'rive-claire' AND u.demo = false
 ON CONFLICT DO NOTHING;
+
+-- App-wide admin settings (map import preferences): key -> JSON value.
+CREATE TABLE IF NOT EXISTS setting (
+    key   text PRIMARY KEY,
+    value jsonb NOT NULL
+);

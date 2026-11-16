@@ -241,6 +241,9 @@ nav a.disabled{pointer-events:none;opacity:.45}
 #imp-chip .imp-bar{height:6px;background:var(--surface-2);border-radius:3px;overflow:hidden;margin-bottom:6px}
 #imp-chip .imp-bar i{display:block;height:100%;background:var(--accent);border-radius:3px;transition:width .4s}
 #imp-chip .imp-txt{font-size:12px;color:var(--muted)}
+.cfg-row{display:flex;gap:10px;align-items:flex-start;padding:7px 0;cursor:pointer;font-size:13.5px}
+.cfg-row input{margin-top:3px;flex:none}
+.cfg-row .sub{font-size:12px;color:var(--muted)}
 .m3-legend{margin-top:10px;font-size:12px;color:var(--muted)} .m3-unit{font-weight:600;color:var(--text);margin-bottom:6px}
 .m3-key{display:inline-flex;align-items:center;gap:5px;margin:0 10px 4px 0} .m3-key i{width:10px;height:10px;border-radius:3px;display:inline-block}
 .m3-panel{position:absolute;top:12px;right:12px;bottom:40px;width:340px;overflow-y:auto;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;box-shadow:var(--shadow)}
@@ -512,6 +515,12 @@ footer{color:var(--muted);font-size:12px;border-top:1px solid var(--line);margin
         </form>
       </div>
     </div>
+    <div class="card" id="map-config-card" style="margin-top:16px">
+      <h2 data-t="cfg_title" style="margin-bottom:4px"></h2>
+      <p class="sub" data-t="cfg_sub" style="margin-bottom:14px"></p>
+      <div id="cfg-toggles"></div>
+      <p id="cfg-msg" style="margin-top:10px;font-size:.9rem;color:var(--muted)"></p>
+    </div>
   </section>
 
   <!-- ================= USERS ================= -->
@@ -569,6 +578,10 @@ fr:{
   nav_localities:"Localités",
   loc_lede:"Chaque localité possède ses propres bâtiments, compteurs et données. L'administrateur voit toutes les localités.",
   loc_list:"Localités disponibles", loc_create_btn:"+ Nouvelle localité",
+  cfg_title:"Préférences d'import carte 3D", cfg_sub:"Réglages administrateur appliqués aux imports de cartes 3D.",
+  cfg_osm:"Empreintes OpenStreetMap", cfg_osm_hint:"Utiliser les vraies empreintes de bâtiments (OSM, ODbL) ; sinon des blocs carrés.",
+  cfg_country_ch:"Territoire Suisse (geo.admin.ch · EGID)", cfg_country_fr:"Territoire France (IGN · RNB)",
+  cfg_country_fr_hint:"Source IGN Géoplateforme (BD TOPO / RNB) — en préparation.", cfg_saved:"Préférence enregistrée.", cfg_err:"Échec de l'enregistrement.",
   loc_create_title:"Créer une localité", loc_f_name:"Nom affiché", loc_f_slug:"Identifiant (slug, ex : ma-commune, lettres minuscules et tirets)",
   loc_f_submit:"Créer", loc_f_cancel:"Annuler",
   loc_h_name:"Nom", loc_h_slug:"Slug", loc_h_data:"Données chargées", loc_h_actions:"Actions",
@@ -751,6 +764,10 @@ en:{
   nav_localities:"Localities",
   loc_lede:"Each locality has its own buildings, meters and data. Administrators see all localities.",
   loc_list:"Available localities", loc_create_btn:"+ New locality",
+  cfg_title:"3D map import preferences", cfg_sub:"Administrator settings applied to 3D map imports.",
+  cfg_osm:"OpenStreetMap footprints", cfg_osm_hint:"Use real building footprints (OSM, ODbL); otherwise square blocks.",
+  cfg_country_ch:"Swiss territory (geo.admin.ch · EGID)", cfg_country_fr:"French territory (IGN · RNB)",
+  cfg_country_fr_hint:"IGN Géoplateforme source (BD TOPO / RNB) — in preparation.", cfg_saved:"Preference saved.", cfg_err:"Could not save.",
   loc_create_title:"Create a locality", loc_f_name:"Display name", loc_f_slug:"Identifier (slug, e.g. my-municipality, lowercase letters and dashes)",
   loc_f_submit:"Create", loc_f_cancel:"Cancel",
   loc_h_name:"Name", loc_h_slug:"Slug", loc_h_data:"Loaded data", loc_h_actions:"Actions",
@@ -1804,6 +1821,7 @@ function renderLocalities(){
   const tb = document.getElementById("loc-table");
   const msg = (s, err=false) => { const el = document.getElementById("loc-msg"); el.textContent = s; el.style.color = err ? "var(--c-fossil,#c00)" : "var(--c-mut,#888)"; };
   applyT(document.getElementById("v-localites"));
+  renderMapConfig();
 
   fetch("api/localities", {cache:"no-store"}).then(r => r.ok ? r.json() : Promise.reject()).then(list => {
     if (!list.length) { tb.innerHTML = `<p class="sub">${esc(t("loc_no_data"))}</p>`; return; }
@@ -1848,6 +1866,25 @@ function renderLocalities(){
       renderLocalities();
     } catch(e) { msg(t("loc_create_err"), true); }
   };
+}
+
+// Admin map-import preferences: OSM footprints on/off, and which territories are available.
+async function renderMapConfig(){
+  const wrap = document.getElementById("cfg-toggles"); if (!wrap) return;
+  let s; try { s = await fetch("api/settings",{cache:"no-store"}).then(r=>r.json()); } catch(e){ return; }
+  const row = (key, label, hint) => `<label class="cfg-row"><input type="checkbox" data-cfg="${key}" ${s[key]?"checked":""}>
+    <span><b>${esc(label)}</b>${hint?`<br><span class="sub">${esc(hint)}</span>`:""}</span></label>`;
+  wrap.innerHTML = row("osm_footprints", t("cfg_osm"), t("cfg_osm_hint"))
+    + row("country_ch", t("cfg_country_ch"), "")
+    + row("country_fr", t("cfg_country_fr"), t("cfg_country_fr_hint"));
+  wrap.querySelectorAll("[data-cfg]").forEach(cb => cb.onchange = async () => {
+    const m = document.getElementById("cfg-msg");
+    try {
+      const r = await fetch("api/settings",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({[cb.dataset.cfg]: cb.checked})});
+      if (!r.ok) throw 0;
+      m.textContent = t("cfg_saved"); m.style.color = "var(--accent)";
+    } catch(e){ m.textContent = t("cfg_err"); m.style.color = "var(--warn)"; cb.checked = !cb.checked; }
+  });
 }
 
 /* ---------------------------------------------------------------- 3D map import (Swiss geo platform) */
@@ -2471,7 +2508,7 @@ let RZ, LASTW = innerWidth;
 window.addEventListener("resize", () => { clearTimeout(RZ); RZ = setTimeout(() => { if (Math.abs(innerWidth - LASTW) < 40 || !D) return; LASTW = innerWidth; const open = document.getElementById("drawer").classList.contains("open"); renderAll(); if (open) reopen(); }, 200); });
 matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", renderAll);
 
-const V = "55";
+const V = "56";
 (async () => {
   try {
     const c = await fetch("api/config.json?v="+V, {cache:"no-store"}).then(r => r.json());
