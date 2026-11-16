@@ -117,7 +117,7 @@ docs/rive-claire-data.md  the Rive-Claire dataset: tables, rules, known defects
 plan.md                 team plan, decisions, state, what's missing, next steps
 ```
 
-The two Rive-Claire tools read the organisers' guide from `rive-claire/` (the dataset, CC BY 4.0, with its CSV tables).
+The two Rive-Claire tools read the organisers' guide from `data/rive-claire/` (the dataset, CC BY 4.0, with its CSV tables).
 Set up the tools:
 
 ```bash
