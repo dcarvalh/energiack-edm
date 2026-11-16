@@ -233,6 +233,14 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;ba
 .m3-card{border-radius:12px;padding:12px 14px;max-height:calc(100vh - 190px);overflow:auto}
 .m3-title{font-weight:680;letter-spacing:-.01em;font-size:16px} .m3-sub{font-size:12.5px;color:var(--muted);margin-bottom:10px}
 .m3-zone{font-size:10.5px;opacity:.65;font-weight:500}
+nav a.disabled{pointer-events:none;opacity:.45}
+.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,16px);background:var(--text);color:var(--bg);padding:10px 16px;border-radius:8px;box-shadow:var(--shadow);font-size:13.5px;font-weight:550;z-index:300;opacity:0;transition:opacity .3s,transform .3s;max-width:90vw;text-align:center}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.toast.ok{background:var(--accent);color:#fff} .toast.warn{background:var(--warn);color:#fff}
+#imp-chip{position:fixed;right:16px;bottom:16px;width:250px;max-width:80vw;background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:var(--shadow);padding:10px 12px;z-index:150}
+#imp-chip .imp-bar{height:6px;background:var(--surface-2);border-radius:3px;overflow:hidden;margin-bottom:6px}
+#imp-chip .imp-bar i{display:block;height:100%;background:var(--accent);border-radius:3px;transition:width .4s}
+#imp-chip .imp-txt{font-size:12px;color:var(--muted)}
 .m3-legend{margin-top:10px;font-size:12px;color:var(--muted)} .m3-unit{font-weight:600;color:var(--text);margin-bottom:6px}
 .m3-key{display:inline-flex;align-items:center;gap:5px;margin:0 10px 4px 0} .m3-key i{width:10px;height:10px;border-radius:3px;display:inline-block}
 .m3-panel{position:absolute;top:12px;right:12px;bottom:40px;width:340px;overflow-y:auto;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;box-shadow:var(--shadow)}
@@ -573,8 +581,12 @@ fr:{
   mi_scale:"Taille de la zone", mi_scale_s:"Petite (≈600 m)", mi_scale_m:"Moyenne (≈1 km)", mi_scale_l:"Grande (≈2 km)",
   mi_scale_xl:"Très grande (≈3 km)", mi_scale_xxl:"Maximale (≈5 km)",
   mi_zone:"Zone : {label} · ≈{m} m de côté", mi_big:"Zone étendue : import découpé en plusieurs blocs, cela peut prendre 1 à 2 min.",
-  mi_import:"Importer la carte 3D", mi_importing:"Import en cours (bâtiments, photo aérienne)…",
+  mi_import:"Importer la carte 3D", mi_importing:"Import en cours (bâtiments, photo aérienne)…", mi_starting:"Lancement de l'import…",
   mi_done:"{n} bâtiments · {m} rattachés par EGID · {u} à rattacher. Ouverture de la carte…", mi_fail:"Échec :",
+  imp_started:"Import de la carte 3D de {name} lancé en arrière-plan.", imp_running:"Import carte 3D · {name}",
+  imp_running_short:"Import…", imp_err_short:"Échec", imp_done_short:"{m} rattachés",
+  imp_done:"Carte 3D de {name} importée : {n} bâtiments, {m} rattachés.", imp_fail:"Échec de l'import de la carte 3D de {name}.",
+  imp_map_wait:"Import de la carte 3D en cours… {pct} %",
   mp_title:"Rattacher à un site", mp_search:"Rechercher un site…", mp_none:"Aucun site",
   loc_delete_confirm:"Supprimer la localité « {name} » et TOUTES ses données (bâtiments, compteurs, mesures, sas) ?\n\nTapez le nom pour confirmer :",
   loc_delete_ok:"Localité supprimée.", loc_delete_err:"Erreur lors de la suppression.",
@@ -751,8 +763,12 @@ en:{
   mi_scale:"Zone size", mi_scale_s:"Small (≈600 m)", mi_scale_m:"Medium (≈1 km)", mi_scale_l:"Large (≈2 km)",
   mi_scale_xl:"Very large (≈3 km)", mi_scale_xxl:"Maximum (≈5 km)",
   mi_zone:"Zone: {label} · ≈{m} m per side", mi_big:"Wide zone: import is split into several blocks, it can take 1–2 min.",
-  mi_import:"Import the 3D map", mi_importing:"Importing (buildings, aerial photo)…",
+  mi_import:"Import the 3D map", mi_importing:"Importing (buildings, aerial photo)…", mi_starting:"Starting the import…",
   mi_done:"{n} buildings · {m} matched by EGID · {u} to match. Opening the map…", mi_fail:"Failed:",
+  imp_started:"3D map import for {name} started in the background.", imp_running:"3D map import · {name}",
+  imp_running_short:"Importing…", imp_err_short:"Failed", imp_done_short:"{m} matched",
+  imp_done:"3D map for {name} imported: {n} buildings, {m} matched.", imp_fail:"3D map import failed for {name}.",
+  imp_map_wait:"3D map import running… {pct}%",
   mp_title:"Match to a site", mp_search:"Search a site…", mp_none:"No site",
   loc_delete_tip:"Delete this locality and all its data",
   loc_delete_confirm:"Delete locality « {name} » and ALL its data (buildings, meters, readings, staging)?\n\nType the name to confirm:",
@@ -1294,6 +1310,68 @@ function renderMap(){
   import("./map3d.js?v="+V).then(m => m.initMap(document.getElementById("m3"), apiObj, mapCfg))
     .then(x => { MAP = x; MAP_LOADING = false; }).catch(e => { MAP_LOADING = false; document.getElementById("m3").innerHTML = `<div class="m3-loading">${esc(String(e))}</div>`; });
 }
+
+/* ---------------------------------------------------------------- 3D-map import: async, progress pushed over SSE
+   The import runs in the background on the server; we subscribe to /api/map/jobs/stream and reflect progress in a
+   floating chip, the Carte-3D nav button (disabled + %), and the Localités list, then notify on success/failure. */
+let MAP_IMPORTS = {};        // locality_id -> {slug,name,state,pct,step,n,matched,unmatched,error}
+let MAP_SSE = null;
+function mapImportsSubscribe(){
+  if (MAP_SSE){ try { MAP_SSE.close(); } catch(e){} MAP_SSE = null; }
+  if (!SERVER || !USER || typeof EventSource === "undefined"){ MAP_IMPORTS = {}; renderImportChip(); return; }
+  try {
+    const es = new EventSource("api/map/jobs/stream");
+    es.onmessage = ev => { let j; try { j = JSON.parse(ev.data); } catch(e){ return; } onImportEvent(j); };
+    MAP_SSE = es;
+  } catch(e){}
+}
+function importRunning(id){ const j = MAP_IMPORTS[id]; return !!(j && j.state === "running"); }
+async function onImportEvent(j){
+  const prev = MAP_IMPORTS[j.locality_id];
+  MAP_IMPORTS[j.locality_id] = j;
+  markMapButton();
+  renderImportChip();
+  const cell = document.getElementById(`loc-imp-${j.slug}`); if (cell) cell.innerHTML = importCell(j);
+  if (j.state === "done" && prev && prev.state === "running"){
+    toast("ok", t("imp_done", {name: j.name || j.slug, n: nf(j.n||0), m: nf(j.matched||0)}));
+    const lr = await fetch("api/localities",{cache:"no-store"}); if (lr.ok) LOCALITIES = await lr.json();
+    if (LOC && LOC.slug === j.slug){
+      LOC = LOCALITIES.find(l=>l.slug===j.slug) || LOC;
+      if (VIEW === "carte"){ if (MAP){ MAP.destroy(); MAP = null; MAP_LOADING = false; } await loadData(); renderMap(); }
+    }
+  } else if (j.state === "error" && prev && prev.state === "running"){
+    toast("warn", t("imp_fail", {name: j.name || j.slug}) + (j.error ? " — " + j.error : ""));
+  }
+}
+function markMapButton(){
+  const a = document.querySelector('nav a[data-view="carte"]'); if (!a) return;
+  const run = LOC && importRunning(LOC.id), j = LOC && MAP_IMPORTS[LOC.id];
+  a.classList.toggle("disabled", !!run);
+  a.title = run ? t("imp_map_wait", {pct: (j && j.pct) || 0}) : "";
+  const sp = a.querySelector("span"); if (sp) sp.textContent = run ? `${t("nav_map")} · ${(j && j.pct) || 0}%` : t("nav_map");
+}
+function renderImportChip(){
+  const run = Object.values(MAP_IMPORTS).filter(j => j.state === "running");
+  let chip = document.getElementById("imp-chip");
+  if (!run.length){ if (chip) chip.remove(); return; }
+  if (!chip){ chip = document.createElement("div"); chip.id = "imp-chip"; document.body.appendChild(chip); }
+  const j = run.sort((a,b)=>(b.pct||0)-(a.pct||0))[0];
+  chip.innerHTML = `<div class="imp-bar"><i style="width:${j.pct||0}%"></i></div>`
+    + `<div class="imp-txt">${esc(t("imp_running", {name: j.name || j.slug}))} · <b>${j.pct||0}%</b></div>`;
+}
+function importCell(j){
+  if (!j) return "";
+  if (j.state === "running") return `<span class="pill p-warn" style="font-style:normal">${esc(t("imp_running_short"))} ${j.pct||0}%</span>`;
+  if (j.state === "error") return `<span class="pill p-fossil" style="font-style:normal">${esc(t("imp_err_short"))}</span>`;
+  if (j.state === "done") return `<span class="pill p-ren" style="font-style:normal">${esc(t("imp_done_short", {m: nf(j.matched||0)}))}</span>`;
+  return "";
+}
+function toast(kind, msg){
+  const el = document.createElement("div"); el.className = "toast " + (kind || "");
+  el.textContent = msg; document.body.appendChild(el);
+  requestAnimationFrame(() => el.classList.add("show"));
+  setTimeout(() => { el.classList.remove("show"); setTimeout(() => el.remove(), 350); }, kind === "warn" ? 9000 : 6000);
+}
 // Assign (or clear) the site of a map building via the API, then let the map recolour.
 async function mapSetMatch(buildingId, idSite, done){
   try {
@@ -1621,6 +1699,7 @@ function renderAll(){
     }
   }
   document.querySelectorAll("nav a").forEach(a=>{ a.classList.toggle("on", a.dataset.view===VIEW); a.classList.toggle("hide", !can(a.dataset.view)); });
+  markMapButton();   // disable the Carte-3D button while this locality's map import is running
   document.getElementById("crumb").textContent = t(NAVKEY[VIEW]);
   const cl = document.getElementById("crumb-loc");
   if (cl) cl.textContent = LOC ? LOC.name : (D?.meta?.commune || "");
@@ -1690,6 +1769,7 @@ async function setUser(u, want){
     }
   }
   await loadData();
+  mapImportsSubscribe();   // push 3D-map import progress for this user's municipalities
   if (want && can(want) && location.hash !== "#"+want) location.hash = "#"+want; else route();
 }
 function renderAcct(){
@@ -1735,6 +1815,7 @@ function renderLocalities(){
       <td style="white-space:nowrap">
         <button class="chip" style="margin-right:4px" onclick="switchToLocality('${esc(l.slug)}')">${esc(t("loc_open"))}</button>
         <button class="chip" style="margin-right:4px" onclick="mapImportDialog('${esc(l.slug)}','${esc(l.name)}')" title="${esc(t('loc_map_tip'))}">${esc(t("loc_map_btn"))}</button>
+        <span id="loc-imp-${esc(l.slug)}">${importCell(MAP_IMPORTS[l.id])}</span>
         ${list.length > 1 ? `<button class="chip" style="color:var(--warn)" onclick="locDelete('${esc(l.slug)}','${esc(l.name)}')" title="${esc(t('loc_delete_tip'))}">✕</button>` : ""}
       </td>
     </tr>`).join("")}</tbody></table></div>`;
@@ -1834,21 +1915,19 @@ function mapImportDialog(slug, name){
   go.onclick = async () => {
     if (!MAP_ZONE) return;
     go.disabled = true; const msg = document.getElementById("mi-msg");
-    msg.textContent = t("mi_importing"); msg.style.color = "var(--muted)";
+    msg.textContent = t("mi_starting"); msg.style.color = "var(--muted)";
     try {
+      // Kick off the import in the background: the server returns immediately, progress arrives over SSE.
       const r = await fetch(`api/localities/${slug}/map/import`, {method:"POST", headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({bbox: MAP_ZONE.bbox.map(v=>Math.round(v)).join(","), name: MAP_ZONE.label, tiles: 1})});
+        body: JSON.stringify({bbox: MAP_ZONE.bbox.map(v=>Math.round(v)).join(","), name: MAP_ZONE.label})});
       if (!r.ok) throw new Error((await r.json()).detail || r.status);
-      const s = await r.json();
-      msg.style.color = "var(--accent)";
-      msg.textContent = t("mi_done", {n: nf(s.n), m: nf(s.matched), u: nf(s.unmatched)});
-      // refresh localities (map_config changed) and switch to this one, open the 3D map
-      const lr = await fetch("api/localities",{cache:"no-store"}); if (lr.ok) LOCALITIES = await lr.json();
-      LOC = LOCALITIES.find(l=>l.slug===slug) || LOC;
-      try { localStorage.setItem("edm-locality", LOC.slug); } catch(e){}
-      if (MAP) { MAP.destroy(); MAP = null; MAP_LOADING = false; }
-      await loadData();
-      setTimeout(() => { modal.classList.remove("open"); location.hash = "#carte"; renderAll(); }, 1200);
+      const lid = (LOCALITIES.find(l=>l.slug===slug)||{}).id;              // optimistic state so the UI reacts at once
+      if (lid != null) MAP_IMPORTS[lid] = {slug, name: MAP_ZONE.label, state:"running", pct:0, step:"queued"};
+      mapImportsSubscribe();                                               // (re)subscribe to catch this locality
+      markMapButton(); renderImportChip();
+      modal.classList.remove("open");                                     // non-blocking: close now, watch progress in the chip/list
+      toast("ok", t("imp_started", {name: MAP_ZONE.label}));
+      if (VIEW === "localites") renderLocalities();
     } catch(e){ msg.style.color = "var(--warn)"; msg.textContent = t("mi_fail") + " " + e.message; go.disabled = false; }
   };
   setTimeout(()=>q.focus(), 50);
@@ -2389,7 +2468,7 @@ let RZ, LASTW = innerWidth;
 window.addEventListener("resize", () => { clearTimeout(RZ); RZ = setTimeout(() => { if (Math.abs(innerWidth - LASTW) < 40 || !D) return; LASTW = innerWidth; const open = document.getElementById("drawer").classList.contains("open"); renderAll(); if (open) reopen(); }, 200); });
 matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", renderAll);
 
-const V = "52";
+const V = "53";
 (async () => {
   try {
     const c = await fetch("api/config.json?v="+V, {cache:"no-store"}).then(r => r.json());
@@ -2407,6 +2486,7 @@ const V = "52";
     }
   } catch (e) {}
   await loadData(); route();
+  mapImportsSubscribe();   // push 3D-map import progress (for an already-logged-in session)
 })();
 </script>
 </body>
