@@ -8,7 +8,7 @@ import { computeBoundsTree, acceleratedRaycast } from "./vendor/three-mesh-bvh.m
 THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
 
-const V = "31";
+const V = "32";
 const GREY = 0xb9bfbb;
 const SEL_COL = 0xff2bbf;   // selected/clicked building: a vivid magenta outline rim
 const SITEHI = 0x2a9df4;    // the other blocks of the selected building's site: a thinner blue outline rim
@@ -259,7 +259,7 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
   const outlineSel  = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial({ color: SEL_COL, side: THREE.BackSide }));
   outlineSite.visible = outlineSel.visible = false; outlineSite.renderOrder = 1; outlineSel.renderOrder = 2;
   scene.add(outlineSite, outlineSel);
-  const SEL_T = 2.4, SITE_T = 1.0;                         // rim thickness (m): selected thick, site-mates thin
+  const SEL_T = 5.0, SITE_T = 2.4;                         // rim thickness (m): selected thick, site-mates thinner
   function setHull(mesh, biList, thickness) {
     mesh.geometry.dispose();
     mesh.geometry = biList.length ? hullGeo(biList, thickness) : new THREE.BufferGeometry();
