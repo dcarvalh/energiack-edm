@@ -27,6 +27,7 @@ IDENTIFY = "https://api3.geo.admin.ch/rest/services/ech/MapServer/identify"
 SEARCH = "https://api3.geo.admin.ch/rest/services/ech/SearchServer"
 WMS = "https://wms.geo.admin.ch/"
 STAC_ALTI = "https://data.geo.admin.ch/api/stac/v0.9/collections/ch.swisstopo.swissalti3d/items"
+OVERPASS = ["https://overpass-api.de/api/interpreter", "https://overpass.kumi.systems/api/interpreter"]
 GWR_LAYER = "ch.bfs.gebaeude_wohnungs_register"
 IDENTIFY_CAP = 200          # the identify endpoint returns at most ~200 features per call
 MAX_TILES = 6               # aerial tiles per side (bounds the fetch); large zones are split into several blocks
@@ -57,6 +58,68 @@ def _lv95_to_wgs(e, n):
     lam = 2.6779094 + 4.728982 * y + 0.791484 * y * x + 0.1306 * y * x * x - 0.0436 * y ** 3
     phi = 16.9023892 + 3.238272 * x - 0.270978 * y * y - 0.002528 * x * x - 0.0447 * y * y * x - 0.0140 * x ** 3
     return lam * 100 / 36, phi * 100 / 36
+
+
+def _wgs_to_lv95(lon, lat):
+    """swisstopo approximate inverse (~1 m): WGS84 (lon, lat) -> LV95 (E, N). For placing OSM footprints on the map."""
+    p = (lat * 3600 - 169028.66) / 10000.0
+    l = (lon * 3600 - 26782.5) / 10000.0
+    e = 2600072.37 + 211455.93 * l - 10938.51 * l * p - 0.36 * l * p * p - 44.54 * l ** 3
+    n = 1200147.07 + 308807.95 * p + 3745.25 * l * l + 76.63 * p * p - 194.56 * l * l * p + 119.79 * p ** 3
+    return e, n
+
+
+def _pt_in_ring(x, y, ring):
+    c = False
+    j = len(ring) - 1
+    for i in range(len(ring)):
+        xi, yi = ring[i]
+        xj, yj = ring[j]
+        if ((yi > y) != (yj > y)) and (x < (xj - xi) * (y - yi) / (yj - yi) + xi):
+            c = not c
+        j = i
+    return c
+
+
+def _osm_footprints(bbox):
+    """Real OpenStreetMap building footprints in bbox, as LV95 rings behind a spatial index.
+    Returns a find(E, N) -> ring|None lookup and the footprint count. ([], 0) if OSM is unreachable."""
+    xmin, ymin, xmax, ymax = bbox
+    c0 = _lv95_to_wgs(xmin, ymin)
+    c1 = _lv95_to_wgs(xmax, ymax)
+    south, west, north, east = min(c0[1], c1[1]), min(c0[0], c1[0]), max(c0[1], c1[1]), max(c0[0], c1[0])
+    q = f'[out:json][timeout:60];way["building"]({south:.6f},{west:.6f},{north:.6f},{east:.6f});out geom;'
+    elements = None
+    for ep in OVERPASS:
+        try:
+            elements = _get(f"{ep}?data={urllib.parse.quote(q)}", timeout=90).get("elements", [])  # _get already parses JSON
+            break
+        except Exception:
+            continue
+    rings = []                                                # (bx0, by0, bx1, by1, ring_lv95)
+    for w in elements or []:
+        g = w.get("geometry")
+        if not g or len(g) < 4:
+            continue
+        ring = [_wgs_to_lv95(p["lon"], p["lat"]) for p in g]
+        xs = [p[0] for p in ring]
+        ys = [p[1] for p in ring]
+        rings.append((min(xs), min(ys), max(xs), max(ys), ring))
+    CELL = 40.0                                               # grid index so point lookup is ~O(1)
+    grid = {}
+    for i, (bx0, by0, bx1, by1, _) in enumerate(rings):
+        for cx in range(int(bx0 // CELL), int(bx1 // CELL) + 1):
+            for cy in range(int(by0 // CELL), int(by1 // CELL) + 1):
+                grid.setdefault((cx, cy), []).append(i)
+
+    def find(e, n):
+        for i in grid.get((int(e // CELL), int(n // CELL)), ()):
+            bx0, by0, bx1, by1, ring = rings[i]
+            if bx0 <= e <= bx1 and by0 <= n <= by1 and _pt_in_ring(e, n, ring):
+                return ring
+        return None
+
+    return find, len(rings)
 
 
 def _alti_tiles(bbox, progress=None, p0=0, p1=0):
@@ -257,32 +320,44 @@ def _aerial(bbox, tiles, px, progress=None, p0=0, p1=0):
     return out, tpx
 
 
-def fetch(bbox, step=16, px=1.0, tiles=1, name=None, progress=None):
+def fetch(bbox, step=16, px=1.0, tiles=1, name=None, progress=None, osm=True):
     """Build the map for a zone. Returns meta, buildings (map-local), flat terrain bytes, aerial tiles.
-    progress(pct:int, step:str) is called through the (slow) network stages, 2..96 %."""
+    progress(pct:int, step:str) is called through the (slow) network stages, 2..96 %.
+    osm=True: replace the square footprint with the real OpenStreetMap footprint where the GWR point sits in one."""
     tiles = max(1, min(tiles, MAX_TILES))
     xmin, ymin, xmax, ymax = (float(v) for v in bbox)
     W, H = xmax - xmin, ymax - ymin
     _report(progress, 2, "start")
 
     # real swissALTI3D terrain (relief); buildings then sit on the ground at their base elevation
-    terrain, nx, ny, step, zmin, ground = _terrain((xmin, ymin, xmax, ymax), tiles, progress, 4, 42)
+    terrain, nx, ny, step, zmin, ground = _terrain((xmin, ymin, xmax, ymax), tiles, progress, 4, 40)
 
-    # buildings -> extruded square blocks in map-local metres, raised to the terrain
-    raw = _buildings((xmin, ymin, xmax, ymax), progress, 42, 66)
-    buildings = []
+    # GWR gives EGID + location + floors; OSM (optional) gives the real footprint shape
+    raw = _buildings((xmin, ymin, xmax, ymax), progress, 40, 60)
+    osm_find, osm_n = (None, 0)
+    if osm:
+        _report(progress, 61, "footprints")
+        osm_find, osm_n = _osm_footprints((xmin, ymin, xmax, ymax))
+    _report(progress, 64, "buildings")
+    buildings, n_osm = [], 0
     for b in raw:
         x, y = b["e"] - xmin, b["n"] - ymin              # map-local (origin at the SW corner)
         if not (0 <= x <= W and 0 <= y <= H):
             continue
-        area = b["garea"] if isinstance(b["garea"], (int, float)) and b["garea"] else 80.0
-        side = max(4.0, math.sqrt(area))
-        hs = side / 2
         floors = b["gastw"] if isinstance(b["gastw"], (int, float)) and b["gastw"] else 3
         height = max(3.0, float(floors) * STOREY_M)
-        ring = [[round(x - hs, 1), round(y - hs, 1)], [round(x + hs, 1), round(y - hs, 1)],
-                [round(x + hs, 1), round(y + hs, 1)], [round(x - hs, 1), round(y + hs, 1)],
-                [round(x - hs, 1), round(y - hs, 1)]]
+        shape = osm_find(b["e"], b["n"]) if osm_find else None
+        if shape:                                        # real OSM footprint -> map-local ring
+            ring = [[round(px - xmin, 1), round(py - ymin, 1)] for px, py in shape]
+            if ring[0] != ring[-1]:
+                ring.append(ring[0])
+            n_osm += 1
+        else:                                            # fall back to a square sized from GWR area
+            area = b["garea"] if isinstance(b["garea"], (int, float)) and b["garea"] else 80.0
+            hs = max(4.0, math.sqrt(area)) / 2
+            ring = [[round(x - hs, 1), round(y - hs, 1)], [round(x + hs, 1), round(y - hs, 1)],
+                    [round(x + hs, 1), round(y + hs, 1)], [round(x - hs, 1), round(y + hs, 1)],
+                    [round(x - hs, 1), round(y - hs, 1)]]
         buildings.append({
             "egid": b["egid"], "rings": [ring], "h": round(height, 1), "z": round(ground(b["e"], b["n"]), 1),
             "use": None, "year": b["year"], "levels": floors, "addr": b["addr"],
@@ -297,7 +372,8 @@ def fetch(bbox, step=16, px=1.0, tiles=1, name=None, progress=None):
         "crs": "EPSG:2056", "origin": [xmin, ymin], "size": [round(W), round(H)],
         "zmin": zmin, "terrain": {"nx": nx, "ny": ny, "step": step, "scale": 0.1},
         "tiles": tiles, "labels": [],
-        "sources": {"buildings": "GWR ch.bfs.gebaeude_wohnungs_register (swisstopo/BFS)",
+        "sources": {"buildings": "GWR ch.bfs.gebaeude_wohnungs_register (swisstopo/BFS)"
+                    + (f" + OpenStreetMap footprints ({n_osm}/{len(buildings)}, ODbL)" if osm and osm_n else ""),
                     "aerial": "swisstopo SWISSIMAGE (WMS)",
                     "terrain": "flat" if flat else "swisstopo swissALTI3D (2 m, XYZ)"},
     }

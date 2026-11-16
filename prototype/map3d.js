@@ -8,7 +8,7 @@ import { computeBoundsTree, acceleratedRaycast } from "./vendor/three-mesh-bvh.m
 THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
 
-const V = "34";
+const V = "35";
 const GREY = 0xb9bfbb;
 const SEL_COL = 0xff2bbf;   // selected/clicked building: a vivid magenta outline rim
 const SITEHI = 0x2a9df4;    // the other blocks of the selected building's site: a thinner blue outline rim
@@ -352,7 +352,8 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
     root.querySelector(".m3-hint").textContent = matchMedia("(pointer:coarse)").matches ? t("m_hint_touch") : t("m_hint");
     const tips = { pan: "m_t_pan", orbit: "m_t_orbit", in: "m_t_in", out: "m_t_out", rl: "m_t_rl", rr: "m_t_rr", top: isTop() ? "m_t_tilt" : "m_t_top", north: "m_north", full: isFull() ? "m_t_fullx" : "m_t_full", home: "m_reset" };
     for (const [k, v] of Object.entries(tips)) { const el = root.querySelector(`[data-tool="${k}"]`); el.title = t(v); el.setAttribute("aria-label", t(v)); }
-    root.querySelector(".m3-attr").textContent = IMP ? t("m_attr_imp") : RC ? t("m_attr_rc", { k: nf(M.scale || 1, 1) }) : t("m_attr");
+    const osmCredit = IMP && M.sources && /OpenStreetMap/.test(M.sources.buildings || "") ? " · © OpenStreetMap contributors (ODbL)" : "";
+    root.querySelector(".m3-attr").textContent = (IMP ? t("m_attr_imp") : RC ? t("m_attr_rc", { k: nf(M.scale || 1, 1) }) : t("m_attr")) + osmCredit;
     if (SEL >= 0) panel(SEL);
   }
   function row(label, value, sim) { return value == null || value === "" ? "" : `<div class="m3-row"><span>${esc(label)}</span><b>${value}${sim ? ` <span class="pill p-warn">${esc(t("m_sim"))}</span>` : ""}</b></div>`; }
