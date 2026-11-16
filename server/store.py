@@ -17,6 +17,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
 import import_rive_claire as rc  # noqa: E402  (build(), check(), read_guide(): shared with the static build)
 import fetch_swiss_map as geomap  # noqa: E402  (fetch(), geocode(): the national Swiss geo platform)
+import fetch_france_map as geomap_fr  # noqa: E402  (fetch(): the IGN Géoplateforme, for French zones)
 
 # dataset table -> (database table, key, columns in the source order)
 REF = {
@@ -339,10 +340,11 @@ def reimport_bundled(conn, locality_id):
 
 # ── imported 3D map (Swiss geo platform) ──────────────────────────────────────
 
-def map_import(conn, locality_id, bbox, step=16, px=1.0, tiles=1, name=None, progress=None, osm=True):
-    """Fetch a zone from geo.admin.ch, store it (replacing any existing map), auto-match, return a summary.
-    progress(pct, step) is called through the fetch (2..96 %) and the save (97..100 %)."""
-    result = geomap.fetch(bbox, step=step, px=px, tiles=tiles, name=name, progress=progress, osm=osm)
+def map_import(conn, locality_id, bbox, step=16, px=1.0, tiles=1, name=None, progress=None, osm=True, country="CH"):
+    """Fetch a zone from the national platform for `country` (CH: geo.admin.ch, FR: IGN), store it (replacing any
+    existing map), auto-match, return a summary. progress(pct, step) runs through the fetch and the save."""
+    src = geomap_fr if (country or "CH").upper() == "FR" else geomap
+    result = src.fetch(bbox, step=step, px=px, tiles=tiles, name=name, progress=progress, osm=osm)
     if progress:
         progress(97, "save")
     with conn.transaction(), conn.cursor() as cur:

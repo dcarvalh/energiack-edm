@@ -18,6 +18,7 @@ import io
 import json
 import math
 import struct
+import time
 import urllib.parse
 import urllib.request
 import zipfile
@@ -27,7 +28,10 @@ IDENTIFY = "https://api3.geo.admin.ch/rest/services/ech/MapServer/identify"
 SEARCH = "https://api3.geo.admin.ch/rest/services/ech/SearchServer"
 WMS = "https://wms.geo.admin.ch/"
 STAC_ALTI = "https://data.geo.admin.ch/api/stac/v0.9/collections/ch.swisstopo.swissalti3d/items"
-OVERPASS = ["https://overpass-api.de/api/interpreter", "https://overpass.kumi.systems/api/interpreter"]
+OVERPASS = ["https://overpass-api.de/api/interpreter", "https://overpass.kumi.systems/api/interpreter",
+            "https://maps.mail.ru/osm/tools/overpass/api/interpreter", "https://overpass.private.coffee/api/interpreter"]
+OSM_BUDGET_S = 75          # total best-effort budget for OSM footprints; past it, remaining blocks keep the square shape
+OSM_CALL_S = 18            # per-Overpass-call timeout, so a slow mirror can't stall the whole import
 GWR_LAYER = "ch.bfs.gebaeude_wohnungs_register"
 IDENTIFY_CAP = 200          # the identify endpoint returns at most ~200 features per call
 MAX_TILES = 6               # aerial tiles per side (bounds the fetch); large zones are split into several blocks
@@ -81,30 +85,41 @@ def _pt_in_ring(x, y, ring):
     return c
 
 
-def _osm_footprints(bbox):
+def _osm_footprints(bbox, progress=None, p0=0, p1=0):
     """Real OpenStreetMap building footprints in bbox, as LV95 rings behind a spatial index.
-    Returns a find(E, N) -> ring|None lookup and the footprint count. ([], 0) if OSM is unreachable."""
+    Returns a find(E, N) -> ring|None lookup and the footprint count. ([], 0) if OSM is unreachable.
+    The Overpass query is TILED (~1 km sub-boxes) so a big zone does not blow the per-query timeout/limit."""
     xmin, ymin, xmax, ymax = bbox
-    c0 = _lv95_to_wgs(xmin, ymin)
-    c1 = _lv95_to_wgs(xmax, ymax)
-    south, west, north, east = min(c0[1], c1[1]), min(c0[0], c1[0]), max(c0[1], c1[1]), max(c0[0], c1[0])
-    q = f'[out:json][timeout:60];way["building"]({south:.6f},{west:.6f},{north:.6f},{east:.6f});out geom;'
-    elements = None
-    for ep in OVERPASS:
-        try:
-            elements = _get(f"{ep}?data={urllib.parse.quote(q)}", timeout=90).get("elements", [])  # _get already parses JSON
-            break
-        except Exception:
-            continue
+    # ~2 km sub-boxes: few enough calls to stay under Overpass's fair-use rate limit, small enough not to time out.
+    sub = max(1, math.ceil(max(xmax - xmin, ymax - ymin) / 2000))
+    boxes = list(_tile_boxes(xmin, ymin, xmax, ymax, sub))
     rings = []                                                # (bx0, by0, bx1, by1, ring_lv95)
-    for w in elements or []:
-        g = w.get("geometry")
-        if not g or len(g) < 4:
-            continue
-        ring = [_wgs_to_lv95(p["lon"], p["lat"]) for p in g]
-        xs = [p[0] for p in ring]
-        ys = [p[1] for p in ring]
-        rings.append((min(xs), min(ys), max(xs), max(ys), ring))
+    deadline = time.monotonic() + OSM_BUDGET_S                # best-effort: stop asking OSM past this, keep what we have
+    for ti, bx in enumerate(boxes):
+        _report(progress, p0 + (p1 - p0) * ti / len(boxes), "footprints")
+        if time.monotonic() > deadline:
+            break
+        c0 = _lv95_to_wgs(bx[0], bx[1])
+        c1 = _lv95_to_wgs(bx[2], bx[3])
+        south, west, north, east = min(c0[1], c1[1]), min(c0[0], c1[0]), max(c0[1], c1[1]), max(c0[0], c1[0])
+        q = f'[out:json][timeout:20];way["building"]({south:.6f},{west:.6f},{north:.6f},{east:.6f});out geom;'
+        elements = None
+        for ep in OVERPASS:
+            if time.monotonic() > deadline:                   # never let the mirror loop push past the budget
+                break
+            try:
+                elements = _get(f"{ep}?data={urllib.parse.quote(q)}", timeout=OSM_CALL_S).get("elements", [])  # _get parses JSON
+                break
+            except Exception:
+                continue
+        for w in elements or []:
+            g = w.get("geometry")
+            if not g or len(g) < 4:
+                continue
+            ring = [_wgs_to_lv95(p["lon"], p["lat"]) for p in g]
+            xs = [p[0] for p in ring]
+            ys = [p[1] for p in ring]
+            rings.append((min(xs), min(ys), max(xs), max(ys), ring))
     CELL = 40.0                                               # grid index so point lookup is ~O(1)
     grid = {}
     for i, (bx0, by0, bx1, by1, _) in enumerate(rings):
@@ -367,12 +382,11 @@ def fetch(bbox, step=16, px=1.0, tiles=1, name=None, progress=None, osm=True):
     terrain, nx, ny, step, zmin, ground = _terrain((xmin, ymin, xmax, ymax), tiles, progress, 4, 40)
 
     # GWR gives EGID + location + floors; OSM (optional) gives the real footprint shape
-    raw = _buildings((xmin, ymin, xmax, ymax), progress, 40, 60)
+    raw = _buildings((xmin, ymin, xmax, ymax), progress, 38, 55)
     osm_find, osm_n = (None, 0)
     if osm:
-        _report(progress, 61, "footprints")
-        osm_find, osm_n = _osm_footprints((xmin, ymin, xmax, ymax))
-    _report(progress, 64, "buildings")
+        osm_find, osm_n = _osm_footprints((xmin, ymin, xmax, ymax), progress, 55, 72)
+    _report(progress, 73, "buildings")
     buildings, n_osm = [], 0
     for b in raw:
         x, y = b["e"] - xmin, b["n"] - ymin              # map-local (origin at the SW corner)
@@ -397,7 +411,7 @@ def fetch(bbox, step=16, px=1.0, tiles=1, name=None, progress=None, osm=True):
             "use": None, "year": b["year"], "levels": floors, "addr": b["addr"],
         })
 
-    tiles_out, tpx = _aerial((xmin, ymin, xmax, ymax), tiles, px, progress, 66, 96)
+    tiles_out, tpx = _aerial((xmin, ymin, xmax, ymax), tiles, px, progress, 74, 96)
     _report(progress, 96, "assemble")
     flat = all(v == 0 for v in struct.unpack(f"<{nx * ny}h", terrain))
 

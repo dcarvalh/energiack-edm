@@ -36,8 +36,9 @@ def snapshot(lids):
         return {lid: dict(JOBS[lid]) for lid in lids if lid in JOBS}
 
 
-def start(locality_id, slug, bbox, tiles, px, name, osm=True):
+def start(locality_id, slug, bbox, tiles, px, name, osm=True, country="CH"):
     """Launch the import in a daemon thread and return at once. False if one is already running for this locality."""
+    name = " ".join((name or "").split())[:120]              # strip newlines/control chars so the SSE JSON stays valid
     with _LOCK:
         if (JOBS.get(locality_id) or {}).get("state") == "running":
             return False
@@ -49,7 +50,7 @@ def start(locality_id, slug, bbox, tiles, px, name, osm=True):
         try:
             def prog(pct, step):
                 _set(locality_id, state="running", pct=pct, step=step)
-            summary = store.map_import(conn, locality_id, bbox, tiles=tiles, px=px, name=name, progress=prog, osm=osm)
+            summary = store.map_import(conn, locality_id, bbox, tiles=tiles, px=px, name=name, progress=prog, osm=osm, country=country)
             conn.execute("UPDATE locality SET map_config = %s WHERE id = %s",
                          (json.dumps({"key": "imported", "dir": f"api/localities/{slug}/map/"}), locality_id))
             conn.commit()

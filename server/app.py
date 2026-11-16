@@ -290,7 +290,7 @@ def map_import(slug: str, body: MapImport, u=Depends(need(*auth.FULL)), conn=Dep
     tiles = max(1, min(round(span / 1000), 6))            # ~1 km aerial block per tile, so large zones stay detailed
     osm = bool(store.get_settings(conn).get("osm_footprints", True))   # admin preference: real OSM footprints on/off
     # The fetch is slow: run it in the background and report progress over SSE instead of blocking the request.
-    started = mapjobs.start(loc["id"], slug, bbox, tiles, body.px, body.name, osm=osm)
+    started = mapjobs.start(loc["id"], slug, bbox, tiles, body.px, body.name, osm=osm, country=loc.get("country") or "CH")
     if not started:
         raise HTTPException(409, "an import is already running for this locality")
     return {"state": "started", "slug": slug}
