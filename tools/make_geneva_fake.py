@@ -4,7 +4,7 @@
 Same CSV schema and conventions as the Rive-Claire dataset (see rive-claire/csv/).
 All output CSVs use ';' as delimiter, UTF-8 with BOM, empty cells = empty strings.
 
-Writes 5 files to geneve/csv/:
+Writes 5 files to data/geneve/csv/:
   geneve-batiments.csv, geneve-compteurs.csv, geneve-installations.csv,
   geneve-mesures.csv, geneve-ref-typologies.csv
 
@@ -13,7 +13,7 @@ geneve-ref-conversion.csv, geneve-ref-vecteurs.csv already exist (copied from Ri
 identical physics/climate) and are NOT touched.
 
 The buildings carry the REAL federal EGIDs of the Geneva Vieille-Ville / centre zone (DEMO_BBOX), fetched once from
-the GWR via tools/fetch_swiss_map.py and cached in geneve/real_buildings_egid.json. Importing the 3D map of the same
+the GWR via tools/fetch_swiss_map.py and cached in data/geneve/real_buildings_egid.json. Importing the 3D map of the same
 zone then auto-matches the buildings by EGID (map_automatch) and lights them up with this data. Consumption, sites,
 scenarios and CO2 are fictional and flagged "simulated" in the app; only the EGIDs/positions/sizes are real (public GWR).
 
@@ -23,7 +23,7 @@ Run:  python3 tools/make_geneva_fake.py
 
 Wire up the demonstrator (admin, running server):
   1. POST /api/localities                         {"slug":"geneve","name":"Genève"}
-  2. POST /api/localities/geneve/import           (ZIP of geneve/csv/*.csv)        -> loads data + building.egid
+  2. POST /api/localities/geneve/import           (ZIP of data/geneve/csv/*.csv)        -> loads data + building.egid
   3. POST /api/localities/geneve/map/import       {"bbox":"2499600,1117100,2500600,1118100"}  -> auto-matches by EGID
 """
 import csv
@@ -36,14 +36,14 @@ from pathlib import Path
 random.seed(42)
 
 ROOT = Path(__file__).resolve().parent.parent
-CSV_DIR = ROOT / "geneve" / "csv"
+CSV_DIR = ROOT / "data" / "geneve" / "csv"
 
 START_YEAR, N_MONTHS = 2021, 60   # 2021-01 .. 2025-12
 
 # Geneva Vieille-Ville / centre (LV95, ~1 km). The 3D demo imports THIS zone; the dataset's buildings carry the real
 # GWR EGIDs found here so the imported map auto-matches and lights up with this data.
 DEMO_BBOX = (2499600, 1117100, 2500600, 1118100)
-REAL_CACHE = ROOT / "geneve" / "real_buildings_egid.json"
+REAL_CACHE = ROOT / "data" / "geneve" / "real_buildings_egid.json"
 
 
 def real_buildings():

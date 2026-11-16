@@ -5,7 +5,7 @@ ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
 COPY server/requirements.txt server/
 RUN pip install --no-cache-dir -r server/requirements.txt
 COPY tools/import_rive_claire.py tools/rc_quality.py tools/csv_detect.py tools/fetch_swiss_map.py tools/
-COPY rive-claire/EIAK-RC-Guide-Donnees-vf.html rive-claire/
+COPY data/rive-claire/EIAK-RC-Guide-Donnees-vf.html data/rive-claire/
 COPY server/ server/
 USER nobody
 EXPOSE 8000
