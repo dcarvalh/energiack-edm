@@ -7,6 +7,7 @@ RUN pip install --no-cache-dir -r server/requirements.txt
 COPY tools/import_rive_claire.py tools/rc_quality.py tools/csv_detect.py tools/fetch_swiss_map.py tools/fetch_france_map.py tools/
 COPY data/rive-claire/EIAK-RC-Guide-Donnees-vf.html data/rive-claire/
 COPY server/ server/
+RUN mkdir -p /app/cache && chown nobody /app/cache   # OSM footprint cache (a named volume mounts here, owned by nobody)
 USER nobody
 EXPOSE 8000
 HEALTHCHECK --interval=10s --timeout=3s --start-period=5s --retries=6 \

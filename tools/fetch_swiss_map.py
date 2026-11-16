@@ -18,6 +18,7 @@ import concurrent.futures
 import io
 import json
 import math
+import os
 import struct
 import time
 import urllib.parse
@@ -29,11 +30,15 @@ IDENTIFY = "https://api3.geo.admin.ch/rest/services/ech/MapServer/identify"
 SEARCH = "https://api3.geo.admin.ch/rest/services/ech/SearchServer"
 WMS = "https://wms.geo.admin.ch/"
 STAC_ALTI = "https://data.geo.admin.ch/api/stac/v0.9/collections/ch.swisstopo.swissalti3d/items"
-OVERPASS = ["https://overpass-api.de/api/interpreter", "https://overpass.kumi.systems/api/interpreter",
-            "https://maps.mail.ru/osm/tools/overpass/api/interpreter", "https://overpass.private.coffee/api/interpreter"]
+# Overpass endpoints. Override with OVERPASS_URLS (comma-separated) to use a private/self-hosted instance and dodge the
+# public rate limits — e.g. OVERPASS_URLS="https://my-overpass.example.com/api/interpreter". Falls back to public mirrors.
+OVERPASS = [u.strip() for u in os.environ.get("OVERPASS_URLS", "").split(",") if u.strip()] or [
+    "https://overpass-api.de/api/interpreter", "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter", "https://overpass.private.coffee/api/interpreter"]
 OSM_BUDGET_PER_TILE_S = 12  # best-effort OSM budget scales with the number of ~1 km sub-boxes (big zones get more time)
 OSM_BUDGET_MAX_S = 180      # but never spend more than this on footprints; the rest keep the square shape
-OSM_CALL_S = 30            # per-Overpass-call timeout, so a slow mirror can't stall the whole import
+OSM_CALL_S = 20            # per-Overpass-call timeout: fail a dead mirror fast, but long enough for a slow-but-live one
+OSM_CACHE_DIR = os.environ.get("OSM_CACHE_DIR")   # if set, cache OSM footprints per 1 km cell so re-imports are consistent
 GWR_LAYER = "ch.bfs.gebaeude_wohnungs_register"
 IDENTIFY_CAP = 200          # the identify endpoint returns at most ~200 features per call
 MAX_TILES = 6               # aerial tiles per side (bounds the fetch); large zones are split into several blocks
@@ -92,42 +97,58 @@ def _osm_footprints(bbox, progress=None, p0=0, p1=0):
     Returns a find(E, N) -> ring|None lookup and the footprint count. ([], 0) if OSM is unreachable.
     The Overpass query is TILED (~1 km sub-boxes) so a big zone does not blow the per-query timeout/limit."""
     xmin, ymin, xmax, ymax = bbox
-    # ~1 km sub-boxes: each Overpass query stays light (fast, under the timeout). Tiles are fetched in parallel, each
-    # routed to a different mirror, so a big zone gets good coverage without hammering one endpoint.
-    sub = max(1, math.ceil(max(xmax - xmin, ymax - ymin) / 1000))
-    boxes = list(_tile_boxes(xmin, ymin, xmax, ymax, sub))
-    budget = min(OSM_BUDGET_MAX_S, max(90, OSM_BUDGET_PER_TILE_S * len(boxes)))
+    # Fixed 1 km LV95-aligned cells: each cell is fetched from Overpass once and CACHED to disk, so later imports of the
+    # same area reuse it instantly and always get the same real footprints (no more intermittent all-cube fallbacks).
+    cells = [(cx * 1000, cy * 1000)
+             for cx in range(int(xmin // 1000), int(xmax // 1000) + 1)
+             for cy in range(int(ymin // 1000), int(ymax // 1000) + 1)]
+    budget = min(OSM_BUDGET_MAX_S, max(90, OSM_BUDGET_PER_TILE_S * len(cells)))
     deadline = time.monotonic() + budget                      # best-effort: stop asking OSM past this, keep what we have
 
-    def fetch_tile(idx_bx):
-        idx, bx = idx_bx
+    def fetch_cell(idx_cell):
+        idx, (cx, cy) = idx_cell
+        cf = os.path.join(OSM_CACHE_DIR, f"{cx}_{cy}.json") if OSM_CACHE_DIR else None
+        if cf and os.path.exists(cf):
+            try:
+                return json.loads(open(cf, encoding="utf-8").read())   # cached LV95 rings for this 1 km cell
+            except Exception:
+                pass
         if time.monotonic() > deadline:
             return []
-        c0 = _lv95_to_wgs(bx[0], bx[1])
-        c1 = _lv95_to_wgs(bx[2], bx[3])
+        c0 = _lv95_to_wgs(cx, cy)
+        c1 = _lv95_to_wgs(cx + 1000, cy + 1000)
         south, west, north, east = min(c0[1], c1[1]), min(c0[0], c1[0]), max(c0[1], c1[1]), max(c0[0], c1[0])
         q = f'[out:json][timeout:25];way["building"]({south:.6f},{west:.6f},{north:.6f},{east:.6f});out geom;'
-        for k in range(len(OVERPASS)):                        # start at a per-tile mirror, then fall back
+        elements = None
+        for k in range(len(OVERPASS)):                        # start at a per-cell mirror, then fall back
             if time.monotonic() > deadline:
                 break
             ep = OVERPASS[(idx + k) % len(OVERPASS)]
             try:
-                return _get(f"{ep}?data={urllib.parse.quote(q)}", timeout=OSM_CALL_S).get("elements", [])
+                elements = _get(f"{ep}?data={urllib.parse.quote(q)}", timeout=OSM_CALL_S).get("elements", [])
+                break
             except Exception:
                 continue
-        return []
+        if elements is None:
+            return []                                          # fetch failed -> do NOT cache, so it is retried next time
+        rings = [[[round(x, 1), round(y, 1)] for x, y in (_wgs_to_lv95(p["lon"], p["lat"]) for p in w["geometry"])]
+                 for w in elements if w.get("geometry") and len(w["geometry"]) >= 4]
+        if cf:
+            try:
+                os.makedirs(OSM_CACHE_DIR, exist_ok=True)
+                with open(cf, "w", encoding="utf-8") as fh:
+                    fh.write(json.dumps(rings))
+            except Exception:
+                pass
+        return rings
 
     rings = []                                                # (bx0, by0, bx1, by1, ring_lv95)
     done = 0
-    with concurrent.futures.ThreadPoolExecutor(max_workers=min(4, len(boxes))) as ex:
-        for elements in ex.map(fetch_tile, list(enumerate(boxes))):
+    with concurrent.futures.ThreadPoolExecutor(max_workers=min(4, len(cells))) as ex:
+        for cell_rings in ex.map(fetch_cell, list(enumerate(cells))):
             done += 1
-            _report(progress, p0 + (p1 - p0) * done / len(boxes), "footprints")
-            for w in elements or []:
-                g = w.get("geometry")
-                if not g or len(g) < 4:
-                    continue
-                ring = [_wgs_to_lv95(p["lon"], p["lat"]) for p in g]
+            _report(progress, p0 + (p1 - p0) * done / len(cells), "footprints")
+            for ring in cell_rings or []:
                 xs = [p[0] for p in ring]
                 ys = [p[1] for p in ring]
                 rings.append((min(xs), min(ys), max(xs), max(ys), ring))

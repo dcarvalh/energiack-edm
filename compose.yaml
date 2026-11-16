@@ -13,6 +13,9 @@ x-api: &api
     PGPASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env (copy .env.example)}
     SEED_DEMO: ${SEED_DEMO:-1}
     DEMO_LOGIN: ${DEMO_LOGIN:-0}
+    OSM_CACHE_DIR: /app/cache            # persist OSM footprints per 1 km cell so re-imports are consistent
+  volumes:
+    - osm_cache:/app/cache
 
 services:
   db:
@@ -63,3 +66,4 @@ volumes:
   db:
   caddy_data:
   caddy_config:
+  osm_cache:
