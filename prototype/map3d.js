@@ -8,7 +8,7 @@ import { computeBoundsTree, acceleratedRaycast } from "./vendor/three-mesh-bvh.m
 THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
 
-const V = "33";
+const V = "34";
 const GREY = 0xb9bfbb;
 const SEL_COL = 0xff2bbf;   // selected/clicked building: a vivid magenta outline rim
 const SITEHI = 0x2a9df4;    // the other blocks of the selected building's site: a thinner blue outline rim
@@ -333,10 +333,13 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
       + `<div class="m3-fhint">${esc(ONLY === null ? t("m_filter_hint") : t("m_filter_clear"))}</div>`;
   }
   function ui() {
-    root.querySelector(".m3-title").textContent = IMP ? (M.area || t("m_map_title_imp")) : t(RC ? "m_map_title_rc" : "m_map_title");
+    // Title = the current municipality; for an imported map the picked zone is shown only small, in the subtitle.
+    root.querySelector(".m3-title").textContent = IMP ? (api.locName || t("m_map_title_imp")) : t(RC ? "m_map_title_rc" : "m_map_title");
     const nMatched = IMP ? B.filter(b => b.id_site).length : 0;
-    root.querySelector(".m3-sub").textContent = IMP ? t("m_sub_imp", { n: nf(B.length), m: nf(nMatched), u: nf(B.length - nMatched) })
-      : RC ? t("m_sub_rc", { n: nf(B.length), s: nf(new Set(B.map(b => b.site)).size), y: M.year }) : t("m_sub", { n: nf(B.length) });
+    const sub = root.querySelector(".m3-sub");
+    if (IMP) sub.innerHTML = esc(t("m_sub_imp", { n: nf(B.length), m: nf(nMatched), u: nf(B.length - nMatched) }))
+      + (M.area ? ` <span class="m3-zone">· ${esc(M.area)}</span>` : "");
+    else sub.textContent = RC ? t("m_sub_rc", { n: nf(B.length), s: nf(new Set(B.map(b => b.site)).size), y: M.year }) : t("m_sub", { n: nf(B.length) });
     root.querySelector(".m3-search input").placeholder = t(RCLIKE ? "m_search_rc" : "m_search");
     root.querySelector(".m3-layers").innerHTML = LAYER_KEYS.map(k => `<button class="chip ${k === LAYER ? "on" : ""}" data-ml="${k}">${esc(t(RCLIKE && k === "idc" ? "m_l_hi" : "m_l_" + k))}</button>`).join("");
     const mf = root.querySelector(".m3-mfilter");
