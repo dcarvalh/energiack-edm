@@ -14,6 +14,7 @@ bbox = (xmin, ymin, xmax, ymax) in LV95 (EPSG:2056).
 geocode(text) -> [{label, x, y, bbox}] to turn a place name into a zone.
 """
 import array
+import concurrent.futures
 import io
 import json
 import math
@@ -30,8 +31,9 @@ WMS = "https://wms.geo.admin.ch/"
 STAC_ALTI = "https://data.geo.admin.ch/api/stac/v0.9/collections/ch.swisstopo.swissalti3d/items"
 OVERPASS = ["https://overpass-api.de/api/interpreter", "https://overpass.kumi.systems/api/interpreter",
             "https://maps.mail.ru/osm/tools/overpass/api/interpreter", "https://overpass.private.coffee/api/interpreter"]
-OSM_BUDGET_S = 75          # total best-effort budget for OSM footprints; past it, remaining blocks keep the square shape
-OSM_CALL_S = 18            # per-Overpass-call timeout, so a slow mirror can't stall the whole import
+OSM_BUDGET_PER_TILE_S = 12  # best-effort OSM budget scales with the number of ~1 km sub-boxes (big zones get more time)
+OSM_BUDGET_MAX_S = 180      # but never spend more than this on footprints; the rest keep the square shape
+OSM_CALL_S = 30            # per-Overpass-call timeout, so a slow mirror can't stall the whole import
 GWR_LAYER = "ch.bfs.gebaeude_wohnungs_register"
 IDENTIFY_CAP = 200          # the identify endpoint returns at most ~200 features per call
 MAX_TILES = 6               # aerial tiles per side (bounds the fetch); large zones are split into several blocks
@@ -90,36 +92,45 @@ def _osm_footprints(bbox, progress=None, p0=0, p1=0):
     Returns a find(E, N) -> ring|None lookup and the footprint count. ([], 0) if OSM is unreachable.
     The Overpass query is TILED (~1 km sub-boxes) so a big zone does not blow the per-query timeout/limit."""
     xmin, ymin, xmax, ymax = bbox
-    # ~2 km sub-boxes: few enough calls to stay under Overpass's fair-use rate limit, small enough not to time out.
-    sub = max(1, math.ceil(max(xmax - xmin, ymax - ymin) / 2000))
+    # ~1 km sub-boxes: each Overpass query stays light (fast, under the timeout). Tiles are fetched in parallel, each
+    # routed to a different mirror, so a big zone gets good coverage without hammering one endpoint.
+    sub = max(1, math.ceil(max(xmax - xmin, ymax - ymin) / 1000))
     boxes = list(_tile_boxes(xmin, ymin, xmax, ymax, sub))
-    rings = []                                                # (bx0, by0, bx1, by1, ring_lv95)
-    deadline = time.monotonic() + OSM_BUDGET_S                # best-effort: stop asking OSM past this, keep what we have
-    for ti, bx in enumerate(boxes):
-        _report(progress, p0 + (p1 - p0) * ti / len(boxes), "footprints")
+    budget = min(OSM_BUDGET_MAX_S, max(90, OSM_BUDGET_PER_TILE_S * len(boxes)))
+    deadline = time.monotonic() + budget                      # best-effort: stop asking OSM past this, keep what we have
+
+    def fetch_tile(idx_bx):
+        idx, bx = idx_bx
         if time.monotonic() > deadline:
-            break
+            return []
         c0 = _lv95_to_wgs(bx[0], bx[1])
         c1 = _lv95_to_wgs(bx[2], bx[3])
         south, west, north, east = min(c0[1], c1[1]), min(c0[0], c1[0]), max(c0[1], c1[1]), max(c0[0], c1[0])
-        q = f'[out:json][timeout:20];way["building"]({south:.6f},{west:.6f},{north:.6f},{east:.6f});out geom;'
-        elements = None
-        for ep in OVERPASS:
-            if time.monotonic() > deadline:                   # never let the mirror loop push past the budget
+        q = f'[out:json][timeout:25];way["building"]({south:.6f},{west:.6f},{north:.6f},{east:.6f});out geom;'
+        for k in range(len(OVERPASS)):                        # start at a per-tile mirror, then fall back
+            if time.monotonic() > deadline:
                 break
+            ep = OVERPASS[(idx + k) % len(OVERPASS)]
             try:
-                elements = _get(f"{ep}?data={urllib.parse.quote(q)}", timeout=OSM_CALL_S).get("elements", [])  # _get parses JSON
-                break
+                return _get(f"{ep}?data={urllib.parse.quote(q)}", timeout=OSM_CALL_S).get("elements", [])
             except Exception:
                 continue
-        for w in elements or []:
-            g = w.get("geometry")
-            if not g or len(g) < 4:
-                continue
-            ring = [_wgs_to_lv95(p["lon"], p["lat"]) for p in g]
-            xs = [p[0] for p in ring]
-            ys = [p[1] for p in ring]
-            rings.append((min(xs), min(ys), max(xs), max(ys), ring))
+        return []
+
+    rings = []                                                # (bx0, by0, bx1, by1, ring_lv95)
+    done = 0
+    with concurrent.futures.ThreadPoolExecutor(max_workers=min(4, len(boxes))) as ex:
+        for elements in ex.map(fetch_tile, list(enumerate(boxes))):
+            done += 1
+            _report(progress, p0 + (p1 - p0) * done / len(boxes), "footprints")
+            for w in elements or []:
+                g = w.get("geometry")
+                if not g or len(g) < 4:
+                    continue
+                ring = [_wgs_to_lv95(p["lon"], p["lat"]) for p in g]
+                xs = [p[0] for p in ring]
+                ys = [p[1] for p in ring]
+                rings.append((min(xs), min(ys), max(xs), max(ys), ring))
     CELL = 40.0                                               # grid index so point lookup is ~O(1)
     grid = {}
     for i, (bx0, by0, bx1, by1, _) in enumerate(rings):
@@ -156,16 +167,15 @@ def _alti_tiles(bbox, progress=None, p0=0, p1=0):
         sq = it["id"].rsplit("_", 1)[-1]
         if sq not in newest or it["id"] > newest[sq][0]:
             newest[sq] = (it["id"], href)
-    grids = {}
     nan = float("nan")
-    total = len(newest) or 1
-    for ti, (_, href) in enumerate(newest.values()):
-        _report(progress, p0 + (p1 - p0) * ti / total, "terrain")
+    hrefs = [href for _, href in newest.values()]
+    total = len(hrefs) or 1
+
+    def load_tile(href):                                      # download + parse one 1 km XYZ tile -> (key, grid)
         try:
-            raw = _get(href, binary=True)
-            zf = zipfile.ZipFile(io.BytesIO(raw))
+            zf = zipfile.ZipFile(io.BytesIO(_get(href, binary=True)))
             with zf.open(zf.namelist()[0]) as f:
-                g = None
+                g, key = None, None
                 for line in f:
                     parts = line.split()
                     if len(parts) != 3 or parts[0] in (b"X", b"x"):
@@ -177,10 +187,17 @@ def _alti_tiles(bbox, progress=None, p0=0, p1=0):
                     col = min(max((e - te) // ALTI_RES, 0), ALTI_N - 1)
                     row = min(max((n - tn) // ALTI_RES, 0), ALTI_N - 1)
                     g[row * ALTI_N + col] = z
-                if g is not None:
-                    grids[key] = g
+                return (key, g) if g is not None else None
         except Exception:
-            continue
+            return None
+
+    grids, done = {}, 0
+    with concurrent.futures.ThreadPoolExecutor(max_workers=min(6, total)) as ex:
+        for res in ex.map(load_tile, hrefs):
+            done += 1
+            _report(progress, p0 + (p1 - p0) * done / total, "terrain")
+            if res:
+                grids[res[0]] = res[1]
     return grids
 
 
@@ -301,14 +318,14 @@ def _tile_boxes(xmin, ymin, xmax, ymax, n):
 
 
 def _buildings(bbox, progress=None, p0=0, p1=0):
-    """All GWR buildings in bbox, de-duplicated by EGID. Tiles the query to beat the ~200 cap."""
+    """All GWR buildings in bbox, de-duplicated by EGID. Tiles the query to beat the ~200 cap; sub-boxes are
+    fetched in parallel (the identify calls are the slowest part of a big import)."""
     xmin, ymin, xmax, ymax = bbox
     span = max(xmax - xmin, ymax - ymin)
     sub = max(1, math.ceil(span / 300))          # ~300 m sub-boxes keep each call under the cap
-    seen, rows = set(), []
     boxes = list(_tile_boxes(xmin, ymin, xmax, ymax, sub))
-    for bi, bx in enumerate(boxes):
-        _report(progress, p0 + (p1 - p0) * bi / len(boxes), "buildings")
+
+    def fetch_box(bx):
         geom = ",".join(f"{v:.1f}" for v in bx)
         q = urllib.parse.urlencode({
             "geometryType": "esriGeometryEnvelope", "geometry": geom,
@@ -317,23 +334,29 @@ def _buildings(bbox, progress=None, p0=0, p1=0):
             "imageDisplay": "100,100,96", "mapExtent": geom, "tolerance": "0",
         })
         try:
-            res = _get(f"{IDENTIFY}?{q}")
+            return _get(f"{IDENTIFY}?{q}", timeout=40)
         except Exception:
-            continue
-        for f in res.get("results") or res.get("features") or []:
-            p = f.get("properties", {}) or f.get("attributes", {})
-            egid = str(p.get("egid") or "").strip()
-            if not egid or egid in seen:
-                continue
-            seen.add(egid)
-            e, n = p.get("gkode"), p.get("gkodn")       # LV95 easting/northing of the building
-            if e is None or n is None:
-                g = f.get("geometry", {})
-                if g.get("type") == "Point":
-                    e, n = g["coordinates"]
-            if e is None or n is None:
-                continue
-            rows.append({
+            return {}
+
+    seen, rows, done = set(), [], 0
+    with concurrent.futures.ThreadPoolExecutor(max_workers=min(12, len(boxes))) as ex:
+        for res in ex.map(fetch_box, boxes):
+            done += 1
+            _report(progress, p0 + (p1 - p0) * done / len(boxes), "buildings")
+            for f in res.get("results") or res.get("features") or []:
+                p = f.get("properties", {}) or f.get("attributes", {})
+                egid = str(p.get("egid") or "").strip()
+                if not egid or egid in seen:
+                    continue
+                seen.add(egid)
+                e, n = p.get("gkode"), p.get("gkodn")       # LV95 easting/northing of the building
+                if e is None or n is None:
+                    g = f.get("geometry", {})
+                    if g.get("type") == "Point":
+                        e, n = g["coordinates"]
+                if e is None or n is None:
+                    continue
+                rows.append({
                 "egid": egid, "e": float(e), "n": float(n),
                 "garea": p.get("garea"), "gastw": p.get("gastw"),
                 "year": p.get("gbauj") or None,
@@ -343,29 +366,33 @@ def _buildings(bbox, progress=None, p0=0, p1=0):
 
 
 def _aerial(bbox, tiles, px, progress=None, p0=0, p1=0):
-    """One SWISSIMAGE JPEG per tile, passed through as-is. Returns (tiles[], tile_px)."""
+    """One SWISSIMAGE JPEG per tile, passed through as-is. Tiles are fetched in parallel. Returns (tiles[], tile_px)."""
     xmin, ymin, xmax, ymax = bbox
     W, H = xmax - xmin, ymax - ymin
-    out = []
-    tpx = int(round(max(W, H) / tiles / px))
-    tpx = max(256, min(tpx, 1024))
-    done, ntiles = 0, tiles * tiles
-    for i in range(tiles):                               # i = column, west -> east
-        for j in range(tiles):                           # j = row, north -> south (so j=0 sits at terrain row 0 = north)
-            _report(progress, p0 + (p1 - p0) * done / ntiles, "aerial"); done += 1
-            x0, x1 = xmin + i * W / tiles, xmin + (i + 1) * W / tiles
-            y1, y0 = ymax - j * H / tiles, ymax - (j + 1) * H / tiles
-            q = urllib.parse.urlencode({
-                "SERVICE": "WMS", "VERSION": "1.3.0", "REQUEST": "GetMap",
-                "LAYERS": "ch.swisstopo.swissimage", "STYLES": "", "CRS": "EPSG:2056",
-                "BBOX": f"{x0},{y0},{x1},{y1}",
-                "WIDTH": str(tpx), "HEIGHT": str(tpx), "FORMAT": "image/jpeg",
-            })
-            try:
-                jpg = _get(f"{WMS}?{q}", binary=True)
-            except Exception:
-                jpg = b""
-            out.append((i, j, jpg))
+    tpx = max(256, min(int(round(max(W, H) / tiles / px)), 1024))
+    ntiles = tiles * tiles
+    ij = [(i, j) for i in range(tiles) for j in range(tiles)]  # i = column west->east, j = row north->south
+
+    def fetch_tile(ij_):
+        i, j = ij_
+        x0, x1 = xmin + i * W / tiles, xmin + (i + 1) * W / tiles
+        y1, y0 = ymax - j * H / tiles, ymax - (j + 1) * H / tiles
+        q = urllib.parse.urlencode({
+            "SERVICE": "WMS", "VERSION": "1.3.0", "REQUEST": "GetMap",
+            "LAYERS": "ch.swisstopo.swissimage", "STYLES": "", "CRS": "EPSG:2056",
+            "BBOX": f"{x0},{y0},{x1},{y1}", "WIDTH": str(tpx), "HEIGHT": str(tpx), "FORMAT": "image/jpeg",
+        })
+        try:
+            return (i, j, _get(f"{WMS}?{q}", binary=True))
+        except Exception:
+            return (i, j, b"")
+
+    out, done = [], 0
+    with concurrent.futures.ThreadPoolExecutor(max_workers=min(6, ntiles)) as ex:
+        for tile in ex.map(fetch_tile, ij):
+            done += 1
+            _report(progress, p0 + (p1 - p0) * done / ntiles, "aerial")
+            out.append(tile)
     return out, tpx
 
 
