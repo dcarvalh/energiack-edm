@@ -1337,7 +1337,9 @@ async function onImportEvent(j){
     const lr = await fetch("api/localities",{cache:"no-store"}); if (lr.ok) LOCALITIES = await lr.json();
     if (LOC && LOC.slug === j.slug){
       LOC = LOCALITIES.find(l=>l.slug===j.slug) || LOC;
-      if (VIEW === "carte"){ if (MAP){ MAP.destroy(); MAP = null; MAP_LOADING = false; } await loadData(); renderMap(); }
+      // drop the now-stale map so it is rebuilt from the fresh import, whether or not we are on the map view
+      if (MAP){ MAP.destroy(); MAP = null; } MAP_LOADING = false;
+      if (VIEW === "carte"){ await loadData(); renderMap(); }       // on the map view: reload it right away
     }
   } else if (j.state === "error" && prev && prev.state === "running"){
     toast("warn", t("imp_fail", {name: j.name || j.slug}) + (j.error ? " — " + j.error : ""));
@@ -1991,6 +1993,7 @@ async function switchToLocality(slug) {
   LOC = LOCALITIES.find(l => l.slug === slug) || LOC;
   if (!LOC) return;
   try { localStorage.setItem("edm-locality", LOC.slug); } catch(e) {}
+  if (MAP) { MAP.destroy(); MAP = null; MAP_LOADING = false; }   // drop the previous municipality's 3D map
   await loadData(); renderAll();
   location.hash = "#gestion";
 }
@@ -2468,7 +2471,7 @@ let RZ, LASTW = innerWidth;
 window.addEventListener("resize", () => { clearTimeout(RZ); RZ = setTimeout(() => { if (Math.abs(innerWidth - LASTW) < 40 || !D) return; LASTW = innerWidth; const open = document.getElementById("drawer").classList.contains("open"); renderAll(); if (open) reopen(); }, 200); });
 matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", renderAll);
 
-const V = "53";
+const V = "54";
 (async () => {
   try {
     const c = await fetch("api/config.json?v="+V, {cache:"no-store"}).then(r => r.json());
