@@ -12,13 +12,25 @@ The ref tables geneve-ref-climat.csv, geneve-ref-climat-normale.csv, geneve-ref-
 geneve-ref-conversion.csv, geneve-ref-vecteurs.csv already exist (copied from Rive-Claire,
 identical physics/climate) and are NOT touched.
 
-Deterministic: random.seed(42). Standard library only.
+The buildings carry the REAL federal EGIDs of the Geneva Vieille-Ville / centre zone (DEMO_BBOX), fetched once from
+the GWR via tools/fetch_swiss_map.py and cached in geneve/real_buildings_egid.json. Importing the 3D map of the same
+zone then auto-matches the buildings by EGID (map_automatch) and lights them up with this data. Consumption, sites,
+scenarios and CO2 are fictional and flagged "simulated" in the app; only the EGIDs/positions/sizes are real (public GWR).
+
+Deterministic: random.seed(42). Standard library only (fetch_swiss_map is also stdlib).
 
 Run:  python3 tools/make_geneva_fake.py
+
+Wire up the demonstrator (admin, running server):
+  1. POST /api/localities                         {"slug":"geneve","name":"Genève"}
+  2. POST /api/localities/geneve/import           (ZIP of geneve/csv/*.csv)        -> loads data + building.egid
+  3. POST /api/localities/geneve/map/import       {"bbox":"2499600,1117100,2500600,1118100"}  -> auto-matches by EGID
 """
 import csv
+import json
 import math
 import random
+import sys
 from pathlib import Path
 
 random.seed(42)
@@ -27,6 +39,26 @@ ROOT = Path(__file__).resolve().parent.parent
 CSV_DIR = ROOT / "geneve" / "csv"
 
 START_YEAR, N_MONTHS = 2021, 60   # 2021-01 .. 2025-12
+
+# Geneva Vieille-Ville / centre (LV95, ~1 km). The 3D demo imports THIS zone; the dataset's buildings carry the real
+# GWR EGIDs found here so the imported map auto-matches and lights up with this data.
+DEMO_BBOX = (2499600, 1117100, 2500600, 1118100)
+REAL_CACHE = ROOT / "geneve" / "real_buildings_egid.json"
+
+
+def real_buildings():
+    """Real GWR buildings (EGID + LV95 location + footprint area) in the demo zone, biggest first.
+    Cached to a JSON file so the generator stays offline and deterministic after the first fetch."""
+    if REAL_CACHE.exists():
+        return json.loads(REAL_CACHE.read_text(encoding="utf-8"))
+    sys.path.insert(0, str(ROOT / "tools"))
+    import fetch_swiss_map as fsm
+    rows = [r for r in fsm._buildings(DEMO_BBOX) if r.get("egid") and r.get("e") and r.get("n")]
+    for r in rows:
+        r["area"] = r["garea"] if isinstance(r.get("garea"), (int, float)) and r["garea"] else 80.0
+    rows.sort(key=lambda r: r["area"], reverse=True)         # largest footprints first ~ institutional/public
+    REAL_CACHE.write_text(json.dumps(rows, ensure_ascii=False), encoding="utf-8")
+    return rows
 
 
 def months():
@@ -270,7 +302,7 @@ for s in SITES:
 # --------------------------------------------------------------------------
 BAT_HEADER = ["id_batiment", "id_site", "nom_site", "quartier", "typologie", "nom_batiment",
               "annee_construction", "annee_renovation", "sre_m2", "niveaux", "label",
-              "logements", "ouverture", "x_km", "y_km", "remarque"]
+              "logements", "ouverture", "x_km", "y_km", "remarque", "egid"]
 
 
 def gen_batiments():
@@ -302,7 +334,21 @@ def gen_batiments():
                 "x_km": fnum(s["x"]),
                 "y_km": fnum(s["y"]),
                 "remarque": s["remarque"] if bi == 1 else "",
+                "egid": "",
             })
+    # Ground on real GWR buildings: give the biggest real footprints to the biggest sites, carry the real EGID and
+    # a real-relative position (km from the zone SW corner). The imported 3D map of the same zone then auto-matches
+    # by EGID and lights the buildings with this (fictional) data. Unheated rows (parking, street lighting) stay blank.
+    real = real_buildings()
+    heated = sorted((r for r in rows if r["sre_m2"]), key=lambda r: float(r["sre_m2"]), reverse=True)
+    for r, rb in zip(heated, real):
+        r["egid"] = str(rb["egid"])
+        r["x_km"] = fnum(round((rb["e"] - DEMO_BBOX[0]) / 1000, 3))
+        r["y_km"] = fnum(round((rb["n"] - DEMO_BBOX[1]) / 1000, 3))
+    if not real:
+        print("WARNING: no real buildings fetched - EGIDs left blank (map will not auto-match).")
+    else:
+        print(f"  grounded {min(len(heated), len(real))} buildings on real EGIDs from {len(real)} GWR buildings in the demo zone")
     return rows
 
 
@@ -406,6 +452,11 @@ def gen_compteurs_installations():
                         "debut": pv_start, "fin": ""})
             add_inst("pv", "Installation photovoltaïque", "soleil", s["pv"], pv_start,
                      remarque="Puissance en kWc")
+
+        # --- pilot micro wind turbine (light renewable scenario, works depot only) ---
+        if s["typo"] == "Voirie et ateliers":
+            add_inst("eolienne", "Petite éolienne (pilote)", "vent", 15, "2024-05",
+                     remarque="Micro-éolienne pilote de 15 kW (démonstration), production non sous-comptée")
 
         # --- heat source ---
         heat = s["heat"]

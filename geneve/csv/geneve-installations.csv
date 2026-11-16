@@ -32,7 +32,8 @@ G24-I1;G24;electrique_direct;Chauffage électrique direct;électricité;20;2000-
 G25-I1;G25;chaudiere_gaz;Chaudière à gaz;gaz;480;2010-04;;
 G26-I1;G26;chaudiere_gaz;Chaudière à gaz;gaz;280;2000-02;;
 G27-I1;G27;pv;Installation photovoltaïque;soleil;200;2021-09;;Puissance en kWc
-G27-I2;G27;chaudiere_gaz;Chaudière à gaz;gaz;340;2000-02;;
+G27-I2;G27;eolienne;Petite éolienne (pilote);vent;15;2024-05;;Micro-éolienne pilote de 15 kW (démonstration), production non sous-comptée
+G27-I3;G27;chaudiere_gaz;Chaudière à gaz;gaz;340;2000-02;;
 G28-I1;G28;chaudiere_gaz;Chaudière à gaz;gaz;130;2001-09;;
 G29-I1;G29;sous_station_cad;Sous-station de chauffage à distance;chaleur à distance;250;2012-03;;
 G30-I1;G30;chaudiere_mazout;Chaudière à mazout;mazout;260;2000-09;;

@@ -22,7 +22,7 @@ import fetch_swiss_map as geomap  # noqa: E402  (fetch(), geocode(): the nationa
 REF = {
     "batiments": ("building", "id_batiment", [
         "id_batiment", "id_site", "nom_site", "quartier", "typologie", "nom_batiment", "annee_construction",
-        "annee_renovation", "sre_m2", "niveaux", "label", "logements", "ouverture", "x_km", "y_km", "remarque"]),
+        "annee_renovation", "sre_m2", "niveaux", "label", "logements", "ouverture", "x_km", "y_km", "remarque", "egid"]),
     "installations": ("installation", "id_installation", [
         "id_installation", "id_site", "type", "libelle", "vecteur", "puissance_kw", "mise_en_service", "retrait", "remarque"]),
     "compteurs": ("meter", "id_compteur", [
