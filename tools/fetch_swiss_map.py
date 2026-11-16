@@ -43,6 +43,14 @@ def _get(url, binary=False, timeout=90):
     return data if binary else json.loads(data)
 
 
+def _report(progress, pct, step):
+    if progress:
+        try:
+            progress(int(pct), step)
+        except Exception:
+            pass
+
+
 def _lv95_to_wgs(e, n):
     """swisstopo approximate formulas (~1 m), enough for a STAC bbox query. Returns (lon, lat)."""
     y, x = (e - 2600000) / 1e6, (n - 1200000) / 1e6
@@ -51,7 +59,7 @@ def _lv95_to_wgs(e, n):
     return lam * 100 / 36, phi * 100 / 36
 
 
-def _alti_tiles(bbox):
+def _alti_tiles(bbox, progress=None, p0=0, p1=0):
     """Download the swissALTI3D 2 m XYZ tiles covering bbox -> {(tileE,tileN): array('f', 500*500)} (NaN = gap)."""
     xmin, ymin, xmax, ymax = bbox
     lo0, la0 = _lv95_to_wgs(xmin - 50, ymin - 50)
@@ -72,7 +80,9 @@ def _alti_tiles(bbox):
             newest[sq] = (it["id"], href)
     grids = {}
     nan = float("nan")
-    for _, href in newest.values():
+    total = len(newest) or 1
+    for ti, (_, href) in enumerate(newest.values()):
+        _report(progress, p0 + (p1 - p0) * ti / total, "terrain")
         try:
             raw = _get(href, binary=True)
             zf = zipfile.ZipFile(io.BytesIO(raw))
@@ -96,11 +106,11 @@ def _alti_tiles(bbox):
     return grids
 
 
-def _terrain(bbox, tiles):
+def _terrain(bbox, tiles, progress=None, p0=0, p1=0):
     """Real swissALTI3D terrain for bbox. Returns (terrain_bytes, nx, ny, step, zmin, ground(E,N))."""
     xmin, ymin, xmax, ymax = bbox
     W, H = xmax - xmin, ymax - ymin
-    grids = _alti_tiles(bbox)
+    grids = _alti_tiles(bbox, progress, p0, p1)
 
     def sample(e, n):                                     # nearest 2 m post, with a tiny spiral to fill gaps
         te, tn = (int(e) // 1000) * 1000, (int(n) // 1000) * 1000
@@ -178,13 +188,15 @@ def _tile_boxes(xmin, ymin, xmax, ymax, n):
             yield (xmin + c * dx, ymin + r * dy, xmin + (c + 1) * dx, ymin + (r + 1) * dy)
 
 
-def _buildings(bbox):
+def _buildings(bbox, progress=None, p0=0, p1=0):
     """All GWR buildings in bbox, de-duplicated by EGID. Tiles the query to beat the ~200 cap."""
     xmin, ymin, xmax, ymax = bbox
     span = max(xmax - xmin, ymax - ymin)
     sub = max(1, math.ceil(span / 300))          # ~300 m sub-boxes keep each call under the cap
     seen, rows = set(), []
-    for bx in _tile_boxes(xmin, ymin, xmax, ymax, sub):
+    boxes = list(_tile_boxes(xmin, ymin, xmax, ymax, sub))
+    for bi, bx in enumerate(boxes):
+        _report(progress, p0 + (p1 - p0) * bi / len(boxes), "buildings")
         geom = ",".join(f"{v:.1f}" for v in bx)
         q = urllib.parse.urlencode({
             "geometryType": "esriGeometryEnvelope", "geometry": geom,
@@ -218,15 +230,17 @@ def _buildings(bbox):
     return rows
 
 
-def _aerial(bbox, tiles, px):
+def _aerial(bbox, tiles, px, progress=None, p0=0, p1=0):
     """One SWISSIMAGE JPEG per tile, passed through as-is. Returns (tiles[], tile_px)."""
     xmin, ymin, xmax, ymax = bbox
     W, H = xmax - xmin, ymax - ymin
     out = []
     tpx = int(round(max(W, H) / tiles / px))
     tpx = max(256, min(tpx, 1024))
+    done, ntiles = 0, tiles * tiles
     for i in range(tiles):                               # i = column, west -> east
         for j in range(tiles):                           # j = row, north -> south (so j=0 sits at terrain row 0 = north)
+            _report(progress, p0 + (p1 - p0) * done / ntiles, "aerial"); done += 1
             x0, x1 = xmin + i * W / tiles, xmin + (i + 1) * W / tiles
             y1, y0 = ymax - j * H / tiles, ymax - (j + 1) * H / tiles
             q = urllib.parse.urlencode({
@@ -243,17 +257,19 @@ def _aerial(bbox, tiles, px):
     return out, tpx
 
 
-def fetch(bbox, step=16, px=1.0, tiles=1, name=None):
-    """Build the map for a zone. Returns meta, buildings (map-local), flat terrain bytes, aerial tiles."""
+def fetch(bbox, step=16, px=1.0, tiles=1, name=None, progress=None):
+    """Build the map for a zone. Returns meta, buildings (map-local), flat terrain bytes, aerial tiles.
+    progress(pct:int, step:str) is called through the (slow) network stages, 2..96 %."""
     tiles = max(1, min(tiles, MAX_TILES))
     xmin, ymin, xmax, ymax = (float(v) for v in bbox)
     W, H = xmax - xmin, ymax - ymin
+    _report(progress, 2, "start")
 
     # real swissALTI3D terrain (relief); buildings then sit on the ground at their base elevation
-    terrain, nx, ny, step, zmin, ground = _terrain((xmin, ymin, xmax, ymax), tiles)
+    terrain, nx, ny, step, zmin, ground = _terrain((xmin, ymin, xmax, ymax), tiles, progress, 4, 42)
 
     # buildings -> extruded square blocks in map-local metres, raised to the terrain
-    raw = _buildings((xmin, ymin, xmax, ymax))
+    raw = _buildings((xmin, ymin, xmax, ymax), progress, 42, 66)
     buildings = []
     for b in raw:
         x, y = b["e"] - xmin, b["n"] - ymin              # map-local (origin at the SW corner)
@@ -272,7 +288,8 @@ def fetch(bbox, step=16, px=1.0, tiles=1, name=None):
             "use": None, "year": b["year"], "levels": floors, "addr": b["addr"],
         })
 
-    tiles_out, tpx = _aerial((xmin, ymin, xmax, ymax), tiles, px)
+    tiles_out, tpx = _aerial((xmin, ymin, xmax, ymax), tiles, px, progress, 66, 96)
+    _report(progress, 96, "assemble")
     flat = all(v == 0 for v in struct.unpack(f"<{nx * ny}h", terrain))
 
     meta = {

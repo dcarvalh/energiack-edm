@@ -315,9 +315,12 @@ def reimport_bundled(conn, locality_id):
 
 # ── imported 3D map (Swiss geo platform) ──────────────────────────────────────
 
-def map_import(conn, locality_id, bbox, step=16, px=1.0, tiles=1, name=None):
-    """Fetch a zone from geo.admin.ch, store it (replacing any existing map), auto-match, return a summary."""
-    result = geomap.fetch(bbox, step=step, px=px, tiles=tiles, name=name)
+def map_import(conn, locality_id, bbox, step=16, px=1.0, tiles=1, name=None, progress=None):
+    """Fetch a zone from geo.admin.ch, store it (replacing any existing map), auto-match, return a summary.
+    progress(pct, step) is called through the fetch (2..96 %) and the save (97..100 %)."""
+    result = geomap.fetch(bbox, step=step, px=px, tiles=tiles, name=name, progress=progress)
+    if progress:
+        progress(97, "save")
     with conn.transaction(), conn.cursor() as cur:
         cur.execute("DELETE FROM map_import WHERE locality_id = %s", (locality_id,))
         mid = cur.execute(
@@ -333,6 +336,8 @@ def map_import(conn, locality_id, bbox, step=16, px=1.0, tiles=1, name=None):
         cur.executemany(
             "INSERT INTO map_tile (map_import_id, i, j, jpg) VALUES (%s,%s,%s,%s)",
             [(mid, i, j, jpg) for i, j, jpg in result["tiles"]])
+    if progress:
+        progress(99, "match")
     matched = map_automatch(conn, locality_id)
     n = len(result["buildings"])
     return {"n": n, "matched": matched, "unmatched": n - matched, "bbox": bbox}

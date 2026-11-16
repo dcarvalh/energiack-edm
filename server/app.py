@@ -19,9 +19,10 @@ import json
 import os
 
 from fastapi import Depends, FastAPI, File, HTTPException, Request, Response, UploadFile
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
-from . import auth, store
+from . import auth, mapjobs, store
 
 DEMO = os.environ.get("DEMO_LOGIN", "0") == "1"
 app = FastAPI(title="openEDM API", version="2", docs_url=None, redoc_url=None, openapi_url="/api/openapi.json")
@@ -270,15 +271,28 @@ def map_import(slug: str, body: MapImport, u=Depends(need(*auth.FULL)), conn=Dep
     if span > MAX_SPAN_M:
         raise HTTPException(422, f"zone too large (max {MAX_SPAN_M} m per side)")
     tiles = max(1, min(round(span / 1000), 6))            # ~1 km aerial block per tile, so large zones stay detailed
-    try:
-        summary = store.map_import(conn, loc["id"], bbox, tiles=tiles, px=body.px, name=body.name)
-    except Exception as e:
-        raise HTTPException(502, f"map fetch failed: {e}")
-    # Point this locality's map_config at the imported map
-    conn.execute("UPDATE locality SET map_config = %s WHERE id = %s",
-                 (json.dumps({"key": "imported", "dir": f"api/localities/{slug}/map/"}), loc["id"]))
-    conn.commit()
-    return summary
+    # The fetch is slow: run it in the background and report progress over SSE instead of blocking the request.
+    started = mapjobs.start(loc["id"], slug, bbox, tiles, body.px, body.name)
+    if not started:
+        raise HTTPException(409, "an import is already running for this locality")
+    return {"state": "started", "slug": slug}
+
+
+@app.get("/api/localities/{slug}/map/import/status")
+def map_import_status(slug: str, u=Depends(current), conn=Depends(db)):
+    """Current import job for one locality (running | done | error), or idle."""
+    loc = store.locality_by_slug(conn, slug)
+    if not loc:
+        raise HTTPException(404, "locality not found")
+    return mapjobs.get(loc["id"]) or {"state": "idle"}
+
+
+@app.get("/api/map/jobs/stream")
+def map_jobs_stream(u=Depends(current), conn=Depends(db)):
+    """Server-Sent Events: push 3D-map import progress for every locality the user can see. One event per change."""
+    lids = [l["id"] for l in store.localities(conn, u)]
+    return StreamingResponse(mapjobs.sse_stream(lids), media_type="text/event-stream",
+                             headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no", "Connection": "keep-alive"})
 
 
 @app.get("/api/localities/{slug}/map/buildings.json")
