@@ -260,12 +260,12 @@ NO_STORE = {"Cache-Control": "no-store"}   # the imported map changes on every r
 
 
 @app.get("/api/geo/search")
-def geo_search(q: str, u=Depends(need(*auth.FULL))):
-    """Geocode a place name -> candidate zones (label, LV95 centre, bbox). For the UI zone picker."""
+def geo_search(q: str, country: str = "CH", u=Depends(need(*auth.FULL))):
+    """Geocode a place name on the right national platform -> candidate zones. For the UI zone picker."""
     if not q or len(q) < 2:
         return []
     try:
-        return store.geocode(q)
+        return store.geocode(q, country)
     except Exception as e:
         raise HTTPException(502, f"geo search failed: {e}")
 

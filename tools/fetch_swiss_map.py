@@ -222,7 +222,7 @@ def _terrain(bbox, tiles, progress=None, p0=0, p1=0):
 
 
 def geocode(text, limit=6):
-    """Place name -> candidate zones (LV95 centre + bbox)."""
+    """Swiss place name -> candidate zones (LV95 centre + bbox)."""
     q = urllib.parse.urlencode({"searchText": text, "type": "locations", "sr": "2056", "limit": limit})
     out = []
     for r in _get(f"{SEARCH}?{q}").get("results", []):
@@ -239,7 +239,41 @@ def geocode(text, limit=6):
             except ValueError:
                 bb = None
         label = (a.get("label", "") or "").replace("<b>", "").replace("</b>", "").replace("<i>", "").replace("</i>", "")
-        out.append({"label": label.strip(), "x": a.get("y"), "y": a.get("x"), "bbox": bb})  # attrs y=easting, x=northing
+        out.append({"label": label.strip(), "x": a.get("y"), "y": a.get("x"), "bbox": bb, "crs": "EPSG:2056"})
+    return out
+
+
+# Lambert-93 (EPSG:2154) forward projection — so France zones use the same metre-based bbox logic as LV95.
+def _wgs_to_lambert93(lon, lat):
+    a, f = 6378137.0, 1 / 298.257222101
+    e = math.sqrt(2 * f - f * f)
+    lon0, lat0, lat1, lat2 = map(math.radians, (3.0, 46.5, 44.0, 49.0))
+    x0, y0 = 700000.0, 6600000.0
+    def mm(p): return math.cos(p) / math.sqrt(1 - e * e * math.sin(p) ** 2)
+    def tt(p): return math.tan(math.pi / 4 - p / 2) / ((1 - e * math.sin(p)) / (1 + e * math.sin(p))) ** (e / 2)
+    n = (math.log(mm(lat1)) - math.log(mm(lat2))) / (math.log(tt(lat1)) - math.log(tt(lat2)))
+    fF = mm(lat1) / (n * tt(lat1) ** n)
+    r0 = a * fF * tt(lat0) ** n
+    lo, la = math.radians(lon), math.radians(lat)
+    r = a * fF * tt(la) ** n
+    theta = n * (lo - lon0)
+    return x0 + r * math.sin(theta), y0 + r0 - r * math.cos(theta)
+
+
+BAN = "https://api-adresse.data.gouv.fr/search/"
+
+
+def geocode_fr(text, limit=6):
+    """French place name -> candidate zones (Lambert-93 centre + bbox), via the BAN (adresse.data.gouv.fr)."""
+    q = urllib.parse.urlencode({"q": text, "limit": limit})
+    out = []
+    for feat in _get(f"{BAN}?{q}").get("features", []):
+        g = feat.get("geometry", {})
+        p = feat.get("properties", {})
+        if g.get("type") != "Point":
+            continue
+        e, n = _wgs_to_lambert93(g["coordinates"][0], g["coordinates"][1])
+        out.append({"label": p.get("label", "").strip(), "x": round(e, 1), "y": round(n, 1), "bbox": None, "crs": "EPSG:2154"})
     return out
 
 

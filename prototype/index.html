@@ -504,9 +504,13 @@ footer{color:var(--muted);font-size:12px;border-top:1px solid var(--line);margin
             <span data-t="loc_f_name" style="font-size:.85rem;color:#888;display:block;margin-bottom:4px"></span>
             <input id="loc-f-name" type="text" required style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px">
           </label>
-          <label style="display:block;margin-bottom:16px">
+          <label style="display:block;margin-bottom:12px">
             <span data-t="loc_f_slug" style="font-size:.85rem;color:#888;display:block;margin-bottom:4px"></span>
             <input id="loc-f-slug" type="text" required pattern="[a-z0-9-]+" style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px">
+          </label>
+          <label style="display:block;margin-bottom:16px">
+            <span data-t="loc_f_country" style="font-size:.85rem;color:#888;display:block;margin-bottom:4px"></span>
+            <select id="loc-f-country" style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px"></select>
           </label>
           <div class="row" style="gap:8px">
             <button type="submit" class="chip" data-t="loc_f_submit"></button>
@@ -583,13 +587,14 @@ fr:{
   cfg_country_ch:"Territoire Suisse (geo.admin.ch · EGID)", cfg_country_fr:"Territoire France (IGN · RNB)",
   cfg_country_fr_hint:"Source IGN Géoplateforme (BD TOPO / RNB) — en préparation.", cfg_saved:"Préférence enregistrée.", cfg_err:"Échec de l'enregistrement.",
   loc_create_title:"Créer une localité", loc_f_name:"Nom affiché", loc_f_slug:"Identifiant (slug, ex : ma-commune, lettres minuscules et tirets)",
+  loc_f_country:"Pays / plateforme", country_ch_name:"Suisse (geo.admin.ch)", country_fr_name:"France (IGN / BAN)", loc_h_country:"Pays",
   loc_f_submit:"Créer", loc_f_cancel:"Annuler",
   loc_h_name:"Nom", loc_h_slug:"Slug", loc_h_data:"Données chargées", loc_h_actions:"Actions",
   loc_no_data:"Aucun import",
   loc_created:"Localité créée.", loc_create_err:"Erreur lors de la création.",
   loc_readings:"{n} relevés", loc_active:"actif", loc_open:"Ouvrir",
   loc_map_btn:"Carte 3D…", loc_map_tip:"Importer une carte 3D réelle depuis geo.admin.ch et la rattacher aux sites",
-  mi_title:"Importer une carte 3D", mi_sub:"Choisissez une zone sur la plateforme suisse (geo.admin.ch)",
+  mi_title:"Importer une carte 3D", mi_sub:"Choisissez une zone à importer (recherche sur la plateforme du pays)",
   mi_search:"Rechercher un lieu", mi_search_ph:"Commune, quartier, rue…", mi_noresult:"Aucun résultat",
   mi_scale:"Taille de la zone", mi_scale_s:"Petite (≈600 m)", mi_scale_m:"Moyenne (≈1 km)", mi_scale_l:"Grande (≈2 km)",
   mi_scale_xl:"Très grande (≈3 km)", mi_scale_xxl:"Maximale (≈5 km)",
@@ -769,13 +774,14 @@ en:{
   cfg_country_ch:"Swiss territory (geo.admin.ch · EGID)", cfg_country_fr:"French territory (IGN · RNB)",
   cfg_country_fr_hint:"IGN Géoplateforme source (BD TOPO / RNB) — in preparation.", cfg_saved:"Preference saved.", cfg_err:"Could not save.",
   loc_create_title:"Create a locality", loc_f_name:"Display name", loc_f_slug:"Identifier (slug, e.g. my-municipality, lowercase letters and dashes)",
+  loc_f_country:"Country / platform", country_ch_name:"Switzerland (geo.admin.ch)", country_fr_name:"France (IGN / BAN)", loc_h_country:"Country",
   loc_f_submit:"Create", loc_f_cancel:"Cancel",
   loc_h_name:"Name", loc_h_slug:"Slug", loc_h_data:"Loaded data", loc_h_actions:"Actions",
   loc_no_data:"No import yet",
   loc_created:"Locality created.", loc_create_err:"Error creating locality.",
   loc_readings:"{n} readings", loc_active:"active", loc_open:"Open",
   loc_map_btn:"3D map…", loc_map_tip:"Import a real 3D map from geo.admin.ch and match it to the sites",
-  mi_title:"Import a 3D map", mi_sub:"Pick a zone on the Swiss platform (geo.admin.ch)",
+  mi_title:"Import a 3D map", mi_sub:"Pick a zone to import (search on the country platform)",
   mi_search:"Search a place", mi_search_ph:"Municipality, district, street…", mi_noresult:"No result",
   mi_scale:"Zone size", mi_scale_s:"Small (≈600 m)", mi_scale_m:"Medium (≈1 km)", mi_scale_l:"Large (≈2 km)",
   mi_scale_xl:"Very large (≈3 km)", mi_scale_xxl:"Maximum (≈5 km)",
@@ -1829,7 +1835,7 @@ function renderLocalities(){
       <th>${esc(t("loc_h_name"))}</th><th>${esc(t("loc_h_slug"))}</th>
       <th>${esc(t("loc_h_data"))}</th><th>${esc(t("loc_h_actions"))}</th>
     </tr></thead><tbody>${list.map(l => `<tr>
-      <td><b>${esc(l.name)}</b>${LOC?.slug===l.slug ? ` <span class="pill p-ren" style="font-style:normal">${esc(t("loc_active"))}</span>`:""}</td>
+      <td><b>${esc(l.name)}</b> <span class="pill" style="font-style:normal;background:var(--surface-2)">${l.country==="FR"?"🇫🇷 FR":"🇨🇭 CH"}</span>${LOC?.slug===l.slug ? ` <span class="pill p-ren" style="font-style:normal">${esc(t("loc_active"))}</span>`:""}</td>
       <td><code>${esc(l.slug)}</code></td>
       <td id="loc-st-${esc(l.slug)}">${esc(t("loc_no_data"))}</td>
       <td style="white-space:nowrap">
@@ -1857,8 +1863,9 @@ function renderLocalities(){
     e.preventDefault();
     const name = document.getElementById("loc-f-name").value.trim();
     const slug = document.getElementById("loc-f-slug").value.trim();
+    const country = (document.getElementById("loc-f-country")||{}).value || "CH";
     try {
-      await api("api/localities", {slug, name}, "POST");
+      await api("api/localities", {slug, name, country}, "POST");
       const lr = await fetch("api/localities",{cache:"no-store"}); if(lr.ok) LOCALITIES = await lr.json();
       msg(t("loc_created")); formCard.classList.add("hide");
       document.getElementById("loc-f-name").value = ""; document.getElementById("loc-f-slug").value = "";
@@ -1883,8 +1890,17 @@ async function renderMapConfig(){
       const r = await fetch("api/settings",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({[cb.dataset.cfg]: cb.checked})});
       if (!r.ok) throw 0;
       m.textContent = t("cfg_saved"); m.style.color = "var(--accent)";
+      populateCountrySelect(s = {...s, [cb.dataset.cfg]: cb.checked});
     } catch(e){ m.textContent = t("cfg_err"); m.style.color = "var(--warn)"; cb.checked = !cb.checked; }
   });
+  populateCountrySelect(s);
+}
+function populateCountrySelect(s){
+  const sel = document.getElementById("loc-f-country"); if (!sel) return;
+  const opts = [];
+  if (s.country_ch !== false) opts.push(`<option value="CH">${esc(t("country_ch_name"))}</option>`);
+  if (s.country_fr) opts.push(`<option value="FR">${esc(t("country_fr_name"))}</option>`);
+  sel.innerHTML = opts.join("") || `<option value="CH">${esc(t("country_ch_name"))}</option>`;
 }
 
 /* ---------------------------------------------------------------- 3D map import (Swiss geo platform) */
@@ -1892,6 +1908,7 @@ let MAP_ZONE = null;   // {bbox:[xmin,ymin,xmax,ymax], label}
 function mapImportDialog(slug, name){
   const modal = document.getElementById("login");
   const fr = LANG==="fr";
+  const country = (LOCALITIES.find(l=>l.slug===slug)||{}).country || "CH";   // search on the right national platform
   MAP_ZONE = null;
   document.getElementById("login-in").innerHTML = `
     <h2 style="margin-bottom:4px">${esc(t("mi_title"))}</h2>
@@ -1940,7 +1957,7 @@ function mapImportDialog(slug, name){
     timer = setTimeout(async () => {
       const text = q.value.trim(); if (text.length < 2) { res.innerHTML=""; return; }
       try {
-        const list = await fetch(`api/geo/search?q=${encodeURIComponent(text)}`).then(r=>r.json());
+        const list = await fetch(`api/geo/search?q=${encodeURIComponent(text)}&country=${country}`).then(r=>r.json());
         res.innerHTML = (list||[]).filter(r=>r.x&&r.y).slice(0,8).map((r,i)=>
           `<button class="chip" style="display:block;width:100%;text-align:left;margin:2px 0" data-cx="${r.x}" data-cy="${r.y}" data-label="${esc(r.label)}">${esc(r.label)}</button>`).join("")
           || `<p class="sub">${esc(t("mi_noresult"))}</p>`;
@@ -2508,7 +2525,7 @@ let RZ, LASTW = innerWidth;
 window.addEventListener("resize", () => { clearTimeout(RZ); RZ = setTimeout(() => { if (Math.abs(innerWidth - LASTW) < 40 || !D) return; LASTW = innerWidth; const open = document.getElementById("drawer").classList.contains("open"); renderAll(); if (open) reopen(); }, 200); });
 matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", renderAll);
 
-const V = "56";
+const V = "57";
 (async () => {
   try {
     const c = await fetch("api/config.json?v="+V, {cache:"no-store"}).then(r => r.json());

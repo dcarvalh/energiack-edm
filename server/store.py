@@ -515,6 +515,6 @@ def map_delete(conn, locality_id):
     conn.commit()
 
 
-def geocode(text):
-    """Place name -> candidate zones (for the UI zone picker)."""
-    return geomap.geocode(text)
+def geocode(text, country="CH"):
+    """Place name -> candidate zones, searched on the right national platform (CH: geo.admin.ch, FR: BAN)."""
+    return geomap.geocode_fr(text) if (country or "CH").upper() == "FR" else geomap.geocode(text)
