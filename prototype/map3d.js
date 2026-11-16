@@ -8,7 +8,7 @@ import { computeBoundsTree, acceleratedRaycast } from "./vendor/three-mesh-bvh.m
 THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
 
-const V = "32";
+const V = "33";
 const GREY = 0xb9bfbb;
 const SEL_COL = 0xff2bbf;   // selected/clicked building: a vivid magenta outline rim
 const SITEHI = 0x2a9df4;    // the other blocks of the selected building's site: a thinner blue outline rim
@@ -149,7 +149,7 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
   const T0 = performance.now();
 
   // ---------------------------------------------------------------- scene
-  const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+  const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance", stencil: true });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(40, 1, 10, 40000);
@@ -233,9 +233,10 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
   const bMat = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });
   const bMesh = new THREE.Mesh(bg, bMat);
   scene.add(bMesh);
-  // Selection outline: a slightly inflated back-face shell of a building draws a crisp coloured rim
-  // around its silhouette WITHOUT recolouring the building, so it keeps its data/metric colour.
-  // Selected block -> thick magenta; the other blocks of its site -> a thinner blue rim.
+  // Selection outline: a coloured rim around the block WITHOUT recolouring it (keeps its data/metric colour).
+  // It is drawn ON TOP of everything (depth test off) so no other block or the ground can hide it. To stay a rim
+  // and not a filled blob, the block's own pixels are first written to the stencil buffer, then the inflated hull
+  // is drawn everywhere EXCEPT those pixels. Selected block -> thick magenta; its site-mates -> a thinner blue rim.
   function hullGeo(biList, thickness) {
     // enforce outward (front) winding per triangle so side:BackSide renders only the far faces = a clean silhouette rim
     // (the building mesh mixes winding — roofs vs walls — which would otherwise fill the whole shell).
@@ -255,22 +256,31 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
     }
     const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(out, 3)); return g;
   }
-  const outlineSite = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial({ color: SITEHI, side: THREE.BackSide }));
-  const outlineSel  = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial({ color: SEL_COL, side: THREE.BackSide }));
-  outlineSite.visible = outlineSel.visible = false; outlineSite.renderOrder = 1; outlineSel.renderOrder = 2;
-  scene.add(outlineSite, outlineSel);
+  // mask: write the block's pixels into the stencil (no colour, no depth). rim: draw the inflated hull on top of
+  // everything, but only where the stencil was NOT set -> a rim that nothing can occlude and that never fills the block.
+  const maskMat = ref => new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false, depthTest: false, side: THREE.DoubleSide,
+    stencilWrite: true, stencilRef: ref, stencilFunc: THREE.AlwaysStencilFunc, stencilZPass: THREE.ReplaceStencilOp });
+  const rimMat = (color, ref) => new THREE.MeshBasicMaterial({ color, depthWrite: false, depthTest: false, side: THREE.DoubleSide,
+    stencilWrite: true, stencilRef: ref, stencilFunc: THREE.NotEqualStencilFunc });
+  const siteMask = new THREE.Mesh(new THREE.BufferGeometry(), maskMat(2));
+  const siteRim  = new THREE.Mesh(new THREE.BufferGeometry(), rimMat(SITEHI, 2));
+  const selMask  = new THREE.Mesh(new THREE.BufferGeometry(), maskMat(1));
+  const selRim   = new THREE.Mesh(new THREE.BufferGeometry(), rimMat(SEL_COL, 1));
+  const rimObjs = [siteMask, siteRim, selMask, selRim];
+  rimObjs.forEach((m, k) => { m.visible = false; m.frustumCulled = false; m.renderOrder = 10 + k; scene.add(m); });
   const SEL_T = 5.0, SITE_T = 2.4;                         // rim thickness (m): selected thick, site-mates thinner
-  function setHull(mesh, biList, thickness) {
-    mesh.geometry.dispose();
-    mesh.geometry = biList.length ? hullGeo(biList, thickness) : new THREE.BufferGeometry();
-    mesh.visible = biList.length > 0;
+  function setGroup(mask, rim, biList, thickness) {
+    mask.geometry.dispose(); rim.geometry.dispose();
+    mask.geometry = biList.length ? hullGeo(biList, 0) : new THREE.BufferGeometry();          // the block itself -> stencil
+    rim.geometry  = biList.length ? hullGeo(biList, thickness) : new THREE.BufferGeometry();  // inflated hull -> rim
+    mask.visible = rim.visible = biList.length > 0;
   }
   const siteOf = b => IMP ? b.id_site : (RC ? b.site : null);
   function updateOutlines() {
-    setHull(outlineSel, SEL >= 0 && !isHidden(SEL) ? [SEL] : [], SEL_T);
+    setGroup(selMask, selRim, SEL >= 0 && !isHidden(SEL) ? [SEL] : [], SEL_T);
     let mates = [];
     if (SEL >= 0) { const sid = siteOf(B[SEL]); if (sid != null) for (let i = 0; i < B.length; i++) if (i !== SEL && siteOf(B[i]) === sid && !isHidden(i)) mates.push(i); }
-    setHull(outlineSite, mates, SITE_T);
+    setGroup(siteMask, siteRim, mates, SITE_T);
   }
   // trees (Rive-Claire scenery, generated): one instanced mesh, not pickable
   let treeMesh = null;
