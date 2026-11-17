@@ -289,6 +289,17 @@ footer{color:var(--muted);font-size:12px;border-top:1px solid var(--line);margin
   .hide-m{display:none}
   h1{font-size:20px}
 }
+/* 30-second tour */
+.tour-block{position:fixed;inset:0;z-index:59}
+.tour-hl{position:fixed;z-index:60;border-radius:10px;box-shadow:0 0 0 9999px rgba(10,12,14,.55);pointer-events:none}
+.tour-box{position:fixed;z-index:61;width:min(330px,calc(100vw - 24px));background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px 16px}
+.tour-box h3{margin:0 0 4px;font-size:14px}
+.tour-box p{margin:0 0 12px;color:var(--muted)}
+.tour-box .tb{display:flex;align-items:center;gap:8px}
+.tour-box .ghost{border:0;background:none;color:var(--muted);cursor:pointer;padding:7px 8px;font-size:13px}
+.tour-n{font-size:12px;color:var(--muted)}
+.tour-offer{right:16px;bottom:16px}
+.tour-offer p{color:var(--text);font-weight:550}
 </style>
 </head>
 <body>
@@ -328,6 +339,7 @@ footer{color:var(--muted);font-size:12px;border-top:1px solid var(--line);margin
   <div class="crumb"><span id="crumb-loc"></span><span aria-hidden="true">/</span><b id="crumb"></b></div>
   <div class="spacer"></div>
   <span class="acct" id="acct"></span>
+  <button class="ib" id="tour-btn" data-ta="tour_btn"><i data-ic="circle-help"></i></button>
   <button class="ib" id="theme-btn" data-ta="theme"><i id="theme-ic"></i></button>
   <div class="seg" role="group" aria-label="Language">
     <button data-lang="fr">FR</button><button data-lang="en">EN</button>
@@ -713,7 +725,15 @@ fr:{
   m_p_boiler:"Chaudière active", m_p_pv:"Production possible", m_p_kwp:"Puissance · surface", m_src:"Sources : données SITG (OCEN, extraction nov. 2026), swisstopo",
   months:"mois", colon:" : ", sites_n:"{n} sites sur {m}",
   nav_g_mun:"Municipalité de travail", loc_btn:"Commune :", nav_g_ops:"Service de l'énergie", nav_g_pub:"Public", side_commune:"",
-  menu:"Menu", theme:"Thème clair ou sombre"
+  menu:"Menu", theme:"Thème clair ou sombre",
+  tour_btn:"Visite guidée de 30 secondes (quittable à tout moment)", tour_offer:"Première visite ? Faites le tour en 30 secondes.",
+  tour_go:"Commencer", tour_skip:"Non merci", tour_next:"Suivant", tour_done:"Terminer", tour_quit:"Quitter",
+  tour_1_t:"À quoi ça sert ?", tour_1:"Une commune possède beaucoup de bâtiments : écoles, salles, piscines. Cet outil montre l'énergie que chacun consomme, ce que ça coûte et ce que ça pollue, pour décider où agir en premier.",
+  tour_2_t:"Les chiffres de l'année", tour_2:"L'énergie utilisée (en kWh, l'unité de votre facture d'électricité), son coût estimé et le CO₂ émis. Les boutons du haut changent l'année.",
+  tour_3_t:"Mois par mois", tour_3:"L'énergie achetée chaque mois, par type. L'hiver monte : c'est le chauffage, là où part l'essentiel de l'énergie.",
+  tour_4_t:"Bâtiment par bâtiment", tour_4:"Les sites sont classés du plus polluant au moins polluant. Les alertes montrent où il vaut la peine d'aller voir. Cliquez sur une ligne pour ouvrir sa fiche.",
+  tour_5_t:"La carte 3D de Genève", tour_5:"Les vrais bâtiments de Genève en 3D (données publiques). Cherchez une adresse, choisissez ce que montrent les couleurs, puis cliquez sur un bâtiment. Les relevés de cette démo sont simulés.",
+  tour_6_t:"Se déplacer sur la carte", tour_6:"Glissez pour déplacer, molette ou deux doigts pour zoomer. Les bâtiments mis en valeur sont ceux de la commune : cliquez-en un pour ouvrir sa fiche.",
 },
 en:{
   notice:"openEDM · data: Energ-IA Transition (CC BY 4.0)",
@@ -881,7 +901,15 @@ en:{
   m_p_boiler:"Active boiler", m_p_pv:"Possible output", m_p_kwp:"Capacity · area", m_src:"Sources: SITG data (OCEN, extracted Nov 2026), swisstopo",
   months:"months", colon:": ", sites_n:"{n} of {m} sites",
   nav_g_mun:"Working municipality", loc_btn:"Municipality:", nav_g_ops:"Energy service", nav_g_pub:"Public", side_commune:"",
-  menu:"Menu", theme:"Light or dark theme"
+  menu:"Menu", theme:"Light or dark theme",
+  tour_btn:"30-second guided tour (quit any time)", tour_offer:"First visit? Take the 30-second tour.",
+  tour_go:"Start", tour_skip:"No thanks", tour_next:"Next", tour_done:"Done", tour_quit:"Quit",
+  tour_1_t:"What is this for?", tour_1:"A town owns many buildings: schools, halls, swimming pools. This tool shows the energy each one uses, what it costs and how much it pollutes, so the town can decide where to act first.",
+  tour_2_t:"The year in numbers", tour_2:"The energy used (in kWh, the unit on your electricity bill), its estimated cost and the CO₂ released. The buttons at the top change the year.",
+  tour_3_t:"Month by month", tour_3:"The energy bought each month, by type. Winter goes up: that is heating, where most of the energy goes.",
+  tour_4_t:"Building by building", tour_4:"Sites are ranked from most to least polluting. Alerts show where a visit is worthwhile. Click a row to open its sheet.",
+  tour_5_t:"The Geneva 3D map", tour_5:"Geneva's real buildings in 3D (public data). Search an address, choose what the colours show, then click a building. The readings in this demo are simulated.",
+  tour_6_t:"Moving around", tour_6:"Drag to move, wheel or two fingers to zoom. Highlighted buildings are the town's own sites: click one to open its sheet.",
 }};
 let LANG = "fr";
 try { LANG = new URLSearchParams(location.search).get("lang") || localStorage.getItem("edm-lang") || (navigator.language||"fr").slice(0,2); } catch(e) {}
@@ -919,6 +947,7 @@ const ICONS = {
   "key-round":'<path d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"/><circle cx="16.5" cy="7.5" r=".5" fill="currentColor"/>',
   "triangle-alert":'<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
   "table-2":'<path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/>',
+  "circle-help":'<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/>',
   "map-pin":'<path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/>',
 };
 const ic = (n) => `<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n]||""}</svg>`;
@@ -2200,7 +2229,84 @@ let RZ, LASTW = innerWidth;
 window.addEventListener("resize", () => { clearTimeout(RZ); RZ = setTimeout(() => { if (Math.abs(innerWidth - LASTW) < 40 || !D) return; LASTW = innerWidth; const open = document.getElementById("drawer").classList.contains("open"); renderAll(); if (open) reopen(); }, 200); });
 matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", renderAll);
 
-const V = "48";
+/* ---------------------------------------------------------------- 30-second tour (welcome bubble + 6 steps, quit at any time) */
+// go/loc: the step first opens that view (and municipality). The Geneva map is its own municipality, so the tour visits it and puts the visitor's choice back if they quit.
+const TOUR = [{}, {sel:"#kpis"}, {sel:"#ch-monthly"}, {sel:"#sites"}, {sel:".m3-card", go:"carte", loc:"geneve-demo"}, {sel:".m3", go:"carte", loc:"geneve-demo"}];
+let TOUR_ON = -1, TOUR_BUSY = false, TOUR_HOME = null, TOUR_VIS = [];
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+const tourShown = (s) => {
+  const e = s.sel && document.querySelector(s.sel); if (!e || !e.getClientRects().length) return false;
+  const r = e.getBoundingClientRect(); return r.right > 0 && r.left < innerWidth;   // hidden view: skip the step
+};
+const tourVisible = (s) => !s.sel || (s.go ? can(s.go) && LOCALITIES.some(l => l.slug === s.loc) : tourShown(s));
+function tourEnd(keepLoc){
+  TOUR_ON = -1; document.getElementById("tour")?.remove();
+  try { localStorage.setItem("edm-tour", "1"); } catch(e) {}
+  const home = TOUR_HOME; TOUR_HOME = null;
+  if (home && !keepLoc) chooseLocality(home);   // the visitor's own municipality comes back
+}
+function tourBox(html){
+  let e = document.getElementById("tour"); if (!e) { e = document.createElement("div"); e.id = "tour"; document.body.appendChild(e); }
+  e.innerHTML = html; return e;
+}
+function tourOffer(){
+  tourBox(`<div class="tour-box tour-offer" role="dialog" aria-label="${esc(t("tour_btn"))}"><p>${esc(t("tour_offer"))}</p><div class="tb"><button class="btn" id="tour-go">${esc(t("tour_go"))}</button><button class="ghost" id="tour-skip">${esc(t("tour_skip"))}</button></div></div>`);
+}
+function tourStart(){
+  tourEnd();
+  if (VIEW !== "gestion" && can("gestion")) { TOUR_BUSY = true; location.hash = "#gestion"; }
+  setTimeout(() => { TOUR_BUSY = false; TOUR_VIS = TOUR.map((s, k) => k).filter(k => tourVisible(TOUR[k])); tourStep(0); }, 150);   // the step list is fixed here, so the count stays right after the view changes
+}
+async function tourGo(s){   // open the step's view and municipality, wait for the (lazy) map
+  TOUR_BUSY = true;
+  document.querySelector(".tour-hl")?.remove(); document.getElementById("tour-next")?.setAttribute("disabled", ""); document.getElementById("tour-out")?.style.setProperty("background", "rgba(10,12,14,.55)");   // dim the page while the view switches
+  try {
+    if (LOC?.slug !== s.loc) { TOUR_HOME ??= LOC?.slug; await chooseLocality(s.loc); }
+    if (VIEW !== s.go) { location.hash = "#" + s.go; await sleep(150); }
+    for (let n = 0; n < 40 && !tourShown(s); n++) await sleep(200);
+    for (let n = 0, h = -1; n < 20; n++) { const k = Math.round(document.querySelector(s.sel).getBoundingClientRect().height); if (k === h) break; h = k; await sleep(200); }   // wait until the map card has finished filling in
+    scrollTo(0, 0);   // the map view starts at the top, whatever the scroll of the previous step
+  } finally { TOUR_BUSY = false; }
+}
+async function tourStep(i){
+  if (TOUR_BUSY) return;
+  const vis = TOUR_VIS;
+  i = vis.find(k => k >= i); if (i === undefined) return tourEnd();
+  const s = TOUR[i]; if (s.go) { await tourGo(s); if (!tourShown(s)) return tourEnd(); }
+  TOUR_ON = i;
+  const pos = vis.indexOf(i), last = pos === vis.length - 1, el = s.sel && document.querySelector(s.sel);
+  if (el && !s.go) el.scrollIntoView({block:"center"});
+  const r = el ? el.getBoundingClientRect() : null, pad = 6;
+  let hl = "top:50%;left:50%;width:0;height:0";
+  if (r) { const tp = Math.max(r.top - pad, 0), lf = Math.max(r.left - pad, 0); hl = `top:${tp}px;left:${lf}px;width:${Math.min(r.right + pad, innerWidth) - lf}px;height:${Math.min(r.bottom + pad, innerHeight) - tp}px`; }
+  const root = tourBox(`<div class="tour-block" id="tour-out"></div><div class="tour-hl" style="${hl}"></div>
+    <div class="tour-box" id="tour-box" role="dialog" aria-label="${esc(t("tour_"+(i+1)+"_t"))}"><h3>${esc(t("tour_"+(i+1)+"_t"))}</h3><p>${esc(t("tour_"+(i+1)))}</p>
+    <div class="tb"><span class="tour-n">${pos + 1}/${vis.length}</span><span class="spacer"></span><button class="ghost" id="tour-quit">${esc(t("tour_quit"))}</button><button class="btn" id="tour-next">${esc(t(last ? "tour_done" : "tour_next"))}</button></div></div>`);
+  const b = root.querySelector("#tour-box"), w = b.offsetWidth, h = b.offsetHeight;
+  let x, y;
+  if (!r) { x = (innerWidth - w) / 2; y = (innerHeight - h) / 2; }
+  else {
+    x = Math.min(Math.max(r.left, 12), innerWidth - w - 12);
+    y = r.bottom + 12; if (y + h > innerHeight - 8) y = r.top - h - 12; if (y < 8 || r.height > innerHeight * .5) y = innerHeight - h - 12;   // big target: box at the bottom
+  }
+  b.style.left = x + "px"; b.style.top = y + "px";
+  root.querySelector("#tour-next").focus();
+}
+document.addEventListener("click", e => {
+  const id = e.target.closest("button")?.id || e.target.id;
+  if (id === "tour-btn" || id === "tour-go") tourStart();
+  else if (id === "tour-skip" || id === "tour-quit" || id === "tour-out") tourEnd();   // quit button, "No thanks", or a click outside the box
+  else if (id === "tour-next") { const last = TOUR_ON >= 0 && !TOUR_VIS.some(k => k > TOUR_ON); last ? tourEnd(true) : tourStep(TOUR_ON + 1); }
+});
+document.addEventListener("keydown", e => { if (e.key === "Escape" && document.getElementById("tour")) tourEnd(); });
+window.addEventListener("hashchange", () => { if (TOUR_ON >= 0 && !TOUR_BUSY) tourEnd(); });
+window.addEventListener("resize", () => { if (TOUR_ON >= 0) tourStep(TOUR_ON); });
+function tourMaybe(){   // first visit only; not in automated checks, not on a deep link
+  try { if (localStorage.getItem("edm-tour") || navigator.webdriver || /^#(site|fiche)\//.test(location.hash)) return; } catch(e) { return; }
+  setTimeout(tourOffer, 1500);
+}
+
+const V = "49";
 (async () => {
   try {
     const c = await fetch("api/config.json?v="+V, {cache:"no-store"}).then(r => r.json());
@@ -2222,7 +2328,7 @@ const V = "48";
       LOC = LOCALITIES.find(l => l.slug === saved) || LOCALITIES[0];
     }
   } catch (e) {}
-  await loadData(); route();
+  await loadData(); route(); tourMaybe();
 })();
 </script>
 </body>
