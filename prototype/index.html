@@ -1668,7 +1668,7 @@ function openLogin(want){
 }
 function closeLogin(){ document.getElementById("login").classList.remove("open"); }
 // Static copy (GitHub Pages): no server, so no upload and no municipality management; say so instead of failing
-const SERVER_URL = "https://openedm.davidcarvalho.work/";
+const SERVER_URL = "https://openedm.isdeveloped.app/";
 function staticOnly(view, title){
   if (SERVER) return false;
   document.getElementById("v-"+view).innerHTML = `<h1>${esc(t(title))}</h1><div class="card" style="max-width:640px"><h2>${esc(t("static_h"))}</h2>
@@ -2306,7 +2306,7 @@ function tourMaybe(){   // first visit only; not in automated checks, not on a d
   setTimeout(tourOffer, 1500);
 }
 
-const V = "49";
+const V = "50";
 (async () => {
   try {
     const c = await fetch("api/config.json?v="+V, {cache:"no-store"}).then(r => r.json());
