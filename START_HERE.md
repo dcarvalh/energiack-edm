@@ -13,7 +13,7 @@ Users: the commune's energy manager first (Manage, site pages, data quality, imp
 residents (Citizens) and a 3D map. Data: the organisers' **fictional** commune Rive-Claire, plus public Geneva
 building data (SITG, swisstopo). Nothing confidential, ever (see "Rules" in `CLAUDE.md`).
 
-- **Server version (main link):** https://openedm.davidcarvalho.work/ (logins, roles, several municipalities;
+- **Server version (main link):** https://openedm.isdeveloped.app/ (logins, roles, several municipalities;
   "Log in" shows one-click demo accounts)
 - **Static copy:** https://dcarvalh.github.io/energiack-edm/ (GitHub Pages, no login; uploading data and managing
   municipalities need the server version, and those pages say so)

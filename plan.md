@@ -82,7 +82,7 @@ hosting, and it **complements** existing tools as an aggregator instead of repla
 | Several municipalities on one server (#43): municipality selector, Municipalities page, ZIP upload into a staging area, row review/edit, commit; 3D map per municipality | merged 14 Nov; checked by CI (`tools/check_stack.sh`, #45). Live: the server answers `/api/localities` with `map_config` (checked 15 Nov) |
 | Pitch deck (`prototype/pitch/`, French only, runs offline) with app clips and two QR codes | done 14 Nov (#33–#46) |
 
-**Main link: the server version** https://openedm.davidcarvalho.work/ (database, logins, roles, one-click demo
+**Main link: the server version** https://openedm.isdeveloped.app/ (database, logins, roles, one-click demo
 accounts; David, 15 Nov). GitHub Pages stays as an open static copy (no login). The old redirect domain is retired.
 Server access and its cost are with David.
 

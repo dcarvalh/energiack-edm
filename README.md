@@ -8,7 +8,7 @@ An open-source Energy Data Management tool (EDM) that a commune **owns**: open d
 or on its own server with a database and logins, and the same format lets communes compare and share. Built at the
 Energ-IACK hackathon, Geneva, 13–14 Nov 2026. **The project goes on after the hackathon: next presentation on Tue 1 Dec 2026.**
 
-**Main link, the server version: https://openedm.davidcarvalho.work/** The app on PostgreSQL, with several
+**Main link, the server version: https://openedm.isdeveloped.app/** The app on PostgreSQL, with several
 municipalities, file imports through a staging area, and four roles (admin, technique, elu, public) enforced by the
 server. "Log in" (top right) shows one-click demo accounts for each role. Fictional data only.
 
@@ -94,7 +94,7 @@ backups: `docs/deploy.md`.
 
 **Live: [French](https://dcarvalh.github.io/energiack-edm/pitch/) (`index.html`) · [English](https://dcarvalh.github.io/energiack-edm/pitch/en.html) (`en.html`)**
 The pitch as a web page: a title slide and six slides, with short clips of the app, small animations and a QR code to
-the server version (openedm.davidcarvalho.work). Both decks use the same clips, recorded with the app in French. A
+the server version (openedm.isdeveloped.app). Both decks use the same clips, recorded with the app in French. A
 change to one deck goes into the other too.
 
 - **Keys:** → / space / click = next, ← (or a click on the left quarter) = back, Home / End, `F` = full screen.
@@ -108,7 +108,7 @@ change to one deck goes into the other too.
 ```bash
 .venv/bin/python tools/record_video.py --shots quality,citizens,sheet --size 1280x720     # data quality, citizen page, building sheet
 .venv/bin/python tools/record_video.py --shots map_ge --size 1200x900                     # Geneva 3D view (sped up 4x with ffmpeg afterwards)
-.venv/bin/python tools/record_video.py --shots access --size 1280x720 --zoom 1.2 --url https://openedm.davidcarvalho.work/   # roles, with the demo logins
+.venv/bin/python tools/record_video.py --shots access --size 1280x720 --zoom 1.2 --url https://openedm.isdeveloped.app/   # roles, with the demo logins
 ```
 
 ## Files
