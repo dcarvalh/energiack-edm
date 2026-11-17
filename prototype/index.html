@@ -2207,7 +2207,7 @@ function renderUsers(){
 }
 document.addEventListener("click", ev => {
   const el = ev.target.closest("[data-lang],[data-y],[data-f],th[data-k],tbody tr[data-id]"); if (!el) return;
-  if (el.dataset.lang){ LANG = el.dataset.lang; try{localStorage.setItem("edm-lang",LANG);}catch(e){} const open = document.getElementById("drawer").classList.contains("open"); renderAll(); if (open) reopen(); }
+  if (el.dataset.lang){ LANG = el.dataset.lang; try{localStorage.setItem("edm-lang",LANG); const u=new URL(location.href); u.searchParams.set("lang",LANG); history.replaceState(history.state,"",u);}catch(e){} const open = document.getElementById("drawer").classList.contains("open"); renderAll(); if (open) reopen(); }
   else if (el.dataset.y){ YEAR = +el.dataset.y; renderManager(); }
   else if (el.dataset.f){ FILTER = el.dataset.f; renderTable(); }
   else if (el.dataset.k){ SORT = {k:el.dataset.k, dir: SORT.k===el.dataset.k ? -SORT.dir : (el.dataset.k==="name"||el.dataset.k==="c"?1:-1)}; renderTable(); }
