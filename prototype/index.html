@@ -1693,7 +1693,7 @@ function renderLocalities(){
       <td id="loc-st-${esc(l.slug)}">${esc(t("loc_no_data"))}</td>
       <td style="white-space:nowrap">
         <button class="chip" style="margin-right:4px" onclick="switchToLocality('${esc(l.slug)}')">${esc(t("loc_open"))}</button>
-        ${list.length > 1 ? `<button class="chip" style="color:var(--warn)" onclick="locDelete('${esc(l.slug)}','${esc(l.name)}')" title="${esc(t('loc_delete_tip'))}">✕</button>` : ""}
+        ${list.length > 1 && !BUILTIN_LOC.includes(l.slug) ? `<button class="chip" style="color:var(--warn)" onclick="locDelete('${esc(l.slug)}','${esc(l.name)}')" title="${esc(t('loc_delete_tip'))}">✕</button>` : ""}
       </td>
     </tr>`).join("")}</tbody></table></div>`;
 
@@ -1726,6 +1726,7 @@ function renderLocalities(){
   };
 }
 
+const BUILTIN_LOC = ["rive-claire", "geneve", "geneve-demo"];  // mirrors store.PROTECTED (server)
 function locDelete(slug, name) {
   // Use the existing login modal as a confirmation dialog
   const modal = document.getElementById("login");
@@ -2306,7 +2307,7 @@ function tourMaybe(){   // first visit only; not in automated checks, not on a d
   setTimeout(tourOffer, 1500);
 }
 
-const V = "49";
+const V = "50";
 (async () => {
   try {
     const c = await fetch("api/config.json?v="+V, {cache:"no-store"}).then(r => r.json());
