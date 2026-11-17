@@ -12,7 +12,7 @@ Energ-IACK hackathon, Geneva, 13–14 Nov 2026. **The project goes on after the 
 municipalities, file imports through a staging area, and four roles (admin, technique, elu, public) enforced by the
 server. "Log in" (top right) shows one-click demo accounts for each role. Fictional data only.
 
-**Open static copy: https://dcarvalh.github.io/energiack-edm/** (FR/EN toggle top right, also `?lang=en`). GitHub
+**Open static copy: https://dcarvalh.github.io/energiack-edm/** (FR/EN toggle top right; direct links `…/fr/` and `…/en/`, also `?lang=en`). GitHub
 Pages, no login, every page visible; Data and Municipalities (upload, manage municipalities) say they need the
 server version, with a link.
 
