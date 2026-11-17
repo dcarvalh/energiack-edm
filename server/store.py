@@ -60,6 +60,10 @@ def localities(conn, user=None):
     return []
 
 
+# Built-in municipalities (seeded by schema.sql): the admin cannot delete them
+PROTECTED = frozenset({"rive-claire", "geneve", "geneve-demo"})
+
+
 def locality_by_slug(conn, slug):
     return conn.execute(
         "SELECT id, slug, name, country, map_config, demo, simulated FROM locality WHERE slug = %s",
