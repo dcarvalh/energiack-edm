@@ -255,7 +255,7 @@ def locality_rejected(slug: str, u=Depends(need(*auth.FULL)), conn=Depends(db)):
 
 # ── Imported 3D map (Swiss geo platform) ─────────────────────────────────────
 
-MAX_SPAN_M = 5000           # cap the zone side (metres) to bound the fetch (large zones are tiled into several blocks)
+MAX_SPAN_M = 10000          # cap the zone side (metres) to bound the fetch (large zones are tiled into several blocks)
 NO_STORE = {"Cache-Control": "no-store"}   # the imported map changes on every re-import: never serve a stale tile/mesh
 
 
@@ -287,7 +287,7 @@ def map_import(slug: str, body: MapImport, u=Depends(need(*auth.FULL)), conn=Dep
     span = max(xmax - xmin, ymax - ymin)
     if span > MAX_SPAN_M:
         raise HTTPException(422, f"zone too large (max {MAX_SPAN_M} m per side)")
-    tiles = max(1, min(round(span / 1000), 6))            # ~1 km aerial block per tile, so large zones stay detailed
+    tiles = max(1, min(round(span / 1000), 10))           # ~1 km aerial block per tile, so large zones stay detailed
     osm = bool(store.get_settings(conn).get("osm_footprints", True))   # admin preference: real OSM footprints on/off
     # The fetch is slow: run it in the background and report progress over SSE instead of blocking the request.
     started = mapjobs.start(loc["id"], slug, bbox, tiles, body.px, body.name, osm=osm, country=loc.get("country") or "CH")

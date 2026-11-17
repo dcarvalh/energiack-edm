@@ -45,17 +45,31 @@ def start(locality_id, slug, bbox, tiles, px, name, osm=True, country="CH"):
         JOBS[locality_id] = {"slug": slug, "name": name, "state": "running", "pct": 0, "step": "queued",
                              "started": time.time(), "updated": time.time()}
 
+    is_ch = (country or "CH").upper() == "CH"
+
     def run():
         conn = store.connect()
         try:
             def prog(pct, step):
                 _set(locality_id, state="running", pct=pct, step=step)
-            summary = store.map_import(conn, locality_id, bbox, tiles=tiles, px=px, name=name, progress=prog, osm=osm, country=country)
+            # Phase 1 — fast square-block map (no OSM for CH): ready to explore as soon as this finishes.
+            summary = store.map_import(conn, locality_id, bbox, tiles=tiles, px=px, name=name, progress=prog,
+                                       osm=(osm and not is_ch), country=country)
             conn.execute("UPDATE locality SET map_config = %s WHERE id = %s",
                          (json.dumps({"key": "imported", "dir": f"api/localities/{slug}/map/"}), locality_id))
             conn.commit()
-            _set(locality_id, state="done", pct=100, step="done",
-                 n=summary["n"], matched=summary["matched"], unmatched=summary["unmatched"])
+            enhance = osm and is_ch
+            _set(locality_id, state="done", pct=100, step="done", n=summary["n"], matched=summary["matched"],
+                 unmatched=summary["unmatched"], fp=("running" if enhance else "none"), fp_pct=0)
+            # Phase 2 — progressively replace blocks with real OSM footprints, biggest building first.
+            if enhance:
+                def fprog(p):
+                    _set(locality_id, fp="running", fp_pct=p)
+                try:
+                    store.map_enhance_footprints(conn, locality_id, fprog)
+                except Exception:
+                    pass
+                _set(locality_id, fp="done", fp_pct=100)
         except Exception as e:                       # noqa: BLE001 - surface any failure to the client
             try:
                 conn.rollback()

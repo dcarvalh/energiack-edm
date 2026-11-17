@@ -597,8 +597,8 @@ fr:{
   mi_title:"Importer une carte 3D", mi_sub:"Choisissez une zone à importer (recherche sur la plateforme du pays)",
   mi_search:"Rechercher un lieu", mi_search_ph:"Commune, quartier, rue…", mi_noresult:"Aucun résultat",
   mi_scale:"Taille de la zone", mi_scale_s:"Petite (≈600 m)", mi_scale_m:"Moyenne (≈1 km)", mi_scale_l:"Grande (≈2 km)",
-  mi_scale_xl:"Très grande (≈3 km)", mi_scale_xxl:"Maximale (≈5 km)",
-  mi_zone:"Zone : {label} · ≈{m} m de côté", mi_big:"Zone étendue : import découpé en plusieurs blocs, cela peut prendre 1 à 2 min.",
+  mi_scale_xl:"Très grande (≈3 km)", mi_scale_xxl:"Étendue (≈5 km)", mi_scale_3xl:"Vaste (≈7 km)", mi_scale_4xl:"Maximale (≈10 km)",
+  mi_zone:"Zone : {label} · ≈{m} m de côté", mi_big:"Zone étendue : import découpé en plusieurs blocs, cela peut prendre plusieurs minutes.",
   mi_import:"Importer la carte 3D", mi_importing:"Import en cours (bâtiments, photo aérienne)…", mi_starting:"Lancement de l'import…",
   mi_done:"{n} bâtiments · {m} rattachés par EGID · {u} à rattacher. Ouverture de la carte…", mi_fail:"Échec :",
   imp_started:"Import de la carte 3D de {name} lancé en arrière-plan.", imp_running:"Import carte 3D · {name}",
@@ -606,6 +606,7 @@ fr:{
   imp_done:"Carte 3D de {name} importée : {n} bâtiments, {m} rattachés.", imp_fail:"Échec de l'import de la carte 3D de {name}.",
   imp_map_wait:"Import de la carte 3D en cours… {pct} %",
   mp_title:"Rattacher à un site", mp_search:"Rechercher un site…", mp_none:"Aucun site",
+  loc_delete_tip:"Supprimer cette localité et toutes ses données",
   loc_delete_confirm:"Supprimer la localité « {name} » et TOUTES ses données (bâtiments, compteurs, mesures, sas) ?\n\nTapez le nom pour confirmer :",
   loc_delete_ok:"Localité supprimée.", loc_delete_err:"Erreur lors de la suppression.",
   loc_delete_mismatch:"Nom incorrect — suppression annulée.",
@@ -784,8 +785,8 @@ en:{
   mi_title:"Import a 3D map", mi_sub:"Pick a zone to import (search on the country platform)",
   mi_search:"Search a place", mi_search_ph:"Municipality, district, street…", mi_noresult:"No result",
   mi_scale:"Zone size", mi_scale_s:"Small (≈600 m)", mi_scale_m:"Medium (≈1 km)", mi_scale_l:"Large (≈2 km)",
-  mi_scale_xl:"Very large (≈3 km)", mi_scale_xxl:"Maximum (≈5 km)",
-  mi_zone:"Zone: {label} · ≈{m} m per side", mi_big:"Wide zone: import is split into several blocks, it can take 1–2 min.",
+  mi_scale_xl:"Very large (≈3 km)", mi_scale_xxl:"Extra large (≈5 km)", mi_scale_3xl:"Huge (≈7 km)", mi_scale_4xl:"Maximum (≈10 km)",
+  mi_zone:"Zone: {label} · ≈{m} m per side", mi_big:"Wide zone: import is split into several blocks, it can take several minutes.",
   mi_import:"Import the 3D map", mi_importing:"Importing (buildings, aerial photo)…", mi_starting:"Starting the import…",
   mi_done:"{n} buildings · {m} matched by EGID · {u} to match. Opening the map…", mi_fail:"Failed:",
   imp_started:"3D map import for {name} started in the background.", imp_running:"3D map import · {name}",
@@ -1317,13 +1318,15 @@ function mapSiteData(sid){
 }
 function mapSiteName(sid){ const s = D.sites.find(x=>x.id===sid); return s ? s.name[LANG] : sid; }
 
+let MAP_RELOAD_CAM = null;   // camera to restore when the imported map is reloaded to show new footprints
 function renderMap(){
   if (MAP || MAP_LOADING) return;
   MAP_LOADING = true;
   const mc = LOC?.map_config;
   const imported = mc?.key === "imported";
-  const mapCfg = imported ? {key:"imported", dir:`api/localities/${LOC.slug}/map/`}
+  const mapCfg = imported ? {key:"imported", dir:`api/localities/${LOC.slug}/map/`, restoreCam: MAP_RELOAD_CAM}
     : (mc?.key && MAPS[mc.key]) ? {key: mc.key, dir: mc.dir} : MAPS.rc;
+  MAP_RELOAD_CAM = null;
   const canMatch = SERVER && USER && (USER.role==="admin" || USER.role==="technique");
   const apiObj = {t, nf, esc, showTip, hideTip, dark:isDark, lang:()=>LANG, locName: (LOC && LOC.name) || (D?.meta?.commune) || "",
     heatIndex:(sid, y)=>(M.sites[sid]||{})[y], siteData:mapSiteData, siteName:mapSiteName, canMatch,
@@ -1367,7 +1370,30 @@ async function onImportEvent(j){
   } else if (j.state === "error" && prev && prev.state === "running"){
     toast("warn", t("imp_fail", {name: j.name || j.slug}) + (j.error ? " — " + j.error : ""));
   }
+  // Progressive footprints (phase 2): the squares map is already shown; as real OSM footprints land in the
+  // background (biggest building first), periodically rebuild the open map to reveal them — keeping the camera.
+  if (LOC && LOC.slug === j.slug && VIEW === "carte"){
+    if (j.state === "done" && j.fp === "running") scheduleFootprintReload(j.slug);
+    else if (j.fp === "done"){ clearFootprintReload(); if (prev && prev.fp === "running") reloadMapKeepCam(); }
+  }
 }
+let FP_RELOAD_TIMER = null;   // periodic rebuild while footprints stream in
+function reloadMapKeepCam(){
+  if (VIEW !== "carte") return;
+  if (!MAP){ renderMap(); return; }
+  try { MAP_RELOAD_CAM = MAP.cam(); } catch(e){ MAP_RELOAD_CAM = null; }
+  MAP.destroy(); MAP = null; MAP_LOADING = false;
+  renderMap();
+}
+function scheduleFootprintReload(slug){
+  if (FP_RELOAD_TIMER) return;
+  FP_RELOAD_TIMER = setInterval(() => {
+    const j = MAP_IMPORTS[LOC && LOC.id];
+    if (!(LOC && LOC.slug === slug && VIEW === "carte" && MAP && j && j.fp === "running")){ clearFootprintReload(); return; }
+    reloadMapKeepCam();
+  }, 30000);
+}
+function clearFootprintReload(){ if (FP_RELOAD_TIMER){ clearInterval(FP_RELOAD_TIMER); FP_RELOAD_TIMER = null; } }
 function markMapButton(){
   const a = document.querySelector('nav a[data-view="carte"]'); if (!a) return;
   const run = LOC && importRunning(LOC.id), j = LOC && MAP_IMPORTS[LOC.id];
@@ -1924,6 +1950,8 @@ function mapImportDialog(slug, name){
         <option value="1000">${esc(t("mi_scale_l"))}</option>
         <option value="1500">${esc(t("mi_scale_xl"))}</option>
         <option value="2500">${esc(t("mi_scale_xxl"))}</option>
+        <option value="3500">${esc(t("mi_scale_3xl"))}</option>
+        <option value="5000">${esc(t("mi_scale_4xl"))}</option>
       </select>
     </label>
     <p id="mi-zone" class="sub" style="margin:0 0 10px"></p>
@@ -2525,7 +2553,7 @@ let RZ, LASTW = innerWidth;
 window.addEventListener("resize", () => { clearTimeout(RZ); RZ = setTimeout(() => { if (Math.abs(innerWidth - LASTW) < 40 || !D) return; LASTW = innerWidth; const open = document.getElementById("drawer").classList.contains("open"); renderAll(); if (open) reopen(); }, 200); });
 matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", renderAll);
 
-const V = "57";
+const V = "60";
 (async () => {
   try {
     const c = await fetch("api/config.json?v="+V, {cache:"no-store"}).then(r => r.json());

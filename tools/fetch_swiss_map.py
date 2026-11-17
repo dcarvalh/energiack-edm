@@ -41,7 +41,7 @@ OSM_CALL_S = 20            # per-Overpass-call timeout: fail a dead mirror fast,
 OSM_CACHE_DIR = os.environ.get("OSM_CACHE_DIR")   # if set, cache OSM footprints per 1 km cell so re-imports are consistent
 GWR_LAYER = "ch.bfs.gebaeude_wohnungs_register"
 IDENTIFY_CAP = 200          # the identify endpoint returns at most ~200 features per call
-MAX_TILES = 6               # aerial tiles per side (bounds the fetch); large zones are split into several blocks
+MAX_TILES = 10              # aerial tiles per side (bounds the fetch); large zones are split into several blocks
 STOREY_M = 3.0              # metres per floor when GASTW is present
 ALTI_RES = 2                # swissALTI3D XYZ grid step (m); one .xyz.zip per 1 km square
 ALTI_N = 1000 // ALTI_RES   # samples per side in a 1 km tile (500)
@@ -193,24 +193,28 @@ def _alti_tiles(bbox, progress=None, p0=0, p1=0):
     total = len(hrefs) or 1
 
     def load_tile(href):                                      # download + parse one 1 km XYZ tile -> (key, grid)
-        try:
-            zf = zipfile.ZipFile(io.BytesIO(_get(href, binary=True)))
-            with zf.open(zf.namelist()[0]) as f:
-                g, key = None, None
-                for line in f:
-                    parts = line.split()
-                    if len(parts) != 3 or parts[0] in (b"X", b"x"):
-                        continue
-                    e = int(float(parts[0])); n = int(float(parts[1])); z = float(parts[2])
-                    te, tn = (e // 1000) * 1000, (n // 1000) * 1000
-                    if g is None:
-                        key = (te, tn); g = array.array("f", [nan]) * (ALTI_N * ALTI_N)
-                    col = min(max((e - te) // ALTI_RES, 0), ALTI_N - 1)
-                    row = min(max((n - tn) // ALTI_RES, 0), ALTI_N - 1)
-                    g[row * ALTI_N + col] = z
-                return (key, g) if g is not None else None
-        except Exception:
-            return None
+        for attempt in range(3):                              # retry: a dropped terrain tile leaves a hole that buries buildings
+            try:
+                zf = zipfile.ZipFile(io.BytesIO(_get(href, binary=True)))
+                with zf.open(zf.namelist()[0]) as f:
+                    g, key = None, None
+                    for line in f:
+                        parts = line.split()
+                        if len(parts) != 3 or parts[0] in (b"X", b"x"):
+                            continue
+                        e = int(float(parts[0])); n = int(float(parts[1])); z = float(parts[2])
+                        te, tn = (e // 1000) * 1000, (n // 1000) * 1000
+                        if g is None:
+                            key = (te, tn); g = array.array("f", [nan]) * (ALTI_N * ALTI_N)
+                        col = min(max((e - te) // ALTI_RES, 0), ALTI_N - 1)
+                        row = min(max((n - tn) // ALTI_RES, 0), ALTI_N - 1)
+                        g[row * ALTI_N + col] = z
+                    return (key, g) if g is not None else None
+            except Exception:
+                if attempt == 2:
+                    return None
+                time.sleep(0.6 * (attempt + 1))
+        return None
 
     grids, done = {}, 0
     with concurrent.futures.ThreadPoolExecutor(max_workers=min(6, total)) as ex:
@@ -245,33 +249,71 @@ def _terrain(bbox, tiles, progress=None, p0=0, p1=0):
                             return v
         return None
 
-    if not grids:                                         # fetch failed -> flat fallback
+    def flat():                                           # fetch failed everywhere -> flat fallback
         nx = ny = tiles + 1
         return struct.pack(f"<{nx * ny}h", *([0] * (nx * ny))), nx, ny, W / (nx - 1), 0.0, (lambda e, n: 0.0)
+
+    if not grids:
+        return flat()
 
     cells = max(tiles, round(max(W, H) / TERRAIN_STEP))   # divisible by tiles -> integer plane segments per tile
     cells = math.ceil(cells / tiles) * tiles
     nx = ny = cells + 1
     step = W / (nx - 1)
-    heights, grid = [], []                                # row 0 = north (N = ymax), to match make_map / terrain.bin
-    last = 0.0
+    raw = []                                              # row 0 = north (N = ymax), to match make_map / terrain.bin
     for r in range(ny):
         n = ymax - r * step
         for c in range(nx):
-            e = xmin + c * step
-            v = sample(e, n)
-            if v is None:
-                v = last
-            last = v
-            grid.append(v); heights.append(v)
-    zmin = math.floor(min(heights))
+            raw.append(sample(xmin + c * step, n))        # None where no terrain tile covers this post
+    known = [v for v in raw if v is not None]
+    if not known:
+        return flat()
+    # Fill holes (a dropped XYZ tile) by spreading neighbouring heights inward, so the surface stays smooth instead of
+    # getting a cliff — and crucially so ground() below matches it, otherwise buildings would sink under a raised patch.
+    grid = _fill_gaps(raw, nx, ny, sum(known) / len(known))
+    zmin = math.floor(min(grid))
 
-    def ground(e, n):
-        v = sample(e, n)
-        return (v if v is not None else zmin) - zmin
+    def ground(e, n):                                     # bilinear on the FINAL grid: a building always sits on the drawn relief
+        fc = min(max((e - xmin) / step, 0.0), nx - 1.0)
+        fr = min(max((ymax - n) / step, 0.0), ny - 1.0)
+        c0, r0 = int(fc), int(fr)
+        c1, r1 = min(c0 + 1, nx - 1), min(r0 + 1, ny - 1)
+        tx, ty = fc - c0, fr - r0
+        top = grid[r0 * nx + c0] * (1 - tx) + grid[r0 * nx + c1] * tx
+        bot = grid[r1 * nx + c0] * (1 - tx) + grid[r1 * nx + c1] * tx
+        return top * (1 - ty) + bot * ty - zmin
 
     terrain = struct.pack(f"<{nx * ny}h", *[int(round((v - zmin) * 10)) for v in grid])
     return terrain, nx, ny, step, float(zmin), ground
+
+
+def _fill_gaps(raw, nx, ny, fillv):
+    """Replace None cells (holes where no terrain tile was available) by iteratively averaging known 4-neighbours, so a
+    missing 1 km tile is filled by its surroundings spreading in rather than left as a cliff. Any cell still unreached
+    (a whole-corner gap) falls back to the mean. Returns a list with no None."""
+    grid = list(raw)
+    missing = [i for i, v in enumerate(grid) if v is None]
+    for _ in range(80):                                   # 80 passes fill a gap ~800 m wide from each edge (a 1 km hole closes)
+        if not missing:
+            break
+        updates, still = [], []
+        for idx in missing:
+            r, c = divmod(idx, nx)
+            acc = k = 0
+            for rr, cc in ((r + 1, c), (r - 1, c), (r, c + 1), (r, c - 1)):
+                if 0 <= rr < ny and 0 <= cc < nx:
+                    v = grid[rr * nx + cc]
+                    if v is not None:
+                        acc += v; k += 1
+            (updates if k else still).append((idx, acc / k) if k else (idx, None))
+        for idx, v in updates:
+            grid[idx] = v
+        if len(still) == len(missing):                    # no progress this pass -> fill the rest with the mean
+            break
+        missing = [idx for idx, _ in still]
+    for idx in missing:
+        grid[idx] = fillv
+    return grid
 
 
 def geocode(text, limit=6):
@@ -338,51 +380,71 @@ def _tile_boxes(xmin, ymin, xmax, ymax, n):
             yield (xmin + c * dx, ymin + r * dy, xmin + (c + 1) * dx, ymin + (r + 1) * dy)
 
 
+def _identify_box(bx):
+    """Raw GWR identify features intersecting one envelope (up to the ~200 cap). [] on error."""
+    geom = ",".join(f"{v:.1f}" for v in bx)
+    q = urllib.parse.urlencode({
+        "geometryType": "esriGeometryEnvelope", "geometry": geom,
+        "layers": f"all:{GWR_LAYER}", "sr": "2056",
+        "geometryFormat": "geojson", "returnGeometry": "true",
+        "imageDisplay": "100,100,96", "mapExtent": geom, "tolerance": "0",
+    })
+    try:
+        res = _get(f"{IDENTIFY}?{q}", timeout=40)
+        return res.get("results") or res.get("features") or []
+    except Exception:
+        return []
+
+
 def _buildings(bbox, progress=None, p0=0, p1=0):
-    """All GWR buildings in bbox, de-duplicated by EGID. Tiles the query to beat the ~200 cap; sub-boxes are
-    fetched in parallel (the identify calls are the slowest part of a big import)."""
+    """All GWR buildings in bbox, de-duplicated by EGID. The identify endpoint returns at most ~200 features per call,
+    so the bbox is tiled into ~300 m sub-boxes AND any sub-box that still comes back full is recursively split into four
+    — otherwise dense city blocks silently lose every building past the 200th. Sub-boxes are fetched in parallel."""
     xmin, ymin, xmax, ymax = bbox
     span = max(xmax - xmin, ymax - ymin)
-    sub = max(1, math.ceil(span / 300))          # ~300 m sub-boxes keep each call under the cap
+    sub = max(1, math.ceil(span / 300))          # ~300 m sub-boxes: usually under the cap, split further where not
     boxes = list(_tile_boxes(xmin, ymin, xmax, ymax, sub))
 
-    def fetch_box(bx):
-        geom = ",".join(f"{v:.1f}" for v in bx)
-        q = urllib.parse.urlencode({
-            "geometryType": "esriGeometryEnvelope", "geometry": geom,
-            "layers": f"all:{GWR_LAYER}", "sr": "2056",
-            "geometryFormat": "geojson", "returnGeometry": "true",
-            "imageDisplay": "100,100,96", "mapExtent": geom, "tolerance": "0",
-        })
-        try:
-            return _get(f"{IDENTIFY}?{q}", timeout=40)
-        except Exception:
-            return {}
+    seen, rows = set(), []
 
-    seen, rows, done = set(), [], 0
-    with concurrent.futures.ThreadPoolExecutor(max_workers=min(12, len(boxes))) as ex:
-        for res in ex.map(fetch_box, boxes):
-            done += 1
-            _report(progress, p0 + (p1 - p0) * done / len(boxes), "buildings")
-            for f in res.get("results") or res.get("features") or []:
-                p = f.get("properties", {}) or f.get("attributes", {})
-                egid = str(p.get("egid") or "").strip()
-                if not egid or egid in seen:
-                    continue
-                seen.add(egid)
-                e, n = p.get("gkode"), p.get("gkodn")       # LV95 easting/northing of the building
-                if e is None or n is None:
-                    g = f.get("geometry", {})
-                    if g.get("type") == "Point":
-                        e, n = g["coordinates"]
-                if e is None or n is None:
-                    continue
-                rows.append({
+    def keep(feats):
+        for f in feats:
+            p = f.get("properties", {}) or f.get("attributes", {})
+            egid = str(p.get("egid") or "").strip()
+            if not egid or egid in seen:
+                continue
+            seen.add(egid)
+            e, n = p.get("gkode"), p.get("gkodn")       # LV95 easting/northing of the building
+            if e is None or n is None:
+                g = f.get("geometry", {})
+                if g.get("type") == "Point":
+                    e, n = g["coordinates"]
+            if e is None or n is None:
+                continue
+            rows.append({
                 "egid": egid, "e": float(e), "n": float(n),
                 "garea": p.get("garea"), "gastw": p.get("gastw"),
                 "year": p.get("gbauj") or None,
                 "addr": (p.get("strname_deinr") or p.get("doffadr") or "").strip() or None,
             })
+
+    done, total = 0, [len(boxes)]
+    with concurrent.futures.ThreadPoolExecutor(max_workers=12) as ex:
+        pending = {ex.submit(_identify_box, bx): bx for bx in boxes}
+        while pending:
+            fut = next(concurrent.futures.as_completed(pending))
+            bx = pending.pop(fut)
+            feats = fut.result()
+            if len(feats) >= IDENTIFY_CAP and (bx[2] - bx[0]) > 40:   # full box -> too dense, split into quarters and retry
+                x0, y0, x1, y1 = bx; mx, my = (x0 + x1) / 2, (y0 + y1) / 2
+                quads = [(x0, y0, mx, my), (mx, y0, x1, my), (x0, my, mx, y1), (mx, my, x1, y1)]
+                total[0] += len(quads)
+                for q in quads:
+                    pending[ex.submit(_identify_box, q)] = q
+            else:
+                keep(feats)
+            done += 1
+            _report(progress, p0 + (p1 - p0) * min(done / total[0], 1.0), "buildings")
     return rows
 
 
@@ -403,10 +465,15 @@ def _aerial(bbox, tiles, px, progress=None, p0=0, p1=0):
             "LAYERS": "ch.swisstopo.swissimage", "STYLES": "", "CRS": "EPSG:2056",
             "BBOX": f"{x0},{y0},{x1},{y1}", "WIDTH": str(tpx), "HEIGHT": str(tpx), "FORMAT": "image/jpeg",
         })
-        try:
-            return (i, j, _get(f"{WMS}?{q}", binary=True))
-        except Exception:
-            return (i, j, b"")
+        for attempt in range(4):                              # the WMS intermittently 400s on a tile; retry so it is not left blank
+            try:
+                data = _get(f"{WMS}?{q}", binary=True)
+                if len(data) > 2000:                          # a real JPEG, not a WMS error page / blank body
+                    return (i, j, data)
+            except Exception:
+                pass
+            time.sleep(0.5 * (attempt + 1))
+        return (i, j, b"")
 
     out, done = [], 0
     with concurrent.futures.ThreadPoolExecutor(max_workers=min(6, ntiles)) as ex:

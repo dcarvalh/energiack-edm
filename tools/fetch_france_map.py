@@ -13,6 +13,7 @@ bbox = (xmin, ymin, xmax, ymax) in Lambert-93 (EPSG:2154).
 import json
 import math
 import struct
+import time
 import urllib.parse
 import urllib.request
 
@@ -23,7 +24,7 @@ ALTI = "https://data.geopf.fr/altimetrie/1.0/calcul/alti/rest/elevation.json"
 BDTOPO = "BDTOPO_V3:batiment"
 ORTHO = "HR.ORTHOIMAGERY.ORTHOPHOTOS"
 STOREY_M = 3.0
-MAX_TILES = 6
+MAX_TILES = 10
 TERRAIN_STEP = 12.0        # target output terrain grid step (m)
 MAX_CELLS = 160            # cap the terrain grid per side (bounds the number of elevation points)
 WFS_PAGE = 1000
@@ -132,24 +133,50 @@ def _terrain(bbox, tiles, progress=None, p0=0, p1=0):
             lons.append(f"{lo:.6f}")
             lats.append(f"{la:.6f}")
         q = "lon=" + "|".join(lons) + "&lat=" + "|".join(lats) + "&resource=ign_rge_alti_wld&zonly=true"
-        try:
-            vals = _get(f"{ALTI}?{q}").get("elevations", [])
-            for j, v in enumerate(vals):
-                if isinstance(v, (int, float)) and v > -1000:
-                    elev[i + j] = float(v)
-        except Exception:
-            pass
+        for attempt in range(3):                             # retry: a dropped batch leaves a terrain hole that distorts the drape
+            try:
+                vals = _get(f"{ALTI}?{q}").get("elevations", [])
+                for j, v in enumerate(vals):
+                    if isinstance(v, (int, float)) and v > -1000:
+                        elev[i + j] = float(v)
+                break
+            except Exception:
+                if attempt < 2:
+                    time.sleep(0.6 * (attempt + 1))
     valid = [v for v in elev if v is not None]
     zmin = math.floor(min(valid)) if valid else 0.0
-    last = zmin
-    grid = []
-    for v in elev:
-        if v is None:
-            v = last
-        last = v
-        grid.append(v)
+    # Fill holes (a failed elevation batch) by spreading neighbouring heights in, so the surface stays smooth rather than
+    # stepping to a stale value — otherwise the orthophoto draped over it looks torn.
+    grid = _fill_gaps(elev, nx, ny, (sum(valid) / len(valid)) if valid else zmin)
     terrain = struct.pack(f"<{nx * ny}h", *[int(round((v - zmin) * 10)) for v in grid])
     return terrain, nx, ny, step, float(zmin)
+
+
+def _fill_gaps(raw, nx, ny, fillv):
+    """Replace None cells (elevation holes) by iteratively averaging known 4-neighbours; anything unreached -> mean."""
+    grid = list(raw)
+    missing = [i for i, v in enumerate(grid) if v is None]
+    for _ in range(80):
+        if not missing:
+            break
+        updates, still = [], []
+        for idx in missing:
+            r, c = divmod(idx, nx)
+            acc = k = 0
+            for rr, cc in ((r + 1, c), (r - 1, c), (r, c + 1), (r, c - 1)):
+                if 0 <= rr < ny and 0 <= cc < nx:
+                    v = grid[rr * nx + cc]
+                    if v is not None:
+                        acc += v; k += 1
+            (updates if k else still).append((idx, acc / k) if k else (idx, None))
+        for idx, v in updates:
+            grid[idx] = v
+        if len(still) == len(missing):
+            break
+        missing = [idx for idx, _ in still]
+    for idx in missing:
+        grid[idx] = fillv
+    return grid
 
 
 def _aerial(bbox, tiles, px, progress=None, p0=0, p1=0):
@@ -168,10 +195,16 @@ def _aerial(bbox, tiles, px, progress=None, p0=0, p1=0):
                 "SERVICE": "WMS", "VERSION": "1.3.0", "REQUEST": "GetMap", "LAYERS": ORTHO, "STYLES": "",
                 "CRS": "EPSG:2154", "BBOX": f"{x0},{y0},{x1},{y1}",
                 "WIDTH": str(tpx), "HEIGHT": str(tpx), "FORMAT": "image/jpeg"})
-            try:
-                jpg = _get(f"{WMS}?{q}", binary=True)
-            except Exception:
-                jpg = b""
+            jpg = b""
+            for attempt in range(4):                          # IGN WMS intermittently 400s on a tile; retry so it is not left blank
+                try:
+                    data = _get(f"{WMS}?{q}", binary=True)
+                    if len(data) > 2000:                      # a real JPEG, not a WMS error page / blank body
+                        jpg = data
+                        break
+                except Exception:
+                    pass
+                time.sleep(0.5 * (attempt + 1))
             out.append((i, j, jpg))
     return out, tpx
 

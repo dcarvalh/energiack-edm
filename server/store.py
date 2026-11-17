@@ -369,6 +369,60 @@ def map_import(conn, locality_id, bbox, step=16, px=1.0, tiles=1, name=None, pro
     return {"n": n, "matched": matched, "unmatched": n - matched, "bbox": bbox}
 
 
+def _ring_centroid_area(ring):
+    """Centroid (x, y) and |area| of a map-local ring (last point == first)."""
+    a = cx = cy = 0.0
+    for i in range(len(ring) - 1):
+        x0, y0 = ring[i]
+        x1, y1 = ring[i + 1]
+        cr = x0 * y1 - x1 * y0
+        a += cr; cx += (x0 + x1) * cr; cy += (y0 + y1) * cr
+    if a == 0:
+        xs = [p[0] for p in ring]; ys = [p[1] for p in ring]
+        return sum(xs) / len(xs), sum(ys) / len(ys), 0.0
+    a *= 0.5
+    return cx / (6 * a), cy / (6 * a), abs(a)
+
+
+def map_enhance_footprints(conn, locality_id, progress=None):
+    """Background pass (after a fast square-block import): fetch real OSM footprints and replace each block's shape
+    in place, BIGGEST building first so the most visible blocks get their true shape first. Swiss zones only
+    (France already imports real BD TOPO footprints). Returns the number of blocks given a real footprint."""
+    mi = conn.execute("SELECT id, meta, bbox FROM map_import WHERE locality_id = %s", (locality_id,)).fetchone()
+    if not mi or (mi["meta"].get("crs") != "EPSG:2056"):
+        return 0
+    xmin, ymin = mi["meta"]["origin"]
+    bbox = tuple(float(v) for v in mi["bbox"].split(","))
+    rows = conn.execute("SELECT id, rings FROM map_building WHERE map_import_id = %s", (mi["id"],)).fetchall()
+    items = []                                                # (area, id, E, N) in LV95, biggest first
+    for r in rows:
+        cx, cy, area = _ring_centroid_area(r["rings"][0])
+        items.append((area, r["id"], xmin + cx, ymin + cy))
+    items.sort(reverse=True)
+
+    find, nf = geomap._osm_footprints(bbox)                   # cached per 1 km cell; find(E,N) -> LV95 ring | None
+    if not nf:
+        return 0
+    updated, batch = 0, []
+    for k, (area, bid, e, n) in enumerate(items):
+        ring = find(e, n)
+        if ring:
+            ml = [[round(px - xmin, 1), round(py - ymin, 1)] for px, py in ring]
+            if ml[0] != ml[-1]:
+                ml.append(ml[0])
+            batch.append((Jsonb([ml]), bid))
+            updated += 1
+        if len(batch) >= 100 or k == len(items) - 1:
+            if batch:
+                with conn.cursor() as cur:
+                    cur.executemany("UPDATE map_building SET rings = %s WHERE id = %s", batch)
+                conn.commit()
+                batch = []
+            if progress:
+                progress(int(100 * (k + 1) / len(items)))
+    return updated
+
+
 def map_automatch(conn, locality_id):
     """Link map buildings to our sites by the federal EGID (stable across re-imports). Two durable sources:
        1) a building row in our data carrying the same EGID -> that building's site

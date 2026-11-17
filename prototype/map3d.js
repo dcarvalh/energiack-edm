@@ -8,7 +8,7 @@ import { computeBoundsTree, acceleratedRaycast } from "./vendor/three-mesh-bvh.m
 THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
 
-const V = "35";
+const V = "37";
 const GREY = 0xb9bfbb;
 const SEL_COL = 0xff2bbf;   // selected/clicked building: a vivid magenta outline rim
 const SITEHI = 0x2a9df4;    // the other blocks of the selected building's site: a thinner blue outline rim
@@ -140,9 +140,10 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
   if (RCLIKE) for (const b of B) enrichHeat(b);
   const [terr, imgs] = await Promise.all([
     fetch(DIR + "terrain.bin?v=" + V).then(r => r.arrayBuffer()).then(b => new Int16Array(b)),
-    Promise.all(Array.from({ length: NT * NT }, (_, k) => new Promise((res, rej) => {
+    Promise.all(Array.from({ length: NT * NT }, (_, k) => new Promise((res) => {
       const i = k % NT, j = Math.floor(k / NT), im = new Image();
-      im.onload = () => res({ i, j, im }); im.onerror = rej; im.src = `${DIR}aerial_${i}_${j}.jpg?v=${V}`;
+      // a single missing/corrupt tile must not blow up the whole map (big zones have many tiles): fall back to a blank
+      im.onload = () => res({ i, j, im }); im.onerror = () => res({ i, j, im: null }); im.src = `${DIR}aerial_${i}_${j}.jpg?v=${V}`;
     }))),
   ]);
   await new Promise(r => setTimeout(r, 30));   // let the "building the scene" text paint
@@ -176,8 +177,10 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
     const p = g.attributes.position;
     for (let r = 0; r <= segY; r++) for (let c = 0; c <= segX; c++) p.setY(r * (segX + 1) + c, hAt(j * segY + r, i * segX + c));
     g.computeVertexNormals();
-    const tex = new THREE.Texture(im); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = renderer.capabilities.getMaxAnisotropy(); tex.needsUpdate = true;
-    const m = new THREE.MeshLambertMaterial({ map: tex }); groundMat.push(m);
+    let m;
+    if (im) { const tex = new THREE.Texture(im); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = renderer.capabilities.getMaxAnisotropy(); tex.needsUpdate = true; m = new THREE.MeshLambertMaterial({ map: tex }); }
+    else m = new THREE.MeshLambertMaterial({ color: 0xcfd6cf });   // tile image unavailable: neutral ground, not a broken texture
+    groundMat.push(m);
     scene.add(new THREE.Mesh(g, m));
   }
   // plinth: a clean base under the map edge, like a physical model
@@ -614,7 +617,9 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
     renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); request();
   });
   ro.observe(stage);
-  camera.position.copy(HOME.pos); controls.target.copy(HOME.target); controls.update();
+  if (cfg.restoreCam) { camera.position.fromArray(cfg.restoreCam.pos); controls.target.fromArray(cfg.restoreCam.target); }
+  else { camera.position.copy(HOME.pos); controls.target.copy(HOME.target); }
+  controls.update();
   theme(); setMode("pan"); ui();
   window.__m3 = { buildMs, lastPick: () => lastPickMs, n: B.length, cam: () => { const s = sph(); return [Math.round(s.radius), +s.phi.toFixed(3), +s.theta.toFixed(3), Math.round(controls.target.x), Math.round(controls.target.z)]; } };   // read by the headless check
   function destroy() {   // before switching map: free the GL context and the page-level listeners
@@ -636,5 +641,6 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
     if (hits[0] !== SEL) { SEL = hits[0]; paintAll(); }
     request();
   }
-  return { relabel: () => ui(), theme, destroy, count: B.length, focusSite };
+  return { relabel: () => ui(), theme, destroy, count: B.length, focusSite,
+           cam: () => ({ pos: camera.position.toArray(), target: controls.target.toArray() }) };
 }
