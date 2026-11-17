@@ -33,7 +33,7 @@ from collections import defaultdict
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-GUIDE = ROOT / "data/rive-claire/EIAK-RC-Guide-Donnees-vf.html"
+GUIDE = ROOT / "rive-claire/EIAK-RC-Guide-Donnees-vf.html"
 TABLES = ("batiments", "installations", "compteurs", "mesures", "ref-climat", "ref-climat-normale", "ref-typologies",
           "ref-conversion", "ref-vecteurs")
 

@@ -259,7 +259,7 @@ def run(tables):
 def _tables():
     import csv
     from pathlib import Path
-    d = Path(__file__).resolve().parent.parent / "data/rive-claire/csv"
+    d = Path(__file__).resolve().parent.parent / "rive-claire/csv"
     names = ("batiments", "installations", "compteurs", "mesures", "ref-conversion", "ref-vecteurs")
     return {n: list(csv.DictReader(open(d / f"rive-claire-{n}.csv", encoding="utf-8-sig"), delimiter=";")) for n in names}
 
