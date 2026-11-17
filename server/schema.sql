@@ -12,6 +12,68 @@ CREATE TABLE IF NOT EXISTS locality (
     created_at timestamptz NOT NULL DEFAULT NOW()
 );
 ALTER TABLE locality ADD COLUMN IF NOT EXISTS demo boolean NOT NULL DEFAULT false;
+-- simulated: real public buildings with simulated readings (Genève démo): the app shows a permanent banner
+ALTER TABLE locality ADD COLUMN IF NOT EXISTS simulated boolean NOT NULL DEFAULT false;
+
+-- The demo locality. First, because the upgrade below attaches the existing rows to it.
+INSERT INTO locality (slug, name, map_config, demo)
+VALUES ('rive-claire', 'Rive-Claire', '{"key":"rc","dir":"map-rc/"}', true)
+ON CONFLICT (slug) DO UPDATE
+  SET map_config = EXCLUDED.map_config,
+      demo       = EXCLUDED.demo
+  WHERE locality.map_config IS NULL OR locality.demo <> EXCLUDED.demo;
+
+-- Geneva: public building data only (SITG, swisstopo), no readings yet. Built in like Rive-Claire, so every server
+-- has it and the 3D map of Geneva is reached by choosing the municipality.
+INSERT INTO locality (slug, name, map_config)
+VALUES ('geneve', 'Genève', '{"key":"ge","dir":"map/"}')
+ON CONFLICT (slug) DO UPDATE
+  SET map_config = EXCLUDED.map_config
+  WHERE locality.map_config IS NULL;
+
+-- Genève (démo): about 40 real buildings of the Geneva map (by EGID) with simulated meters and readings
+-- (tools/make_geneva_fake.py, loaded by server/cli.py seed). Separate from Genève: real and simulated never mix.
+INSERT INTO locality (slug, name, map_config, demo, simulated)
+VALUES ('geneve-demo', 'Genève (démo)', '{"key":"ge","dir":"map/"}', true, true)
+ON CONFLICT (slug) DO UPDATE
+  SET map_config = EXCLUDED.map_config, demo = true, simulated = true
+  WHERE NOT locality.simulated;
+
+-- ── upgrade from the single-municipality version ──────────────────────────────
+-- A database created before localities existed has the tables below without locality_id, and CREATE TABLE IF NOT
+-- EXISTS leaves them as they are. This block runs once on such a database: every existing row goes to Rive-Claire
+-- (the only dataset that version could hold) and the keys get locality_id in front. Nothing is deleted.
+-- tools/check_upgrade.sh tests it on every pull request.
+DO $$
+DECLARE
+    rc_id integer;
+    t     text;
+BEGIN
+    IF to_regclass('import_run') IS NULL OR EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = current_schema() AND table_name = 'import_run' AND column_name = 'locality_id') THEN
+        RETURN;
+    END IF;
+    SELECT id INTO rc_id FROM locality WHERE slug = 'rive-claire';
+    ALTER TABLE reading DROP CONSTRAINT reading_id_compteur_fkey;      -- points at the old meter key, re-added below
+    FOREACH t IN ARRAY ARRAY['import_run', 'building', 'installation', 'meter', 'reference'] LOOP
+        EXECUTE format('ALTER TABLE %I ADD COLUMN locality_id integer REFERENCES locality ON DELETE CASCADE', t);
+        EXECUTE format('UPDATE %I SET locality_id = %s', t, rc_id);
+        EXECUTE format('ALTER TABLE %I ALTER COLUMN locality_id SET NOT NULL', t);
+    END LOOP;
+    ALTER TABLE reading ADD COLUMN locality_id integer;
+    EXECUTE format('UPDATE reading SET locality_id = %s', rc_id);
+    ALTER TABLE reading ALTER COLUMN locality_id SET NOT NULL;
+
+    ALTER TABLE building     DROP CONSTRAINT building_pkey,     ADD PRIMARY KEY (locality_id, id_batiment);
+    ALTER TABLE installation DROP CONSTRAINT installation_pkey, ADD PRIMARY KEY (locality_id, id_installation);
+    ALTER TABLE meter        DROP CONSTRAINT meter_pkey,        ADD PRIMARY KEY (locality_id, id_compteur);
+    ALTER TABLE reference    DROP CONSTRAINT reference_pkey,    ADD PRIMARY KEY (locality_id, name, pos);
+    ALTER TABLE reading      DROP CONSTRAINT reading_pkey,      ADD PRIMARY KEY (locality_id, id_compteur, mois);
+    ALTER TABLE reading ADD FOREIGN KEY (locality_id, id_compteur) REFERENCES meter (locality_id, id_compteur) ON DELETE CASCADE;
+
+    DROP INDEX building_site, installation_site, meter_site, reading_site;   -- re-created below with locality_id
+END $$;
 
 -- ── import runs ───────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS import_run (
@@ -39,6 +101,8 @@ CREATE TABLE IF NOT EXISTS building (
     PRIMARY KEY (locality_id, id_batiment)
 );
 CREATE INDEX IF NOT EXISTS building_site ON building (locality_id, id_site);
+-- optional federal building id (EGID): links a site's building to the public one on the map (plan item 16)
+ALTER TABLE building ADD COLUMN IF NOT EXISTS egid bigint;
 
 CREATE TABLE IF NOT EXISTS installation (
     locality_id      integer NOT NULL REFERENCES locality ON DELETE CASCADE,
@@ -152,11 +216,9 @@ CREATE TABLE IF NOT EXISTS staged_file (
 );
 CREATE INDEX IF NOT EXISTS staged_file_import ON staged_file (staged_import_id);
 
--- ── imported 3D map (Swiss geo platform) ──────────────────────────────────────
+-- ── imported 3D map (Swiss geo platform / France IGN) ─────────────────────────
 -- One imported map per municipality. Buildings are fetched from the national GWR
--- (ch.bfs.gebaeude_wohnungs_register) and matched to our sites by EGID or by hand.
-ALTER TABLE building ADD COLUMN IF NOT EXISTS egid text;
-
+-- (ch.bfs.gebaeude_wohnungs_register) or BD TOPO (France) and matched to our sites by EGID/RNB or by hand.
 CREATE TABLE IF NOT EXISTS map_import (
     id          integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     locality_id integer NOT NULL REFERENCES locality ON DELETE CASCADE,
@@ -200,20 +262,13 @@ CREATE TABLE IF NOT EXISTS map_match (
 );
 
 -- ── seed ──────────────────────────────────────────────────────────────────────
-INSERT INTO locality (slug, name, map_config, demo)
-VALUES ('rive-claire', 'Rive-Claire', '{"key":"rc","dir":"map-rc/"}', true)
-ON CONFLICT (slug) DO UPDATE
-  SET map_config = EXCLUDED.map_config,
-      demo       = EXCLUDED.demo
-  WHERE locality.map_config IS NULL OR locality.demo <> EXCLUDED.demo;
-
--- Grant all existing (non-demo) users access to Rive-Claire.
+-- Grant all existing (non-demo) users access to the built-in municipalities (Rive-Claire, Geneva, Genève démo).
 -- Demo accounts are granted in cli.py AFTER auth.reset_demo() creates them.
 INSERT INTO user_locality (user_id, locality_id, role)
 SELECT u.id, l.id,
     CASE u.role WHEN 'admin' THEN 'admin' WHEN 'technique' THEN 'manager' ELSE 'viewer' END
 FROM app_user u CROSS JOIN locality l
-WHERE l.slug = 'rive-claire' AND u.demo = false
+WHERE l.slug IN ('rive-claire', 'geneve', 'geneve-demo') AND u.demo = false
 ON CONFLICT DO NOTHING;
 
 -- App-wide admin settings (map import preferences): key -> JSON value.

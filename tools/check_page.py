@@ -3,7 +3,8 @@
 Reports JS errors, FR/EN dictionary mismatches, horizontal overflow, and saves screenshots.
 Usage: .venv/bin/python tools/check_page.py [URL] [OUTDIR]
 On the server stack (compose.yaml with DEMO_LOGIN=1), CHECK_ROLE=technique (or admin) logs in first, since Manage
-and Data quality need a role; tools/check_roles.py checks what each role sees.
+and Data quality need a role; tools/check_roles.py checks what each role sees. The server-only views are added for the
+roles that have them: Data (technique, admin), Municipalities and Users (admin). CHECK_ROLE=admin covers every view.
 """
 import os
 import sys
@@ -15,6 +16,8 @@ OUT = Path(sys.argv[2] if len(sys.argv) > 2 else "shots")
 OUT.mkdir(parents=True, exist_ok=True)
 problems = []
 ROLE = os.environ.get("CHECK_ROLE")
+VIEWS = ["accueil", "gestion", "qualite", "citoyens", "carte", "apropos", "site/S01"]
+VIEWS += {"technique": ["donnees"], "admin": ["donnees", "localites", "utilisateurs"]}.get(ROLE, [])
 
 with sync_playwright() as p:
     b = p.chromium.launch(args=["--use-angle=swiftshader", "--enable-unsafe-swiftshader"])
@@ -29,7 +32,7 @@ with sync_playwright() as p:
                 r = page.request.post(URL.rstrip("/") + "/api/demo-login", data={"role": ROLE})
                 assert r.ok, f"demo login as {ROLE} failed: {r.status}"
             for lang in ("fr", "en"):
-                for view in ("accueil", "gestion", "qualite", "citoyens", "carte", "apropos", "site/S01"):
+                for view in VIEWS:
                     if scheme == "dark" and (dev == "phone" or view not in ("gestion", "accueil", "qualite")):
                         continue
                     page.goto(f"{URL}?lang={lang}#{view}")
@@ -38,6 +41,8 @@ with sync_playwright() as p:
                         page.wait_for_selector("#m3 canvas", timeout=60000); page.wait_for_timeout(2000)
                     if view == "site/S01":
                         page.wait_for_selector("#drawer.open")
+                    elif not page.is_visible(f"#v-{view}"):
+                        problems.append(f"{dev} {lang} {view}: the view is not shown")
                     ow = page.evaluate("document.documentElement.scrollWidth - innerWidth")
                     if ow > 1:
                         problems.append(f"{dev} {lang} {view}: horizontal overflow {ow}px")
@@ -64,15 +69,17 @@ with sync_playwright() as p:
                 page.click("[data-lang='en']"); page.wait_for_timeout(300)
                 if "Manage" not in page.inner_text("nav"):
                     problems.append("language toggle did not switch nav to EN")
-                # 3D map: Rive-Claire by default, switch to Geneva and back (one WebGL canvas at a time)
+                # 3D map: one per municipality. Rive-Claire's by default; choosing Geneva shows its map, then back
                 page.goto(URL + "?lang=en#carte"); page.wait_for_selector("#m3 canvas", timeout=60000)
                 page.wait_for_function("window.__m3 && window.__m3.n < 100", timeout=60000)
-                page.click("[data-map='ge']"); page.wait_for_function("window.__m3 && window.__m3.n > 1000", timeout=90000)
+                if page.locator("[data-map]").count():
+                    problems.append("the old map switch is still on the 3D map")
+                page.select_option("#loc-select", "geneve"); page.wait_for_function("window.__m3 && window.__m3.n > 1000", timeout=90000)
                 page.wait_for_timeout(1500); page.screenshot(path=str(OUT / "desk-light-en-carte-geneva.png"))
-                page.click("[data-map='rc']"); page.wait_for_function("window.__m3 && window.__m3.n < 100", timeout=60000)
+                page.select_option("#loc-select", "rive-claire"); page.wait_for_function("window.__m3 && window.__m3.n < 100", timeout=60000)
                 if page.locator("canvas").count() != 1:
-                    problems.append(f"map switch left {page.locator('canvas').count()} canvases")
-                page.evaluate("localStorage.removeItem('energiack-map')")
+                    problems.append(f"municipality switch left {page.locator('canvas').count()} canvases")
+                page.evaluate("localStorage.removeItem('edm-locality')")
             if errs:
                 problems.append(f"{dev} {scheme} JS errors: {errs[:5]}")
             ctx.close()

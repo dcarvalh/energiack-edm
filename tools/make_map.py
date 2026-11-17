@@ -5,9 +5,10 @@ Real public data, fetched once (cached in data/cache/) and cut to the area:
   - heat index IDC, energy carriers, consumption: SITG SCANE_INDICE_MOYENNES_3_ANS (OCEN, open data)
   - boilers (fuel, year, power):                  SITG SCANE_CHAUDIERE
   - solar potential per building:                 SITG OCEN_SOLAIRE_PV_BATIMENT
+  - official addresses:                           SITG CAD_ADRESSE (tools/geneva_addresses.py)
   - terrain: swisstopo swissALTI3D 2 m (STAC)     - aerial photo: swisstopo SWISSIMAGE (WMS), tiled
   - place labels: swisstopo search API
-Simulated (flagged "sim"): electricity and water per building. Not public; Quanthome provides them per EGID.
+Simulated (flagged "sim"): electricity and water per building (no public source).
 
 Run: .venv/bin/python tools/make_map.py [--box xmin,ymin,xmax,ymax] [--out DIR] [--step 8] [--px 0.8] [--tiles 2]
 Outputs: buildings.json, terrain.bin (Int16 dm), aerial_<i>_<j>.jpg
@@ -27,6 +28,8 @@ from pathlib import Path
 import numpy as np
 import rasterio
 from PIL import Image, ImageEnhance
+
+from geneva_addresses import assign, fetch as fetch_addresses
 
 ROOT = Path(__file__).resolve().parent.parent
 ap = argparse.ArgumentParser()
@@ -244,18 +247,15 @@ for f in sitg("CAD_BATIMENT_HORSOL", "egid,hauteur,niveaux_horsol,destination,an
     uses[b["use"]] += 1
     i = idc.get(e)
     if i:
-        b["addr"] = i["adresse"]
         b["idc"] = {"year": i["annee"], "mj_m2": i["indice"], "kwh_m2": round(i["indice"] / 3.6), "sre": i["sre"],
                     "carriers": list(dict.fromkeys(c for c in (i["agent_energetique_1"], i["agent_energetique_2"]) if c)),
                     "kwh": i["quantite_agent_energetique_1"] if i["unite_agent_energetique_1"] == "kWh" else None}
         b["sre"] = i["sre"]
     bl = boilers.get(e)
     if bl:
-        b["addr"] = b.get("addr") or bl[0]["adresse"]
         b["boilers"] = [{"fuel": x["libelle_combustible"], "year": x["annee_chaudiere"], "kw": x["puiss_nom_chaudiere"]} for x in bl]
     s = solar.get(e)
     if s and s["pv_an_tot"]:
-        b["addr"] = b.get("addr") or (s["adresse"] or "").split(" - ")[0]
         b["pv"] = {"kwh": round(s["pv_an_tot"]), "kwp": round(s["p_kwc_tot"] or 0, 1), "m2": round(s["area_pv_tot"] or 0)}
     kind = carrier_kind((((b.get("idc") or {}).get("carriers")) or [None])[0]) or (carrier_kind(bl[0]["libelle_combustible"]) if bl else None)
     if kind:
@@ -268,10 +268,14 @@ for f in sitg("CAD_BATIMENT_HORSOL", "egid,hauteur,niveaux_horsol,destination,an
                     "water_m3": round(floor * WATER_RATE[u] * rnd.uniform(0.7, 1.4))}
     buildings.append({k: v for k, v in b.items() if v is not None})
 
+print("addresses…")
+n_addr = assign(buildings, fetch_addresses((XMIN, YMIN, XMAX, YMAX)), (XMIN, YMIN))
+print(f"  official address by EGID {n_addr['egid']}, by footprint {n_addr['footprint']}, none {n_addr['none']}")
+
 meta = {"area": "Genève centre", "crs": "EPSG:2056", "origin": [XMIN, YMIN], "size": [XMAX - XMIN, YMAX - YMIN],
         "zmin": ZMIN, "terrain": {"nx": nx, "ny": ny, "step": STEP, "scale": 0.1}, "tiles": NT, "labels": labels,
         "sources": {"buildings": "SITG CAD_BATIMENT_HORSOL", "idc": "SITG SCANE_INDICE_MOYENNES_3_ANS (OCEN)",
-                    "boilers": "SITG SCANE_CHAUDIERE", "solar": "SITG OCEN_SOLAIRE_PV_BATIMENT",
+                    "boilers": "SITG SCANE_CHAUDIERE", "addresses": "SITG CAD_ADRESSE (official addresses)", "solar": "SITG OCEN_SOLAIRE_PV_BATIMENT",
                     "terrain": "swisstopo swissALTI3D", "aerial": "swisstopo SWISSIMAGE"},
         "simulated": ["sim.elec_kwh", "sim.water_m3"]}
 (OUT / "buildings.json").write_text(json.dumps({"meta": meta, "buildings": buildings}, ensure_ascii=False, separators=(",", ":")))

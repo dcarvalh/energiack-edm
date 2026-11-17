@@ -1,11 +1,12 @@
 # Team plan · openEDM (Défi 2 « EDM citoyen et souverain »)
 
-Updated 14 Nov 2026, 10:00. What exists and how to run it: `README.md`. What is still missing: see "What's missing" below.
+Updated 15 Nov 2026. What exists and how to run it: `README.md`. What is left: see "To do" below.
 
 ## Deadlines
-- All deliverables before **14:00 on Sat 14 Nov**.
-  Deliverables: prototype, code with declared third-party parts and licences (`THIRD_PARTY.md`), slides, one-page project sheet.
-- Pitch: about 5 minutes, 2 of them video. **Tell a story**, don't list features.
+- Hackathon pitch: done, Sat 14 Nov (deliverables in by 14:00: prototype, code with `THIRD_PARTY.md`, slides, project sheet).
+- **The project goes on. Next presentation: Tue 1 Dec 2026.** Aim: a stable, presentable demo and a repo others
+  can pick up (see "To do").
+- Pitch format so far: about 5 minutes, **tell a story**, don't list features.
 
 ## The pitch in one line
 An EDM a commune owns: one open-source codebase for every commune, open data format, runs on its own server or shared
@@ -78,54 +79,167 @@ hosting, and it **complements** existing tools as an aggregator instead of repla
 | Heat index per site in MJ/m²·yr (#7): Manage table, site page, Rive-Claire map layer with the Geneva IDC classes | done 14 Nov. Approximate, **not weather-corrected**, never called the IDC. Heat-pump heat: heat meter at S09/S12, elsewhere pump electricity × the COP measured that month at S09/S12, marked estimated. No index where heating is direct electric (not metered apart) |
 | Server stack: PostgreSQL + API + Caddy (`compose.yaml`, `server/`, `docs/deploy.md`) | merged 13 Nov night (#23); live since 13 Nov night on one small cloud server (EU), with its own domain and HTTPS since 14 Nov. `data.json` comes from the database, identical to the static build |
 | Logins and roles (#15): admin, technique, élu·e, public; menus filtered, data filtered by the server, Users page, one-click demo accounts | done 14 Nov (#25), live on the server version with demo accounts on; GitHub Pages stays open without login |
+| Several municipalities on one server (#43): municipality selector, Municipalities page, ZIP upload into a staging area, row review/edit, commit; 3D map per municipality | merged 14 Nov; checked by CI (`tools/check_stack.sh`, #45). Live: the server answers `/api/localities` with `map_config` (checked 15 Nov) |
+| Pitch deck (`prototype/pitch/`, French only, runs offline) with app clips and two QR codes | done 14 Nov (#33–#46) |
 
-**Two live copies.** GitHub Pages (static, open, no login; the pitch QR code points there) and the server version
-(database, logins, roles, one-click demo accounts): https://openedm.davidcarvalho.work/ (both links in `README.md`).
+**Main link: the server version** https://openedm.davidcarvalho.work/ (database, logins, roles, one-click demo
+accounts; David, 15 Nov). GitHub Pages stays as an open static copy (no login). The old redirect domain is retired.
 Server access and its cost are with David.
 
 **Hosted version, decided (14 Nov):** one small server running `compose.yaml` (see `docs/deploy.md`); built-in
 accounts, an OpenID Connect server (Keycloak, Authentik, Zitadel) only when a commune wants its own single sign-on.
-Roles per #15. Still open: accounts per commune (several communes on one install), deploys on merge (the server is
-updated by hand), creating accounts from the app.
+Roles per #15. Several communes on one install: done (#43). Still open: deploys on merge (the server is updated by
+hand), resetting passwords from the app.
 
-## What's missing (14 Nov, 10:00)
+## To do (priorities set by David, 15 Nov; one branch + PR each, one session per item)
 
-**For 14:00 today (deliverables):**
-1. Slides: **done, in this repo** as a web deck (`prototype/pitch/`, live at `/pitch/`, runs offline; README › Pitch
-   deck). David chose a silent deck clicked through live, with clips of the app, over a separate video file (14 Nov).
-   The one-page project sheet is not in this repo; nothing about it was checked here.
-2. Which link the pitch shows: Pages (QR code, open) or the server version (logins, demo roles). Both work.
-3. Optional quick wins, not started: weather-corrected heat (the climate data is in `data.json`, unused) and a traffic
-   light per site against its typology (Buyer review below, items 1 and 2).
+**Goal until 1 Dec** (David, 15 Nov): a stable demo he can show and talk about; a repo teammates can
+join and understand quickly (what is done, what is not, what is next); a state anyone, David included, can pick up
+again after weeks away. Not a "polish" pass: no redesign. Effort: S = under an hour, M = about one session, L = several.
+Items 15–19 keep their numbers: their details are under "Public base layer" below.
 
-**Server version, not done:**
-- An admin account for David (real accounts are created on the server: `docs/deploy.md` › Accounts).
-- A budget alert on the cloud account; deploys on merge (the server is updated by hand; the Stack workflow's deploy job
-  is ready but needs SSH secrets).
-- Accounts per commune (today one commune per install), creating accounts and resetting passwords in the app,
-  importing a file from the app (today a server command), corrections with a trace (who, when, why).
+**Now, in this order**
+- ~~**Step 1.**~~ Done 15 Nov: licences and attribution (S): checked the `THIRD_PARTY.md` lines written from memory (three-mesh-bvh,
+   OrbitControls, server stack) and the SITG/swisstopo credit wording against the real sources.
+- ~~**Step 2.**~~ Done 15 Nov (`START_HERE.md`): "Start here" doc (S, new): what openEDM is, what is done and not done, run it in 5 minutes, where each part of the
+   code lives, next steps (points here). Today that is spread across `README.md`, `plan.md`, `CLAUDE.md` and `docs/`.
+   Refresh it at step 9.
+- ~~**Step 3.**~~ Done 15 Nov: Geneva as a built-in municipality (S–M, item 15): seeded with the `map/` map, listed to
+  visitors before it has readings (pages without data say so and point to the map), the admin picks a map when creating
+  a municipality.
+- ~~**Step 4.**~~ Done 15 Nov: one map per municipality (S, David 15 Nov): once Geneva is its own municipality, drop the Rive-Claire /
+  Geneva switch on the 3D tab (`MAPS`, `switchMap` in `prototype/index.html`, the switch in `map3d.js`); the map is
+  the municipality's `map_config`. Clear the old `energiack-map` choice saved in `localStorage`.
+- ~~**Step 5.**~~ Done 15 Nov: a clearer municipality switch, a labelled button in the sidebar and the page header (phones use the header one) (S, David 15 Nov): today it is a small uppercase label over a borderless
+  dropdown at the top of the sidebar (`#loc-select` in `prototype/index.html`), easy to miss; with one municipality
+  it is only a name. Make it visible and explicit: e.g. a labelled button "Municipality: Rive-Claire ▾" (FR/EN) that
+  opens the list, also reachable on phone width; show the current municipality in the page header.
+- ~~**Step 6.**~~ Done 15 Nov: Geneva addresses from SITG `CAD_ADRESSE` (`tools/geneva_addresses.py`, normal-case names): most buildings sharing one address 10 → 2. Without an address 487 → 1933: annexes, garages and building parts with their own EGID that the register gives no address (their old one was the energy record of a group); they show "EGID …". Idea: a "part of <address>" link for them. (M, item 19.) Before step 8, because Genève (démo) shows real addresses.
+- ~~**Step 7.**~~ Done 15 Nov: EGID link (item 16): optional `egid` column in `batiments` (`ALTER TABLE building ADD COLUMN IF NOT EXISTS egid`). On the Geneva map linked buildings get a blue site label, a "Municipality sites" legend filter and an "All data for this site" button; the site page gets a "Public building data" table read from the map. Tested with two fictional Geneva sites linked by hand (no committed data has EGIDs yet: step 8).
+- ~~**Step 8.**~~ Done 15 Nov: Genève (démo) (item 18), built-in municipality `geneve-demo`: 39 real buildings of the Geneva map chosen by SITG use and linked by EGID, plus public lighting; yearly heat = public heat index × floor area (2025 lands at 85-95 % of it: −2 %/yr trend, mild year), electricity and water = the map's simulated values. Permanent banner and a "simulated" tag on every reading-based figure (not on the public building data). Seeded by the server from `geneve/csv/`, static copy `prototype/data-geneve-demo.json` for Pages; `check_stack.sh` asserts both are equal. Fixed on the way: the generator's monthly split gave heat and solar 0.48× their yearly target and electricity and water 2.4×. The climate tables were already Geneva's real ones (checked against MeteoSwiss Genève-Cointrin), nothing to replace.
+- ~~**Step 8a.**~~ Done 15 Nov (David: "one neighbourhood, clustered and highlighted"): the 39 Genève (démo) buildings
+  now sit in one neighbourhood (Plainpalais / Jonction around Boulevard Carl-Vogt, all within 520 m), 32 with the
+  matching SITG use, 7 in a plausible host (`FALLBACK` in `tools/make_geneva_fake.py`). The map opens framed on them
+  with only them lit (legend "Municipality sites", click to show all); site names appear when zoomed in, on hover or
+  when selected. Fixed: that legend key ghosted every building. The server replaces a simulated built-in dataset at
+  each start (`store.load(..., replace=True)`), so old demo sites do not linger. Address check against OpenStreetMap:
+  of 11,869 OSM addresses inside a map footprint, 72.8 % match exactly, 2.9 % same street other number, 10.2 % another
+  street (mostly second entrances of corner and Old Town buildings that SITG does not attach to that EGID; only 0.6 %
+  point to a building 40 m+ away); the 35 demo sites with an OSM address in their footprint all agree.
+- ~~**Step 8b.**~~ Done 15 Nov: building sheets in Genève (démo). On the Geneva map a linked building's panel has
+  "Building sheet" (`#fiche/<id>`) and a "Simulated readings, <year>" block (heat index, energy/m², heat, electricity,
+  solar, water of the site, each tagged "simulated"; `siteYear()` in `prototype/index.html`, same numbers as the
+  sheet) under the public SITG data (not tagged). In the sheet the reading cards carry the "simulated" tag, heating
+  and "other indicators" do not. Fixed on the way: the sheet's month chart called `LOC()` (now the municipality
+  object), so no sheet opened, Rive-Claire's included; after a municipality switch the old map's click listener and
+  a queued frame still ran (`trim` / `addr` errors); the `ecole_primaire` type had no label.
+- ~~**Step 9.**~~ Done 15 Nov: stability pass. On the server version every page works for every role and
+  municipality, FR and EN, desktop and phone width (`tools/check_roles.py` passed; no JS errors). Fixed: every dataset
+  carried Rive-Claire's meta (Genève (démo)'s citizen page said "25,000 residents"): `META` per built-in dataset in
+  `tools/import_rive_claire.py`, none for uploads, and the citizen page shows totals instead of per-resident figures
+  when the population is unknown; the Manage subtitle said "48 sites, 172 meters" for every municipality; the committed
+  `prototype/data.json` was stale (no coverage KPI on Pages); on the static copy Data and Localities showed "Select a
+  municipality" / "Error creating locality": they now say these need the server version, with a link. Left as is:
+  `api/data.json?locality=geneve` answers 503 (no readings yet), which the app reads as "no data yet".
+- **Step 10.** Geneva: estimated instead of simulated (David, 15 Nov). For every simulated value in the Geneva
+  municipalities (the Genève map's electricity and water, and the readings of Genève (démo)), try to estimate the real
+  value from public data (e.g. SITG heat index × floor area, building type and size, published consumption ratios),
+  replace the simulated number with the estimate and label it "estimated" (with its method and source) instead of
+  "simulated". Where no estimate is possible, or its error would likely be large, show "no data" instead of a number.
+  To decide per indicator: which public source, which error is still acceptable.
 
-**Team user stories still open** (GitHub issues): #5 load the challenge data (largely done: import + quality report),
-#6 quality of results, #7 consistent indicators, #8 explore the portfolio and a site, #9 compare without hiding limits,
-#10 political summary, #11 export and hand-over, #12 costs vs a target, #13 AI summary (AI report is off for now),
-#14 heating change review, #16 internal vs publishable indicator, #17 normal-year heat forecast, #18 alert when a month
-leaves the expected range, #19 boiler replacement simulation, #20 combine levers, #26–#29 views per audience
-(decision-maker, citizen, energy manager, analyst). Close the ones the app already covers after checking them.
+**Before 1 Dec, after "Now"**
+- #10 council summary (S–M): choose the year, printable page, quality and limits in it; same numbers as Manage.
+- #11 hand-over (M): CSV of the filtered Manage view; a guide and a formula dictionary; one config file per commune
+  (assumed prices are still in `tools/import_rive_claire.py`).
+- Weather-corrected heat (S–M): degree-days are in `meta.climate`, unused; the +12 % alert on the corrected figure.
+  Show the monthly heat-pump COP (`meta.hp_cop`, used but not displayed).
+- Corrections by an authorised person with a trace (L): who, when, why; median replacements today are automatic.
+- Public-data view for a municipality with no readings (M, item 17).
+- Server: deploys on merge (S–M; the Stack workflow's deploy job needs SSH secrets, David adds them); David's admin
+  account (S). Budget alert (S): likely before 1 Dec, but David may move the server off the cloud account to his own
+  machine (to decide, maybe after 1 Dec).
 
-**Not verified:** three-mesh-bvh / OrbitControls and server-stack licence lines in `THIRD_PARTY.md` (from memory);
-SITG/swisstopo attribution wording; real-phone performance of the 3D map.
+**Later / ideas**
+- #6 quality in Manage (M, L with the part where a person decides between two values for the same meter and month):
+  coverage, estimated and excluded readings for the chosen year; a visible note on an incomplete total.
+- #8 explore (M): choose the fluid, a perimeter (quarter, building type) and months at portfolio level.
+- #9 compare (M): a month vs the same month a year before; absolute difference next to the %; coverage of both periods;
+  alert wording asks a question, never claims a fault.
+- Traffic light per site (M): heat kWh/m² vs its typology average, labelled "approximate".
+- Reset passwords in the app (M): only useful once real users exist.
+- Issue triage (S–M): P0 issues got a status comment on 15 Nov; P1/P2 (#12–#20) and the audience views (#26–#29) not
+  gone through.
 
-## Next steps (keep the UI minimal; FR and EN for every string)
-1. Corrections: negative values and spikes are replaced by the median of the same month in other years (David, 13 Nov).
-   Later: let an authorised person correct a value with a trace (who, when, why).
-2. Indicators: weather-corrected heat index (the raw one is done), dynamic COP shown for heat-pump sites (the monthly COP is in `meta.hp_cop`, used but not displayed).
-3. Targets per site with a traffic light (kWh/m² vs target).
-4. Pitch deck: done (14 Nov), `prototype/pitch/`. Its last slide carries a second QR code, to the server version.
-   Open: the two clips stacked on slides 2 and 3 are small on a projector; an English copy does not exist.
-5. Ideas, not started: consumption breaks after renovations, synergies between buildings, price scenarios; place the
-   fictional commune in a recognisable Geneva neighbourhood on the map.
+**Done or dropped on 15 Nov:** English deck `prototype/pitch/en.html` (reuses the French clips); `README.md` updated
+(project goes on, server = main link); QR codes checked. Dropped: the small stacked pitch clips (the hackathon pitch
+is over; David may make a new deck for 1 Dec) and the real-phone test (David checked it: fine).
 
-## Buyer review (13 Nov evening, not started)
+**Public base layer, Switzerland-wide, Geneva first** (David, 15 Nov). Idea: public building data is the starting point
+every municipality reuses without copying it; what a municipality imports stays its own, linked to the public
+buildings by **EGID** (the federal building ID, already in `prototype/map/buildings.json`). Maps are already shared:
+`map_config` points to a folder, so several municipalities can use `map/` today.
+Decided: a portfolio is a list of EGIDs in the import, not an area drawn on the map (a commune's buildings are
+scattered, and the 3D map is slow without a GPU); the map's extent comes from the commune boundary. Real and
+simulated data never mix in one municipality (David, 15 Nov): the default **Genève** shows only public, true values;
+a separate **Genève (démo)** has a set of real buildings where every reading is simulated, to show the features
+Rive-Claire has (site sheet, meters, history, alerts).
+Goal: adaptable anywhere in Switzerland (David, 15 Nov). Geneva is the first **data pack**, not a special case: a
+municipality points to a pack, the app reads the same map schema whatever the source, and Geneva-only fields are
+optional (the page hides what a pack lacks). EGID is national, so the link in 16 works everywhere. Build each pack in
+two layers: national sources that exist for every commune, plus cantonal extras where a canton publishes them.
+
+| Data | National (every commune) | Geneva extra (SITG, used today) |
+|---|---|---|
+| terrain, aerial photo | swissALTI3D, SWISSIMAGE (used today) | – |
+| footprints, heights | swissBUILDINGS3D (to check: EGID on each building) | CAD_BATIMENT_HORSOL |
+| use, year, heating type, energy source | federal register RegBL/GWR (to check: heating fields, open access) | SCANE_CHAUDIERE (boilers) |
+| solar potential | the federal roof solar layer (sonnendach.ch; to check: per-building values) | OCEN_SOLAIRE_PV_BATIMENT |
+| heat index | none known: only from the commune's own readings | SCANE_INDICE_MOYENNES_3_ANS (IDC) |
+| building addresses | swisstopo official building address directory (by EGID; to check) | CAD_ADRESSE (item 19) |
+| commune boundary | swissBOUNDARIES3D (to check) | – |
+| climate, degree-days | MeteoSwiss open data (to check: station data, licence) | – |
+
+For 1 Dec only Geneva; the code must not assume it (no Geneva names or SITG fields hard-coded outside the pack
+builder `tools/make_map.py`, the IDC threshold applies only where the pack says so).
+15. Geneva as a built-in municipality: seeded in `server/schema.sql` like Rive-Claire, `map_config` → `map/`; the admin
+    chooses the map when creating a municipality (`POST /api/localities` takes slug, name and country only today).
+16. EGID link: optional `egid` column in the `building` import (upgrade step in `schema.sql`, `check_upgrade.sh` must
+    pass; `build()` stays the single format). Linked buildings are highlighted on the map and open their site; the
+    site page shows the public attributes (height, use, heating, heat index, solar). Buildings without EGID work as now.
+17. A public-data view for a municipality with no readings yet (map, heat-index classes, heating mix, solar), since
+    Manage and Citizens need readings. The public municipality list hides a municipality with no import today.
+    This is what the default Genève shows.
+18. Genève (démo): about 40 real buildings on the same `map/` (chosen by use: schools, offices, sports, culture),
+    each with its EGID and fully simulated meters and readings, rebuilt by `tools/make_geneva_fake.py` (today it
+    makes 40 sites that are not linked to the map). Make the simulated values plausible from public attributes: floor
+    area from footprint × levels, yearly heat from the public heat index, monthly split by degree-days (the tables in `geneve/csv/` turned
+    out to be Geneva's real climate already, checked against MeteoSwiss), electricity from assumed kWh/m² per use (labelled "assumed"). On screen: a permanent "simulated
+    data" banner and a "simulated" tag on every figure, never only a footnote, because the addresses are real.
+    Needs 16.
+19. Correct Geneva addresses. Today `tools/make_map.py` takes `addr` from the first energy record with the same EGID
+    (heat index, then boilers, then solar): that is the installation's address, not the building's. In
+    `prototype/map/buildings.json` 10 buildings share "30 Quai du Mont-Blanc", formats are mixed ("40 Rue AGASSE",
+    "Rue SCHAUB 21") and 487 of 10,574 have none. Fix: read SITG `CAD_ADRESSE` (official address register, open;
+    checked 15 Nov that it answers by EGID with street type, name, number, postcode, locality, official flag, point),
+    with the existing `sitg()` helper on the map's extent, official addresses only. Group by EGID: several entrances
+    give "Rue de Bâle 28-30" (all numbers in the search index). No address on the EGID: an address point inside the
+    footprint, else "EGID …" as now. One format: street, number, then "1201 Genève" where there is room. Keep the
+    old energy-layer address only to print a before/after count and 20 random pairs, checked by hand on
+    map.geo.admin.ch. Build into a scratch folder, then copy; bump both `V`; add `CAD_ADRESSE` to `THIRD_PARTY.md`.
+    To decide: write names in normal case ("Samuel-Constant", recommended) or as the register does ("Samuel-CONSTANT").
+
+Later, after 1 Dec: a pack builder per commune from its federal statistical number (BFS number): national sources
+first, cantonal extras when present, generated once into a shared `map/<canton>/<commune>/` (a whole canton is too
+heavy for the browser); DE/IT UI (Swiss-wide means German and Italian communes); CO₂ factors and prices per pack
+or commune (see #11 hand-over); add or remove buildings by clicking the map; sharing between
+municipalities (e.g. commune → canton; accounts already get a role per municipality). Every "to check" in the table above is from memory, not
+verified: check it before building a non-Geneva pack.
+
+**Ideas, not planned:** consumption breaks after renovations, synergies between buildings, price scenarios, indirect CO₂,
+DE/IT, place Rive-Claire in a recognisable Geneva neighbourhood on the map.
+
+## Buyer review (13 Nov evening; since then: login, roles and a ZIP upload are done, so deal-breakers 1 and 4 are partly met)
 A review of the app as a buyer would see it: the commune's energy manager, plus the council, IT and procurement who sign.
 Checked in the code: the degree-day data (`meta.climate`, `meta.climate_normal`) is in `data.json` but no calculation uses it.
 Comparisons with commercial tools are from memory, not researched.
@@ -148,7 +262,7 @@ and service level; a guaranteed full export (no lock-in); German and Italian; ac
 **Already good:** the data quality report (the differentiator); honest labels (estimated, simulated, CO₂ scope);
 open and portable (no build step, no external requests).
 
-**Proposed before 14:00 Sat** (one branch + PR each; if short on time, only 1 and 2):
+**Proposed changes** (not done on 14 Nov; now in "To do"):
 | # | Change | Size |
 |---|---|---|
 | 1 | Weather-corrected annual heat (to the 1991–2020 normal), second figure on Manage and the site page; the +12 % alert on it if it compares heat year on year | S–M |
@@ -157,4 +271,4 @@ open and portable (no build step, no external requests).
 | 4 | Printable council page (print layout + button) | S |
 | 5 | "Run it in your commune" block on How it works: hosting options, nLPD stance, estimated cost shape, CSV template and import command, full-export promise | S |
 
-Not now: upload in the browser, real login, invoice checks, indirect CO₂, e-mail alerts, DE/IT, hourly data.
+Not now: invoice checks, indirect CO₂, e-mail alerts, DE/IT, hourly data.

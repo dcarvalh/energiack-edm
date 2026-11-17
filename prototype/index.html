@@ -52,7 +52,11 @@ nav a.on .ic{color:var(--accent)}
 .side-loc-current{padding:4px 10px 2px;border-bottom:1px solid var(--line);margin-bottom:2px}
 .side-loc-label{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:2px}
 .side-loc-name{display:block;font-size:13px;font-weight:700;color:var(--text);padding:2px 0 4px}
-.side-loc-select{display:block;width:100%;font-size:13px;font-weight:700;color:var(--text);background:transparent;border:none;border-bottom:2px solid var(--accent);padding:2px 0 4px;cursor:pointer;outline:none}
+.loc-btn{position:relative;display:inline-flex;align-items:center;gap:5px;max-width:100%;min-width:0;padding:4px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--text);font-size:13px;white-space:nowrap;cursor:pointer}
+.loc-btn:hover{border-color:var(--accent)} .loc-btn:focus-within{outline:2px solid var(--accent);outline-offset:1px}
+.loc-btn .loc-k{color:var(--muted)} .loc-btn b{font-weight:650;overflow:hidden;text-overflow:ellipsis} .loc-btn .loc-v{color:var(--muted);font-size:11px}
+.loc-btn select{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:16px}
+.side-loc-current .loc-btn{display:flex;width:100%;margin:2px 0 6px} .side-loc-current .loc-k{display:none} .side-loc-current .loc-v{margin-left:auto}
 .content{min-width:0;display:flex;flex-direction:column}
 .top{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:10px;height:52px;padding:0 24px;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
 .crumb{display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--muted);min-width:0;white-space:nowrap}
@@ -66,6 +70,11 @@ nav a.on .ic{color:var(--accent)}
 .seg button.on{background:var(--surface);color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.08)}
 .notice{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);padding:7px 24px;border-bottom:1px solid var(--line);background:var(--surface)}
 .notice::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--warn);flex:none}
+.notice.sim{color:var(--text);font-weight:550;background:color-mix(in srgb,var(--warn) 14%,var(--surface))}
+/* Simulated municipality (Genève démo): a tag on every figure computed from readings; the word comes from t("sim_tag") */
+body.sim :is(#v-gestion,#v-donnees,#v-qualite,#v-citoyens,#drawer) :is(.card:not(.pub) h2,.card:not(.pub) > .fs-lab,.kpi .lab,.fact.simv > .lab)::after{content:var(--simtag);margin-left:6px;
+  font-size:10px;font-weight:650;letter-spacing:.03em;text-transform:uppercase;color:var(--warn);border:1px solid currentColor;
+  border-radius:4px;padding:0 4px;vertical-align:2px;white-space:nowrap}
 main{width:100%;max-width:1440px;padding:24px 24px 48px}
 footer{max-width:1440px;padding:16px 24px 32px}
 h1{font-size:22px;font-weight:650;letter-spacing:-.015em;line-height:1.25;margin:0 0 4px}
@@ -111,6 +120,7 @@ th .ar{opacity:.5;margin-left:3px}
 .search{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:5px 10px;min-width:220px;font-size:13px}
 .search:focus,.chip:focus-visible,.ib:focus-visible{outline:2px solid color-mix(in srgb,var(--accent) 60%,transparent);outline-offset:1px}
 .tablewrap{overflow-x:auto;margin:0 -16px;padding:0 16px}
+#v-localites .card{min-width:0}                    /* a grid item: lets the table scroll inside the card on a phone */
 .tablewrap.scroll{max-height:560px;overflow-y:auto;border-top:1px solid var(--line)}
 .tablewrap.scroll th{position:sticky;top:0;z-index:1}
 .count{font-size:12px;color:var(--muted);margin-top:10px}
@@ -206,6 +216,7 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;ba
 .m3-spin{width:28px;height:28px;border:3px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:m3spin .9s linear infinite;margin-bottom:12px}
 @keyframes m3spin{to{transform:rotate(360deg)}}
 .m3-labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.m3-place.m3-site{background:rgba(31,111,235,.9)}
 .m3-place{position:absolute;left:0;top:0;font-size:12px;font-weight:650;color:#fff;background:rgba(18,26,22,.72);padding:3px 9px;border-radius:999px;white-space:nowrap;transition:opacity .2s;letter-spacing:.01em}
 .m3-search{position:relative;margin-bottom:10px}
 .m3-search input{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:9px;padding:7px 10px;font-size:13.5px}
@@ -275,6 +286,7 @@ footer{color:var(--muted);font-size:12px;border-top:1px solid var(--line);margin
 }
 @media (max-width:720px){
   .top{padding:0 16px}
+  .top .loc-k{display:none}
   .notice{padding:6px 16px;align-items:flex-start}
   .notice::before{margin-top:6px}
   main{padding:18px 16px 40px}
@@ -504,13 +516,19 @@ footer{color:var(--muted);font-size:12px;border-top:1px solid var(--line);margin
             <span data-t="loc_f_name" style="font-size:.85rem;color:#888;display:block;margin-bottom:4px"></span>
             <input id="loc-f-name" type="text" required style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px">
           </label>
-          <label style="display:block;margin-bottom:12px">
+          <label style="display:block;margin-bottom:16px">
             <span data-t="loc_f_slug" style="font-size:.85rem;color:#888;display:block;margin-bottom:4px"></span>
             <input id="loc-f-slug" type="text" required pattern="[a-z0-9-]+" style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px">
           </label>
           <label style="display:block;margin-bottom:16px">
             <span data-t="loc_f_country" style="font-size:.85rem;color:#888;display:block;margin-bottom:4px"></span>
             <select id="loc-f-country" style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px"></select>
+          </label>
+          <label style="display:block;margin-bottom:16px">
+            <span data-t="loc_f_map" style="font-size:.85rem;color:#888;display:block;margin-bottom:4px"></span>
+            <select id="loc-f-map" style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px">
+              <option value="" data-t="loc_map_none"></option><option value="ge" data-t="loc_map_ge"></option><option value="rc" data-t="loc_map_rc"></option>
+            </select>
           </label>
           <div class="row" style="gap:8px">
             <button type="submit" class="chip" data-t="loc_f_submit"></button>
@@ -554,6 +572,8 @@ const T = {
 fr:{
   notice:"openEDM · données Energ-IA Transition (CC BY 4.0)",
   notice_demo:"Données de démonstration",
+  notice_sim:"{name} · données simulées : bâtiments réels (adresses et données publiques SITG), mais tous les compteurs et relevés sont simulés. Aucun chiffre de consommation n’est réel.",
+  sim_tag:"simulé",
   notice_server:"{name}",
   tagline:"EDM citoyen et souverain",
   nav_home:"Accueil",
@@ -579,7 +599,8 @@ fr:{
   dm_viewer_rows:"{n} lignes", dm_del_row:"Supprimer", dm_del_ok:"Ligne supprimée.", dm_del_err:"Erreur.",
   dm_replace_ok:"Table remplacée.", dm_replace_err:"Erreur de remplacement.",
   dm_prev:"← Préc.", dm_next:"Suiv. →", dm_all_rows:"Toutes les lignes",
-  nav_localities:"Localités",
+  nav_localities:"Localités", static_h:"Disponible sur la version serveur", static_p:"Cette copie statique montre les données de démonstration. Charger des données et gérer les localités demandent la version serveur (base de données, comptes et rôles).", static_btn:"Ouvrir la version serveur",
+  nd_title:"Aucun relevé pour {name}", nd_load:"Chargez des données via le module Données pour commencer.", nd_none:"Cette commune n'a pas encore publié de relevés.", nd_map:"La carte 3D montre déjà ses bâtiments (données publiques).", nd_go_map:"Voir la carte 3D", nd_go_data:"Aller aux Données",
   loc_lede:"Chaque localité possède ses propres bâtiments, compteurs et données. L'administrateur voit toutes les localités.",
   loc_list:"Localités disponibles", loc_create_btn:"+ Nouvelle localité",
   cfg_title:"Préférences d'import carte 3D", cfg_sub:"Réglages administrateur appliqués aux imports de cartes 3D.",
@@ -588,6 +609,7 @@ fr:{
   cfg_country_fr_hint:"Source IGN Géoplateforme (BD TOPO / RNB) — en préparation.", cfg_saved:"Préférence enregistrée.", cfg_err:"Échec de l'enregistrement.",
   loc_create_title:"Créer une localité", loc_f_name:"Nom affiché", loc_f_slug:"Identifiant (slug, ex : ma-commune, lettres minuscules et tirets)",
   loc_f_country:"Pays / plateforme", country_ch_name:"Suisse (geo.admin.ch)", country_fr_name:"France (IGN / BAN)", loc_h_country:"Pays",
+  loc_f_map:"Carte 3D", loc_map_none:"Aucune carte", loc_map_ge:"Genève (bâtiments publics SITG)", loc_map_rc:"Rive-Claire (schématique)", loc_h_map:"Carte",
   loc_f_submit:"Créer", loc_f_cancel:"Annuler",
   loc_h_name:"Nom", loc_h_slug:"Slug", loc_h_data:"Données chargées", loc_h_actions:"Actions",
   loc_no_data:"Aucun import",
@@ -652,7 +674,7 @@ fr:{
   qc_conversion:"Conversion en kWh", qd_conversion:"Le kWh du fichier ne correspond pas à la valeur × le facteur de conversion du mois.",
   qc_submeter:"Sous-compteurs plus grands que le parent", qd_submeter:"La somme des sous-compteurs dépasse la consommation sur site du parent (soutirage + solaire − injection).",
   qc_out_of_window:"Hors des dates du compteur", qd_out_of_window:"Relevé avant la mise en service ou après le retrait du compteur.",
-  m_title:"Patrimoine communal", m_lede:"48 sites, 172 compteurs, tous les fluides au même endroit. Cliquez sur un site pour toutes ses données.",
+  m_title:"Patrimoine communal", m_lede:"{n} sites, tous les fluides au même endroit. Cliquez sur un site pour toutes ses données.",
   k_energy:"Énergie achetée", k_cost:"Coût estimé", k_co2:"CO₂ direct sur site", k_fossil:"Sites chauffés au fossile", k_solar:"Solaire produit",
   vs_prev:"vs {y}", vs_base:"vs {y} (objectif 2030 : −60 %)", selfuse:"{p} consommé sur place", of_sites:"sur {n}",
   c_monthly:"Consommation mensuelle", c_monthly_sub:"Énergie achetée par mois, en MWh",
@@ -665,7 +687,7 @@ fr:{
   hi_est:"* Chaleur de la pompe à chaleur estimée (électricité de la pompe × COP mesuré sur les sites équipés d'un compteur de chaleur).",
   d_hi:"Indice de chaleur {y}", d_hi_sub:"approximatif · non corrigé du climat", d_hi_deliv:"livraisons de l'année", h_flag:"",
   alert:"Alerte", up:"hausse",
-  type_administration:"Administration", type_ecole:"École primaire", type_ecole_piscine:"École avec piscine", type_creche:"Crèche", type_maison_quartier:"Maison de quartier", type_salle_communale:"Salle communale", type_bibliotheque:"Bibliothèque", type_salle_spectacle:"Salle de spectacle", type_installation_sportive:"Installation sportive", type_piscine:"Piscine couverte", type_patinoire:"Patinoire", type_voirie:"Voirie et ateliers", type_caserne:"Caserne de pompiers", type_logements:"Logements communaux", type_abri_pc:"Abri PC", type_cimetiere:"Cimetière", type_parking:"Parking souterrain", type_eclairage_public:"Éclairage public", type_autre:"Autre",
+  type_administration:"Administration", type_ecole:"École primaire", type_ecole_primaire:"École primaire", type_ecole_piscine:"École avec piscine", type_creche:"Crèche", type_maison_quartier:"Maison de quartier", type_salle_communale:"Salle communale", type_bibliotheque:"Bibliothèque", type_salle_spectacle:"Salle de spectacle", type_installation_sportive:"Installation sportive", type_piscine:"Piscine couverte", type_patinoire:"Patinoire", type_voirie:"Voirie et ateliers", type_caserne:"Caserne de pompiers", type_logements:"Logements communaux", type_abri_pc:"Abri PC", type_cimetiere:"Cimetière", type_parking:"Parking souterrain", type_eclairage_public:"Éclairage public", type_autre:"Autre",
   car_oil:"Mazout", car_gas:"Gaz", car_district:"Chauffage à distance", car_heat_pump:"Pompe à chaleur", car_wood:"Bois (granulés)", car_electric:"Électrique direct", car_none:"Non chauffé",
   d_area:"Surface (SRE)", d_built:"Construction", d_pv:"Solaire", d_quarter:"Quartier", d_int:"Énergie par m² {y}",
   d_series:"Historique mensuel 2021–2025", fl_elec_grid:"Électricité réseau", fl_heat:"Chaleur", fl_heat_est:"pompe à chaleur : estimée", fl_pv_prod:"Solaire produit", fl_water:"Eau", fl_co2:"CO₂ (kg)",
@@ -673,7 +695,8 @@ fr:{
   h_meter:"Compteur", h_unit:"Unité", h_level:"Niveau", h_total:"Total {y}", h_flags:"Qualité",
   d_buildings:"Bâtiments", h_bname:"Bâtiment", h_built:"Construit", h_reno:"Rénové", h_levels:"Niveaux", h_label:"Label", h_homes:"Logements",
   d_inst:"Installations", h_inst:"Installation", h_power:"Puissance", h_from:"Mise en service", h_to:"Retrait", h_note:"Remarque",
-  q_missing:"manquant", q_estimated:"estimé", q_duplicate:"doublon", q_replaced:"remplacé par une estimation", d_na:"sans objet", d_back_map:"← Carte", d_map_btn:"Voir sur la carte 3D", m_open_site:"Toutes les données du site →",
+  q_missing:"manquant", q_estimated:"estimé", q_duplicate:"doublon", q_replaced:"remplacé par une estimation", d_na:"sans objet", d_back_map:"← Carte", d_map_btn:"Voir sur la carte 3D", m_sites:"Sites de la commune", m_site_of:"Site de la commune", d_public:"Données publiques des bâtiments", d_public_sub:"Registres du canton (SITG), reliés par l'EGID du bâtiment.", h_use:"Affectation", h_idc:"IDC MJ/m²", h_solar:"Solaire possible / an",
+  m_open_site:"Toutes les données du site →",
   fs_title:"Fiche de bâtiment", fs_open_site:"Toutes les données du site →", fs_nodata:"Pas assez de données pour le calculer", fs_year:"Année {y}",
   fs_whole:"Valeurs mesurées pour tout le site ({n} bâtiments) : les compteurs sont posés par site, pas par bâtiment.",
   fs_hi:"Indice de chaleur", fs_hi_note:"Approximatif, sans correction climatique : ce n'est pas l'IDC officiel. Repère : 450 MJ/m² par an.",
@@ -687,12 +710,12 @@ fr:{
   d_events:"Journal du site", d_noevents:"Rien à signaler sur la période.",
   d_onsite:"Électricité réellement consommée sur place ({y})", d_onsite_eq:"soutirage réseau + production solaire − injection = consommation sur place",
   d_history:"Chauffage", unit_kwh:"kWh", unit_mwh:"MWh", unit_m3:"m³",
-    c_kicker:"{commune} · {n} habitant·e·s · bâtiments communaux",
+    c_kicker:"{commune} · {n} habitant·e·s · bâtiments communaux", c_kicker0:"{commune} · bâtiments communaux",
   c_hero:"En {y}, nos bâtiments publics ont émis <em>{co2} t de CO₂</em> sur place, soit {pc} de moins qu'en {b}.",
   g_co2:"CO₂ : objectif −60 % d'ici 2030", g_energy:"Énergie : objectif −30 % d'ici 2030", g_fossil:"Sortir du chauffage fossile",
   g_done:"{p} du chemin parcouru", g_left:"{n} sites encore au mazout ou au gaz",
   c_numbers:"Les chiffres de l'année, en clair",
-  cs_inhab:"kWh par habitant·e pour les bâtiments communaux", cs_solar:"MWh d'électricité solaire produits sur les toits communaux", cs_cost:"CHF par habitant·e de facture énergétique (prix estimés)",
+  cs_inhab:"kWh par habitant·e pour les bâtiments communaux", cs_energy:"MWh consommés par les bâtiments communaux", cs_cost_k:"milliers de CHF de facture énergétique (prix estimés)", cs_solar:"MWh d'électricité solaire produits sur les toits communaux", cs_cost:"CHF par habitant·e de facture énergétique (prix estimés)",
   c_changes:"Ce qui a changé", c_changes_sub:"Les chantiers qui font baisser les émissions",
   a_title:"Un EDM que la commune possède", a_lede:"Pas de licence, pas de boîte noire : des fichiers ouverts, un code lisible, et une IA seulement si la commune le veut.",
   fl1:"Compteurs et factures", fl1s:"Électricité, chaleur, solaire, eau : télérelève, portail du distributeur, CSV, Excel",
@@ -716,8 +739,8 @@ fr:{
   m_heat_fossil:"Gaz ou mazout", m_heat_district:"Chauffage à distance", m_heat_heatpump:"Pompe à chaleur", m_heat_wood:"Bois", m_heat_electric:"Électrique", m_heat_other:"Autre",
   m_nodata:"Pas de donnée", m_yr:"an", m_sim:"simulé",
   m_hint:"Glisser : déplacer · Clic droit : pivoter · Molette : zoom · Flèches : déplacer · Clic : détails", m_hint_touch:"1 doigt : déplacer · 2 doigts : zoom et rotation · Toucher : détails",
-  m_reset:"Recentrer", m_attr:"© swisstopo · © SITG / OCEN · électricité et eau simulées",
-  m_map_title_rc:"Rive-Claire · patrimoine communal",
+  m_reset:"Recentrer", m_attr:"© swisstopo · Données SITG (extraction nov. 2026), traitées par openEDM · électricité et eau simulées",
+  m_nomap:"Pas encore de carte 3D pour cette commune.", m_map_title_rc:"Rive-Claire · patrimoine communal",
   m_sub_rc:"{n} bâtiments · {s} sites · relevés {y} · plan fictif, volumes schématiques", m_search_rc:"Rechercher un site…",
   m_attr_rc:"Données : Energ-IA Transition, Energ-IACK 2026 (CC BY 4.0) · volumes déduits de la SRE et des niveaux, agrandis ×{k} · lac, routes et arbres inventés",
   m_map_title_imp:"Carte 3D importée", m_sub_imp:"{n} bâtiments · {m} rattachés · {u} à rattacher",
@@ -731,17 +754,19 @@ fr:{
   m_lg_rc_idc:"Indice de chaleur approximatif, non corrigé du climat", m_lg_rc_heat:"Chauffage en service", m_lg_rc_solar:"Production solaire mesurée",
   m_lg_rc_elec:"Électricité consommée sur site", m_lg_rc_water:"Consommation d'eau",
   m_p_reno:"Rénovation", m_p_label:"Label", m_p_homes:"Logements", m_p_open:"Ouverture", m_p_under:"souterrain", m_na:"sans objet",
-  m_p_since:"depuis {d}", m_p_measured:"Mesuré en {y}", m_p_site:"valeurs du site ({n} bâtiments)", m_p_pvprod:"Solaire produit",
+  m_p_since:"depuis {d}", m_p_measured:"Mesuré en {y}", m_p_simread:"Relevés simulés, {y}", m_p_site:"valeurs du site ({n} bâtiments)", m_p_pvprod:"Solaire produit",
   m_n_deliv:"Mazout ou granulés : livraisons de l'année, pas une consommation mesurée.", m_n_common:"Logements : électricité des parties communes seulement.",
   m_p_year:"Construction", m_p_levels:"Niveaux", m_p_height:"Hauteur", m_p_sre:"Surface chauffée (SRE)", m_p_idc:"IDC {y}", m_p_carriers:"Énergies déclarées", m_p_heatkwh:"Chaleur consommée",
-  m_p_boiler:"Chaudière active", m_p_pv:"Production possible", m_p_kwp:"Puissance · surface", m_src:"Sources : SITG (OCEN), swisstopo",
+  m_p_boiler:"Chaudière active", m_p_pv:"Production possible", m_p_kwp:"Puissance · surface", m_src:"Sources : données SITG (OCEN, extraction nov. 2026), swisstopo",
   months:"mois", colon:" : ", sites_n:"{n} sites sur {m}",
-  nav_g_mun:"Municipalité de travail", nav_g_ops:"Service de l'énergie", nav_g_pub:"Public", side_commune:"",
+  nav_g_mun:"Municipalité de travail", loc_btn:"Commune :", nav_g_ops:"Service de l'énergie", nav_g_pub:"Public", side_commune:"",
   menu:"Menu", theme:"Thème clair ou sombre"
 },
 en:{
   notice:"openEDM · data: Energ-IA Transition (CC BY 4.0)",
   notice_demo:"Demo data",
+  notice_sim:"{name} · simulated data: real buildings (addresses and SITG public data), but every meter and reading is simulated. No consumption figure is real.",
+  sim_tag:"simulated",
   notice_server:"{name}",
   tagline:"Citizen-owned, sovereign EDM",
   nav_home:"Welcome",
@@ -767,7 +792,8 @@ en:{
   dm_viewer_rows:"{n} rows", dm_del_row:"Delete", dm_del_ok:"Row deleted.", dm_del_err:"Error.",
   dm_replace_ok:"Table replaced.", dm_replace_err:"Replace error.",
   dm_prev:"← Prev", dm_next:"Next →", dm_all_rows:"All rows",
-  nav_localities:"Localities",
+  nav_localities:"Localities", static_h:"Available on the server version", static_p:"This static copy shows the demo data. Uploading data and managing municipalities need the server version (database, accounts and roles).", static_btn:"Open the server version",
+  nd_title:"No readings for {name}", nd_load:"Load data via the Data module to get started.", nd_none:"This municipality has not published readings yet.", nd_map:"The 3D map already shows its buildings (public data).", nd_go_map:"Open the 3D map", nd_go_data:"Go to Data",
   loc_lede:"Each locality has its own buildings, meters and data. Administrators see all localities.",
   loc_list:"Available localities", loc_create_btn:"+ New locality",
   cfg_title:"3D map import preferences", cfg_sub:"Administrator settings applied to 3D map imports.",
@@ -776,6 +802,7 @@ en:{
   cfg_country_fr_hint:"IGN Géoplateforme source (BD TOPO / RNB) — in preparation.", cfg_saved:"Preference saved.", cfg_err:"Could not save.",
   loc_create_title:"Create a locality", loc_f_name:"Display name", loc_f_slug:"Identifier (slug, e.g. my-municipality, lowercase letters and dashes)",
   loc_f_country:"Country / platform", country_ch_name:"Switzerland (geo.admin.ch)", country_fr_name:"France (IGN / BAN)", loc_h_country:"Country",
+  loc_f_map:"3D map", loc_map_none:"No map", loc_map_ge:"Geneva (SITG public buildings)", loc_map_rc:"Rive-Claire (schematic)", loc_h_map:"Map",
   loc_f_submit:"Create", loc_f_cancel:"Cancel",
   loc_h_name:"Name", loc_h_slug:"Slug", loc_h_data:"Loaded data", loc_h_actions:"Actions",
   loc_no_data:"No import yet",
@@ -840,7 +867,7 @@ en:{
   qc_conversion:"Conversion to kWh", qd_conversion:"The file's kWh does not match the value × the month's conversion factor.",
   qc_submeter:"Sub-meters larger than their parent", qd_submeter:"Sub-meters add up to more than the parent's on-site use (grid + solar − export).",
   qc_out_of_window:"Outside the meter's dates", qd_out_of_window:"Reading before the meter was installed or after it was removed.",
-  m_title:"Municipal buildings", m_lede:"48 sites, 172 meters, every utility in one place. Click a site for all its data.",
+  m_title:"Municipal buildings", m_lede:"{n} sites, every utility in one place. Click a site for all its data.",
   k_energy:"Energy purchased", k_cost:"Estimated cost", k_co2:"Direct on-site CO₂", k_fossil:"Sites heated by fossil fuel", k_solar:"Solar produced",
   vs_prev:"vs {y}", vs_base:"vs {y} (2030 target: −60%)", selfuse:"{p} used on site", of_sites:"of {n}",
   c_monthly:"Monthly consumption", c_monthly_sub:"Energy purchased per month, in MWh",
@@ -853,7 +880,7 @@ en:{
   hi_est:"* Heat-pump heat estimated (pump electricity × the COP measured at the sites with a heat meter).",
   d_hi:"Heat index {y}", d_hi_sub:"approximate · not weather-corrected", d_hi_deliv:"year's deliveries", h_flag:"",
   alert:"Alert", up:"up",
-  type_administration:"Administration", type_ecole:"Primary school", type_ecole_piscine:"School with pool", type_creche:"Nursery", type_maison_quartier:"Community centre", type_salle_communale:"Community hall", type_bibliotheque:"Library", type_salle_spectacle:"Theatre", type_installation_sportive:"Sports facility", type_piscine:"Indoor pool", type_patinoire:"Ice rink", type_voirie:"Works depot", type_caserne:"Fire station", type_logements:"Municipal housing", type_abri_pc:"Civil-defence shelter", type_cimetiere:"Cemetery", type_parking:"Underground car park", type_eclairage_public:"Street lighting", type_autre:"Other",
+  type_administration:"Administration", type_ecole:"Primary school", type_ecole_primaire:"Primary school", type_ecole_piscine:"School with pool", type_creche:"Nursery", type_maison_quartier:"Community centre", type_salle_communale:"Community hall", type_bibliotheque:"Library", type_salle_spectacle:"Theatre", type_installation_sportive:"Sports facility", type_piscine:"Indoor pool", type_patinoire:"Ice rink", type_voirie:"Works depot", type_caserne:"Fire station", type_logements:"Municipal housing", type_abri_pc:"Civil-defence shelter", type_cimetiere:"Cemetery", type_parking:"Underground car park", type_eclairage_public:"Street lighting", type_autre:"Other",
   car_oil:"Heating oil", car_gas:"Gas", car_district:"District heating", car_heat_pump:"Heat pump", car_wood:"Wood pellets", car_electric:"Direct electric", car_none:"Unheated",
   d_area:"Floor area (ERA)", d_built:"Built", d_pv:"Solar", d_quarter:"District", d_int:"Energy per m² {y}",
   d_series:"Monthly history 2021–2025", fl_elec_grid:"Grid electricity", fl_heat:"Heat", fl_heat_est:"heat pump: estimated", fl_pv_prod:"Solar produced", fl_water:"Water", fl_co2:"CO₂ (kg)",
@@ -861,7 +888,8 @@ en:{
   h_meter:"Meter", h_unit:"Unit", h_level:"Level", h_total:"Total {y}", h_flags:"Quality",
   d_buildings:"Buildings", h_bname:"Building", h_built:"Built", h_reno:"Renovated", h_levels:"Floors", h_label:"Label", h_homes:"Homes",
   d_inst:"Installations", h_inst:"Installation", h_power:"Capacity", h_from:"In service", h_to:"Removed", h_note:"Note",
-  q_missing:"missing", q_estimated:"estimated", q_duplicate:"duplicate", q_replaced:"replaced by an estimate", d_na:"not applicable", d_back_map:"← Map", d_map_btn:"View on 3D map", m_open_site:"All data for this site →",
+  q_missing:"missing", q_estimated:"estimated", q_duplicate:"duplicate", q_replaced:"replaced by an estimate", d_na:"not applicable", d_back_map:"← Map", d_map_btn:"View on 3D map", m_sites:"Municipality sites", m_site_of:"Municipality site", d_public:"Public building data", d_public_sub:"Canton registers (SITG), linked by the building's EGID.", h_use:"Use", h_idc:"IDC MJ/m²", h_solar:"Possible solar / yr",
+  m_open_site:"All data for this site →",
   fs_title:"Building sheet", fs_open_site:"All data for this site →", fs_nodata:"Not enough data to compute", fs_year:"Year {y}",
   fs_whole:"Measured values are for the whole site ({n} buildings): meters are installed per site, not per building.",
   fs_hi:"Heat index", fs_hi_note:"Approximate, not weather-corrected: this is not the official IDC. Reference: 450 MJ/m² per year.",
@@ -875,12 +903,12 @@ en:{
   d_events:"Site log", d_noevents:"Nothing to report over the period.",
   d_onsite:"Electricity actually used on site ({y})", d_onsite_eq:"grid draw + solar production − feed-in = on-site use",
   d_history:"Heating", unit_kwh:"kWh", unit_mwh:"MWh", unit_m3:"m³",
-    c_kicker:"{commune} · {n} residents · municipal buildings",
+    c_kicker:"{commune} · {n} residents · municipal buildings", c_kicker0:"{commune} · municipal buildings",
   c_hero:"In {y}, our public buildings emitted <em>{co2} t of CO₂</em> on site, {pc} less than in {b}.",
   g_co2:"CO₂: −60% target by 2030", g_energy:"Energy: −30% target by 2030", g_fossil:"Phase out fossil heating",
   g_done:"{p} of the way there", g_left:"{n} sites still on oil or gas",
   c_numbers:"This year's numbers, in plain words",
-  cs_inhab:"kWh per resident for municipal buildings", cs_solar:"MWh of solar electricity from municipal roofs", cs_cost:"CHF per resident in energy bills (estimated prices)",
+  cs_inhab:"kWh per resident for municipal buildings", cs_energy:"MWh used by municipal buildings", cs_cost_k:"thousand CHF in energy bills (estimated prices)", cs_solar:"MWh of solar electricity from municipal roofs", cs_cost:"CHF per resident in energy bills (estimated prices)",
   c_changes:"What changed", c_changes_sub:"The projects bringing emissions down",
   a_title:"An EDM the municipality owns", a_lede:"No licence, no black box: open files, readable code, and AI only if the municipality wants it.",
   fl1:"Meters and bills", fl1s:"Electricity, heat, solar, water: smart meters, utility portal, CSV, Excel",
@@ -904,8 +932,8 @@ en:{
   m_heat_fossil:"Gas or oil", m_heat_district:"District heating", m_heat_heatpump:"Heat pump", m_heat_wood:"Wood", m_heat_electric:"Electric", m_heat_other:"Other",
   m_nodata:"No data", m_yr:"yr", m_sim:"simulated",
   m_hint:"Drag: move · Right-drag: rotate · Wheel: zoom · Arrow keys: move · Click: details", m_hint_touch:"1 finger: move · 2 fingers: zoom and rotate · Tap: details",
-  m_reset:"Reset view", m_attr:"© swisstopo · © SITG / OCEN · electricity and water simulated",
-  m_map_title_rc:"Rive-Claire · municipal buildings",
+  m_reset:"Reset view", m_attr:"© swisstopo · SITG data (extracted Nov 2026), processed by openEDM · electricity and water simulated",
+  m_nomap:"No 3D map for this municipality yet.", m_map_title_rc:"Rive-Claire · municipal buildings",
   m_sub_rc:"{n} buildings · {s} sites · {y} readings · fictional plan, schematic volumes", m_search_rc:"Search a site…",
   m_attr_rc:"Data: Energ-IA Transition, Energ-IACK 2026 (CC BY 4.0) · volumes from floor area and levels, enlarged ×{k} · lake, roads and trees invented",
   m_map_title_imp:"Imported 3D map", m_sub_imp:"{n} buildings · {m} matched · {u} to match",
@@ -919,12 +947,12 @@ en:{
   m_lg_rc_idc:"Approximate heat index, not weather-corrected", m_lg_rc_heat:"Heating in service", m_lg_rc_solar:"Measured solar output",
   m_lg_rc_elec:"Electricity used on site", m_lg_rc_water:"Water use",
   m_p_reno:"Renovated", m_p_label:"Label", m_p_homes:"Homes", m_p_open:"Opened", m_p_under:"underground", m_na:"not applicable",
-  m_p_since:"since {d}", m_p_measured:"Measured in {y}", m_p_site:"site values ({n} buildings)", m_p_pvprod:"Solar produced",
+  m_p_since:"since {d}", m_p_measured:"Measured in {y}", m_p_simread:"Simulated readings, {y}", m_p_site:"site values ({n} buildings)", m_p_pvprod:"Solar produced",
   m_n_deliv:"Oil or pellets: the year's deliveries, not measured use.", m_n_common:"Housing: electricity of common areas only.",
   m_p_year:"Built", m_p_levels:"Floors", m_p_height:"Height", m_p_sre:"Heated area (ERA)", m_p_idc:"IDC {y}", m_p_carriers:"Declared energy", m_p_heatkwh:"Heat consumed",
-  m_p_boiler:"Active boiler", m_p_pv:"Possible output", m_p_kwp:"Capacity · area", m_src:"Sources: SITG (OCEN), swisstopo",
+  m_p_boiler:"Active boiler", m_p_pv:"Possible output", m_p_kwp:"Capacity · area", m_src:"Sources: SITG data (OCEN, extracted Nov 2026), swisstopo",
   months:"months", colon:": ", sites_n:"{n} of {m} sites",
-  nav_g_mun:"Working municipality", nav_g_ops:"Energy service", nav_g_pub:"Public", side_commune:"",
+  nav_g_mun:"Working municipality", loc_btn:"Municipality:", nav_g_ops:"Energy service", nav_g_pub:"Public", side_commune:"",
   menu:"Menu", theme:"Light or dark theme"
 }};
 let LANG = "fr";
@@ -1076,38 +1104,26 @@ function deltaHtml(cur, ref, label, goodIfDown=true){
   return `<div class="delta ${Math.abs(d)<0.005?'mut':good?'good':'badc'}">${pct(d,1)} <span class="mut" style="font-weight:500">${esc(label)}</span></div>`;
 }
 function noDataBanner(){
-  const name = LOC?.name || "";
+  const name = LOC?.name || "", load = SERVER && can("donnees"), map = LOC?.map_config;
   return `<div class="card" style="margin-top:14px;text-align:center;padding:2.5rem">
-    <div style="font-size:2rem;margin-bottom:12px">📂</div>
-    <h2>${esc(LANG==="fr"?`Aucune donnée pour ${name}`:`No data for ${name}`)}</h2>
-    <p class="sub" style="margin:8px 0 16px">${esc(LANG==="fr"
-      ?"Chargez des données via le module Données pour commencer."
-      :"Load data via the Data module to get started.")}</p>
-    <a href="#donnees" class="chip" onclick="location.hash='#donnees'">${esc(LANG==="fr"?"Aller aux Données":"Go to Data")}</a>
+    <h2>${esc(t("nd_title",{name}))}</h2>
+    <p class="sub" style="margin:8px 0 16px">${esc([load ? t("nd_load") : t("nd_none"), map ? t("nd_map") : ""].filter(Boolean).join(" "))}</p>
+    <div class="row" style="justify-content:center;gap:8px">${map ? `<a href="#carte" class="chip">${esc(t("nd_go_map"))}</a>` : ""}${load ? `<a href="#donnees" class="chip">${esc(t("nd_go_data"))}</a>` : ""}</div>
   </div>`;
+}
+// A municipality without readings (Geneva today): the data views show one clear message instead of empty charts.
+function noData(view){
+  const sec = document.getElementById("v-"+view), old = document.getElementById("no-data-"+view);
+  if (old) old.remove();
+  const none = !!D?.meta?.no_data;
+  Array.from(sec.children).forEach(c => { if (none) c.style.display = "none"; else c.style.removeProperty("display"); });
+  if (none) { const el = document.createElement("div"); el.id = "no-data-"+view; el.innerHTML = noDataBanner(); sec.prepend(el); }
+  return none;
 }
 
 function renderManager(){
-  const banner = document.getElementById("no-data-banner");
-  if (D?.meta?.no_data) {
-    // Show banner, hide existing content — never destroy the DOM structure
-    if (!banner) {
-      const el = document.createElement("div");
-      el.id = "no-data-banner";
-      el.innerHTML = noDataBanner();
-      document.getElementById("v-gestion").prepend(el);
-    }
-    // Hide all section content except the banner
-    Array.from(document.getElementById("v-gestion").children)
-      .forEach(c => { if (c.id !== "no-data-banner") c.style.display = "none"; });
-    return;
-  }
-  // Data now available — remove banner and restore visibility
-  if (banner) {
-    banner.remove();
-    Array.from(document.getElementById("v-gestion").children)
-      .forEach(c => c.style.removeProperty("display"));
-  }
+  if (noData("gestion")) return;
+  const lede = document.querySelector('[data-t="m_lede"]'); if (lede) lede.textContent = t("m_lede", {n: nf(D.sites.length)});
   const Y = M.years[YEAR], P = M.years[YEAR-1], B0 = M.years[D.meta.baseline_year];
   document.getElementById("years").innerHTML = YEARS.map(y=>`<button data-y="${y}" class="${y===YEAR?'on':''}">${y}</button>`).join("");
   const k = [
@@ -1174,12 +1190,13 @@ function renderAI(elId, part){
     + `<div class="meta">${esc(t("ai_meta",{d:new Intl.DateTimeFormat(locale(),{dateStyle:"long"}).format(new Date(R.generated)), m:R.model}))}</div>`;
 }
 function renderCitizen(){
+  if (noData("citoyens")) return;
   const CY = YEARS[YEARS.length-1], Y = M.years[CY], B0 = M.years[D.meta.baseline_year];
-  const inhab = D.meta?.inhabitants || 25000;
+  const inhab = D.meta?.inhabitants || null;   // null: population unknown (Genève démo, uploaded data)
   const commune = LOC?.name || D.meta?.commune || "";
   // set c_kicker dynamically since it uses {commune} and {n} placeholders
   const kicker = document.querySelector('[data-t="c_kicker"]');
-  if (kicker) kicker.textContent = t("c_kicker", {commune, n: inhab.toLocaleString(LANG)});
+  if (kicker) kicker.textContent = inhab ? t("c_kicker", {commune, n: nf(inhab)}) : t("c_kicker0", {commune});
   const dco2 = 1 - Y.co2/B0.co2, den = 1 - Y.energy/B0.energy;
   document.getElementById("c-hero").innerHTML = t("c_hero",{y:CY, co2:nf(Y.co2/1000), pc:pct0(dco2), b:D.meta.baseline_year});
   const fos0 = M.years[D.meta.baseline_year].fossilSites;
@@ -1189,7 +1206,8 @@ function renderCitizen(){
     [t("g_fossil"), (fos0-Y.fossilSites)/fos0, `${Y.fossilSites}/${D.sites.length}`, t("g_left",{n:Y.fossilSites})],
   ];
   document.getElementById("goals").innerHTML = goals.map(([l,p,big,foot])=>`<div class="card goal"><div class="lab mut" style="font-size:13px;font-weight:550">${esc(l)}</div><div class="big">${esc(big)}</div><div class="track"><span style="width:${Math.max(2,Math.min(100,p*100))}%"></span></div><div class="foot">${esc(foot)}</div></div>`).join("");
-  const st = [[nf(Y.energy/inhab), t("cs_inhab")],[nf(Y.pv/1000), t("cs_solar")],[nf(Y.cost/inhab), t("cs_cost")]];
+  const st = inhab ? [[nf(Y.energy/inhab), t("cs_inhab")],[nf(Y.pv/1000), t("cs_solar")],[nf(Y.cost/inhab), t("cs_cost")]]
+    : [[nf(Y.energy/1000), t("cs_energy")],[nf(Y.pv/1000), t("cs_solar")],[nf(Y.cost/1000), t("cs_cost_k")]];
   document.getElementById("cstats").innerHTML = st.map(([n,l])=>`<div class="card stat"><div class="n">${n}</div><div class="t">${esc(l)}</div></div>`).join("");
   const ch = D.events.filter(e=>e.kind==="heating_change"||e.kind==="installation"||e.kind==="opening").sort((a,b)=>b.month-a.month);
   const byId = Object.fromEntries(D.sites.map(s=>[s.id,s]));
@@ -1217,6 +1235,7 @@ function qrDetail(code, it){
   return x==null ? "" : String(x);
 }
 function renderQuality(){
+  if (noData("qualite")) return;
   if (!D?.quality) {
     document.getElementById("qr-kpis").innerHTML = "";
     document.getElementById("qr-list").innerHTML = "";
@@ -1303,9 +1322,6 @@ function renderAbout(){
 /* ---------------------------------------------------------------- 3D map (loaded on first visit) */
 let MAP = null, MAP_LOADING = false;
 const isDark = () => { const a = document.documentElement.dataset.theme; return a ? a === "dark" : matchMedia("(prefers-color-scheme: dark)").matches; };
-// Built-in demo maps; which one a locality shows is driven by its map_config (set via the left-menu locality),
-// not by an in-map switcher. Localities with no map_config fall back to Rive-Claire.
-const MAPS = {rc:{key:"rc", dir:"map-rc/"}, ge:{key:"ge", dir:"map/"}};
 // Carrier (oil/gas/district/heat_pump/wood/electric/none) -> the 5 map heat kinds
 const CARRIER_KIND = {oil:"fossil", gas:"fossil", district:"district", heat_pump:"heatpump", wood:"wood", electric:"electric"};
 // Per-site figures in the shape the 3D map expects as b.rc (matches make_rive_claire_map output)
@@ -1319,22 +1335,54 @@ function mapSiteData(sid){
 function mapSiteName(sid){ const s = D.sites.find(x=>x.id===sid); return s ? s.name[LANG] : sid; }
 
 let MAP_RELOAD_CAM = null;   // camera to restore when the imported map is reloaded to show new footprints
+// One map per municipality: its map_config picks one of these (no switch on the map)
+const MAPS = {rc:{key:"rc", dir:"map-rc/"}, ge:{key:"ge", dir:"map/"}};
+try { localStorage.removeItem("energiack-map"); } catch(e) {}   // the old map switch's saved choice
+// EGID -> {id, name} of the site owning that public building (plan item 16): the map links and highlights them
+function egidSites(){ const o = {}; for (const s of D?.sites || []) for (const b of s.buildings) if (b.egid) o[b.egid] = {id:s.id, name:s.name[LANG], b:b.id, nb:s.buildings.length}; return o; }
+// The site's figures of the chosen year for the map panel (same numbers as the building sheet; plan step 8b)
+function siteYear(sid){ const c = M?.sites[sid]?.[YEAR]; if (!c) return null;
+  return {year:YEAR, hi:c.hi, hiEst:c.hiEst, int:c.int, heat:c.heat, elec:c.elec, pv:c.pv, water:c.water, sim:!!LOC?.simulated}; }
+// The site page's public building data (height, use, heating, IDC, solar), read from the municipality's map
+function sitePublic(s){
+  const el = document.getElementById("d-public"), map = MAPS[LOC?.map_config?.key], eg = s.buildings.map(b=>b.egid).filter(Boolean);
+  if (!el || !map || !eg.length) return;
+  import("./map3d.js?v="+V).then(m => m.publicBuildings(map.dir, eg, LANG)).then(rows => {
+    if (!rows.length || !document.getElementById("d-public")) return;
+    const idc = b => b.idc ? `<span class="pill ${b.idc.mj_m2>=800?"p-fossil":b.idc.mj_m2>=450?"p-warn":"p-ren"}">${nf(b.idc.mj_m2)}</span> <small class="mut">${b.idc.year}</small>` : "–";
+    el.innerHTML = `<div class="card pub" style="margin-top:14px"><h2>${esc(t("d_public"))}</h2><p class="sub">${esc(t("d_public_sub"))}</p>
+      <div class="tablewrap"><table class="dtab"><thead><tr><th>${esc(t("h_bname"))}</th><th class="hide-m">${esc(t("h_use"))}</th><th class="num">${esc(t("m_p_height"))}</th>
+        <th>${esc(t("m_l_heat"))}</th><th class="num">${esc(t("h_idc"))}</th><th class="num hide-m">${esc(t("h_solar"))}</th></tr></thead><tbody>
+      ${rows.map(b=>`<tr><td><div class="tname">${esc(b.addr || "EGID "+b.egid)}</div><div class="tsub">EGID ${esc(b.egid)}</div></td><td class="hide-m">${esc(b.use||"–")}</td>
+        <td class="num">${nf(b.h,1)} m</td><td>${b.heat?esc(t("m_heat_"+b.heat)):"–"}</td><td class="num">${idc(b)}</td>
+        <td class="num hide-m">${b.pv?nf(b.pv.kwh/1000)+" MWh":"–"}</td></tr>`).join("")}</tbody></table></div>
+      <p class="sub" style="margin:8px 0 0">${esc(t("m_src"))}</p></div>`;
+  }).catch(()=>{});
+}
+let MAP_FOR = null;   // slug of the municipality the shown (or loading) map belongs to
+function resetMap(){ if (MAP) MAP.destroy(); MAP = null; MAP_FOR = null; }
 function renderMap(){
-  if (MAP || MAP_LOADING) return;
-  MAP_LOADING = true;
-  const mc = LOC?.map_config;
-  const imported = mc?.key === "imported";
+  const el = document.getElementById("m3"), mc = LOC?.map_config, imported = mc?.key === "imported";
+  // imported maps are served per-municipality by the API; built-in maps (rc/ge) are static folders; else: no map yet
   const mapCfg = imported ? {key:"imported", dir:`api/localities/${LOC.slug}/map/`, restoreCam: MAP_RELOAD_CAM}
-    : (mc?.key && MAPS[mc.key]) ? {key: mc.key, dir: mc.dir} : MAPS.rc;
+    : (mc?.key && MAPS[mc.key]) ? MAPS[mc.key] : null;
+  if (!MAP_LOADING && MAP_FOR && MAP_FOR !== LOC?.slug) resetMap();
+  if (!mapCfg) { el.innerHTML = `<div class="m3-loading">${esc(t("m_nomap"))}</div>`; return; }
+  if (MAP || MAP_LOADING) return;
   MAP_RELOAD_CAM = null;
+  MAP_LOADING = true; MAP_FOR = LOC.slug;
   const canMatch = SERVER && USER && (USER.role==="admin" || USER.role==="technique");
-  const apiObj = {t, nf, esc, showTip, hideTip, dark:isDark, lang:()=>LANG, locName: (LOC && LOC.name) || (D?.meta?.commune) || "",
-    heatIndex:(sid, y)=>(M.sites[sid]||{})[y], siteData:mapSiteData, siteName:mapSiteName, canMatch,
+  const apiObj = {t, nf, esc, showTip, hideTip, dark:isDark, lang:()=>LANG,
+    locName: (LOC && LOC.name) || (D?.meta?.commune) || "",
+    heatIndex:(sid, y)=>(M.sites[sid]||{})[y],
+    sites:egidSites(), siteYear,                           // built-in maps: EGID-linked sites of the municipality
+    siteData:mapSiteData, siteName:mapSiteName, canMatch,  // imported maps: manual match UI
     matchBuilding: (b, done) => mapPickSite(b, done),
     registerBuilding: (b, done) => mapRegisterDialog(b, done),
     setMatch: (buildingId, idSite, done) => mapSetMatch(buildingId, idSite, done)};
-  import("./map3d.js?v="+V).then(m => m.initMap(document.getElementById("m3"), apiObj, mapCfg))
-    .then(x => { MAP = x; MAP_LOADING = false; }).catch(e => { MAP_LOADING = false; document.getElementById("m3").innerHTML = `<div class="m3-loading">${esc(String(e))}</div>`; });
+  import("./map3d.js?v="+V).then(m => m.initMap(el, apiObj, mapCfg))
+    .then(x => { MAP = x; MAP_LOADING = false; if (MAP_FOR !== LOC?.slug && VIEW === "carte") renderMap(); })
+    .catch(e => { MAP_LOADING = false; MAP_FOR = null; el.innerHTML = `<div class="m3-loading">${esc(String(e))}</div>`; });
 }
 
 /* ---------------------------------------------------------------- 3D-map import: async, progress pushed over SSE
@@ -1559,8 +1607,8 @@ function openSite(id){
     <div class="facts">
       <div class="fact"><div class="lab">${esc(t("d_area"))}</div><div class="v">${s.area_m2?nf(s.area_m2)+" m²":esc(t("d_na"))}</div></div>
       <div class="fact"><div class="lab">${esc(t("d_built"))}</div><div class="v">${s.year_built??"–"}${reno?` <small class="mut">· ${reno}</small>`:""}</div></div>
-      <div class="fact"><div class="lab">${esc(t("d_hi",{y:YEAR}))}</div><div class="v">${cur.hi==null?esc(t("d_na")):`<span class="pill ${hiClass(cur.hi)}">${nf(cur.hi)} MJ/m²</span> <small class="mut">≈ ${nf(cur.hi/3.6)} kWh/m²</small>`}</div>${cur.hi==null?"":`<div class="lab">${esc(t("d_hi_sub"))}${cur.hiEst?" · "+esc(t("q_estimated")):""}${deliv?" · "+esc(t("d_hi_deliv")):""}</div>`}</div>
-      <div class="fact"><div class="lab">${esc(t("d_int",{y:YEAR}))}</div><div class="v">${cur.int==null?esc(t("d_na")):nf(cur.int)+" kWh/m²"}</div></div>
+      <div class="fact simv"><div class="lab">${esc(t("d_hi",{y:YEAR}))}</div><div class="v">${cur.hi==null?esc(t("d_na")):`<span class="pill ${hiClass(cur.hi)}">${nf(cur.hi)} MJ/m²</span> <small class="mut">≈ ${nf(cur.hi/3.6)} kWh/m²</small>`}</div>${cur.hi==null?"":`<div class="lab">${esc(t("d_hi_sub"))}${cur.hiEst?" · "+esc(t("q_estimated")):""}${deliv?" · "+esc(t("d_hi_deliv")):""}</div>`}</div>
+      <div class="fact simv"><div class="lab">${esc(t("d_int",{y:YEAR}))}</div><div class="v">${cur.int==null?esc(t("d_na")):nf(cur.int)+" kWh/m²"}</div></div>
       <div class="fact"><div class="lab">${esc(t("d_pv"))}</div><div class="v">${s.pv_kwp?nf(s.pv_kwp)+(LANG==="fr"?" kWc":" kWp"):"–"}</div></div>
     </div>
     <div class="card"><div class="row" style="margin-bottom:8px"><h2>${esc(FLUID.startsWith("m:")?FLUID.slice(2)+" · "+mlabel(MS.find(m=>"m:"+m.id===FLUID)):t("d_series"))}</h2><div class="spacer"></div>
@@ -1578,6 +1626,7 @@ function openSite(id){
       ${tbl([[t("h_bname")],[t("h_built"),"num"],[t("h_reno"),"num hide-m"],["SRE m²","num"],[t("h_levels"),"num hide-m"],[t("h_label"),"hide-m"]],
         s.buildings.map(b=>`<tr><td><div class="tname">${esc(b.name)}</div>${b.homes?`<div class="tsub">${nf(b.homes)} ${esc(t("h_homes").toLowerCase())}</div>`:""}${b.note?`<div class="tsub">${esc(loc(b.note))}</div>`:""}</td><td class="num">${b.built??"–"}</td><td class="num hide-m">${b.renovated??"–"}</td><td class="num">${b.sre_m2?nf(b.sre_m2):"–"}</td><td class="num hide-m">${b.levels??"–"}</td><td class="hide-m">${esc(b.label||"–")}</td></tr>`))}
     </div>
+    <div id="d-public"></div>
     ${s.installations.length?`<div class="card" style="margin-top:14px"><h2 style="margin-bottom:8px">${esc(t("d_inst"))}</h2>
       ${tbl([[t("h_inst")],[t("h_power"),"num"],[t("h_from"),"num"],[t("h_to"),"num"]],
         s.installations.map(x=>`<tr class="${x.to?"mut":""}"><td><div class="tname">${esc(loc(x.label))}</div>${x.note?`<div class="tsub">${esc(loc(x.note))}</div>`:""}</td><td class="num">${x.kw?nf(x.kw)+(x.type==="pv"?(LANG==="fr"?" kWc":" kWp"):" kW"):"–"}</td><td class="num">${esc(x.from||"–")}</td><td class="num">${esc(x.to||"–")}</td></tr>`))}
@@ -1585,7 +1634,7 @@ function openSite(id){
     <div class="card" style="margin-top:14px"><h2 style="margin-bottom:8px">${esc(t("d_events"))}</h2>
       ${ev.length?`<ul class="timeline">${ev.map(e=>`<li><span class="d">${esc(monthYear(e.month))}</span><span>${e.kind==="anomaly"||e.kind==="quality"?`<span class="pill p-warn">${ic("triangle-alert")}</span> `:''}${esc(e.text[LANG])}</span></li>`).join("")}</ul>`:`<div class="mut">${esc(t("d_noevents"))}</div>`}
     </div>
-    <p class="sub" style="margin-top:14px">${esc(D.meta.source)}</p>`;
+    ${D.meta.source ? `<p class="sub" style="margin-top:14px">${esc(D.meta.source)}</p>` : ""}`;
   const labels = Array.from({length:60},(_,i)=>i%12===0?String(2021+i/12):"");
   let values, unit, color, name;
   if (FLUID.startsWith("m:")) { const m = MS.find(x=>"m:"+x.id===FLUID); values = m.v; unit = " "+unitOf(m.unit); color = {"eau":"--water","électricité solaire":"--solar"}[m.fluid] || (m.fluid.startsWith("électricité")?"--elec":"--heat-fossil"); name = m.id; }
@@ -1596,6 +1645,7 @@ function openSite(id){
   const back = document.getElementById("dback"); if (back) back.onclick = closeSite;
   const mapBtn = document.getElementById("dmap-btn"); if (mapBtn) mapBtn.onclick = () => goToMapSite(id);
   const dcsv = document.getElementById("dcsv"); if (dcsv) dcsv.onclick = () => siteCsv(id);
+  sitePublic(s);
   document.querySelectorAll("[data-fl]").forEach(b=>b.onclick=()=>{FLUID=b.dataset.fl; openSite(id);});
   document.querySelectorAll("[data-mt]").forEach(r=>r.onclick=()=>{FLUID="m:"+r.dataset.mt; openSite(id); document.getElementById("drawer").scrollTo({top:0, behavior:"smooth"});});
   document.getElementById("drawer").classList.add("open"); document.getElementById("scrim").classList.add("open");
@@ -1616,7 +1666,7 @@ function openSheet(bid){
   const heat = Array.from({length:12},(_,i)=>(S.heat[a0+i]||0)+(S.heat_hp?S.heat_hp[a0+i]||0:0)), elec = S.elec_grid.slice(a0,a0+12).map(v=>v||0);
   const hcol = fos ? "--heat-fossil" : "--heat-ren";
   const bars = () => { const W = 640, H = 190, L = 44, B = 22, T = 8, mx = niceMax(Math.max(1,...heat,...elec)), gw = (W-L)/12, bw = gw*0.32, y = v => T+(H-T-B)*(1-v/mx);
-    const mon = i => new Intl.DateTimeFormat(LOC(), {month:"narrow"}).format(new Date(2021, i, 1)), full = i => new Intl.DateTimeFormat(LOC(), {month:"long"}).format(new Date(2021, i, 1));
+    const mon = i => new Intl.DateTimeFormat(locale(), {month:"narrow"}).format(new Date(2021, i, 1)), full = i => new Intl.DateTimeFormat(locale(), {month:"long"}).format(new Date(2021, i, 1));
     let g = [0,.5,1].map(k=>`<line x1="${L}" x2="${W}" y1="${y(mx*k)}" y2="${y(mx*k)}" stroke="var(--line)"/><text x="${L-6}" y="${y(mx*k)+4}" text-anchor="end" font-size="11" fill="var(--muted)">${mx*k>=10000?nf(mx*k/1000)+"k":nf(mx*k)}</text>`).join("");
     for (let i=0;i<12;i++){ const x = L+gw*i+gw/2;
       g += `<rect x="${x-bw-1}" y="${y(heat[i])}" width="${bw}" height="${H-B-y(heat[i])}" rx="2" fill="var(${hcol})"><title>${esc(full(i))} · ${esc(t("fl_heat"))} ${nf(heat[i])} kWh</title></rect>`
@@ -1642,7 +1692,7 @@ function openSheet(bid){
         ${cur.hi==null?"":`<div class="fs-scale"><i style="left:${Math.min(100,cur.hi/10)}%"></i></div><div class="fs-ticks"><span style="left:45%">450</span><span style="left:80%">800</span></div>`}
         ${d==null?"":`<div style="margin-top:8px"><span class="pill ${d>0?"p-warn":"p-ren"}" style="white-space:normal">${esc(t("fs_vs",{d:(d>0?"+":d<0?"−":"")+Math.abs(d), n:peers.length}))}</span></div>`}
         <div class="fs-note">${esc(t("fs_hi_note"))}${cur.hiEst?" · "+esc(t("q_estimated")):""}</div></div>
-      <div class="card"><div class="fs-lab">${esc(t("fs_heating"))}</div>
+      <div class="card pub"><div class="fs-lab">${esc(t("fs_heating"))}</div>
         <div class="fs-mid">${esc(t("car_"+car))}</div>
         <div class="tsub">${last&&last.from_month?esc(t("fs_since",{d:monthYear(last.from_month)})):""}</div>
         ${car==="none"?"":`<div style="margin-top:8px"><span class="pill ${fos?"p-fossil":"p-ren"}">${esc(t(fos?"fs_fossil":"fs_nofossil"))}</span></div>`}
@@ -1655,11 +1705,11 @@ function openSheet(bid){
         <div class="fs-leg"><span><i style="background:var(${hcol})"></i>${esc(t("fl_heat"))}</span><span><i style="background:var(--elec)"></i>${esc(t("fl_elec_grid"))}</span></div>${bars()}</div>
       <div class="card wide"><div class="fs-lab" style="margin-bottom:10px">${esc(t("fs_solar"))}</div>
         ${selfc==null?`<div class="mut">${s.pv_kwp?na:esc(t("fs_nopv"))}</div>`:`<div class="fs-solar">${sol(selfc,"--solar","fs_selfc","fs_selfc_note")}${selfs==null?"":sol(selfs,"--accent","fs_selfs","fs_selfs_note")}</div>`}</div>
-      <div class="card wide"><div class="fs-lab" style="margin-bottom:4px">${esc(t("fs_more"))}</div>
+      <div class="card wide pub"><div class="fs-lab" style="margin-bottom:4px">${esc(t("fs_more"))}</div>
         <div class="fs-rows">${["fs_enr","fs_cop","fs_night"].map(k=>`<div><span>${esc(t(k))}</span>${na}</div>`).join("")}</div></div>
     </div>
     <div class="m3-acts"><a class="btn alt" href="#site/${esc(s.id)}">${esc(t("fs_open_site"))}</a></div>
-    <p class="sub" style="margin-top:14px">${esc(D.meta.source)}</p>`;
+    ${D.meta.source ? `<p class="sub" style="margin-top:14px">${esc(D.meta.source)}</p>` : ""}`;
   document.getElementById("dx").onclick = closeSite;
   document.getElementById("drawer").classList.add("open"); document.getElementById("scrim").classList.add("open"); document.getElementById("drawer").scrollTop = 0;
   if (location.hash !== "#fiche/"+bid) history.replaceState(null,"","#fiche/"+bid);
@@ -1683,8 +1733,8 @@ function renderLocality() {
   const name = LOC?.name || (D?.meta?.commune) || "";
   if (!nav) return;
 
-  if (!SERVER || !USER) {
-    // Static/public: show commune name below the brand only
+  if (LOCALITIES.length <= 1 && (!SERVER || !USER)) {
+    // One municipality, visitor or static host: the name below the brand is enough
     nav.classList.add("hide");
     return;
   }
@@ -1697,22 +1747,25 @@ function renderLocality() {
     return;
   }
 
-  // Multiple municipalities: dropdown selector in nav
-  const opts = LOCALITIES.map(l =>
-    `<option value="${esc(l.slug)}" ${LOC && l.slug === LOC.slug ? "selected" : ""}>${esc(l.name)}</option>`
-  ).join("");
-  nav.innerHTML = `<span class="side-loc-label" data-t="nav_g_mun"></span>
-    <select id="loc-select" class="side-loc-select">${opts}</select>`;
+  // Several municipalities: a labelled button in the sidebar and in the page header (phones see the header one)
+  nav.innerHTML = `<span class="side-loc-label" data-t="nav_g_mun"></span>${locButton("loc-select")}`;
   applyT(nav);
-  const sel = document.getElementById("loc-select");
-  if (sel) sel.onchange = async () => {
-    LOC = LOCALITIES.find(l => l.slug === sel.value) || LOC;
-    try { localStorage.setItem("edm-locality", LOC.slug); } catch(e) {}
-    if (MAP) { MAP.destroy(); MAP = null; MAP_LOADING = false; }
-    await loadData();
-    route();
-  };
 }
+function locButton(id) {
+  const opts = LOCALITIES.map(l => `<option value="${esc(l.slug)}" ${LOC && l.slug === LOC.slug ? "selected" : ""}>${esc(l.name)}</option>`).join("");
+  return `<label class="loc-btn"><span class="loc-k">${esc(t("loc_btn"))}</span><b>${esc(LOC?.name || "")}</b><span class="loc-v" aria-hidden="true">▾</span>`
+    + `<select id="${id}" aria-label="${esc(t("loc_btn"))}">${opts}</select></label>`;
+}
+async function chooseLocality(slug) {
+  const l = LOCALITIES.find(x => x.slug === slug);
+  if (!l || l === LOC) return;
+  LOC = l;
+  try { localStorage.setItem("edm-locality", LOC.slug); } catch(e) {}
+  if (!MAP_LOADING) resetMap();
+  await loadData();
+  route();
+}
+document.addEventListener("change", e => { if (e.target.id === "loc-select" || e.target.id === "loc-select-top") chooseLocality(e.target.value); });
 function applyT(el) {
   el.querySelectorAll("[data-t]").forEach(e => e.textContent = t(e.dataset.t));
 }
@@ -1733,9 +1786,16 @@ function renderAll(){
   applyStatic();
   for (const v of VIEWS) document.getElementById("v-"+v).classList.toggle("hide", v!==VIEW);
   // Notice banner: dynamic per server/locality/demo context
-  const noticeEl = document.querySelector(".notice");
+  const noticeEl = document.querySelector(".notice"), sim = !!LOC?.simulated;
+  document.body.classList.toggle("sim", sim);
+  document.body.style.setProperty("--simtag", JSON.stringify(t("sim_tag")));
   if (noticeEl) {
-    if (SERVER && LOC) {
+    noticeEl.classList.toggle("sim", sim);
+    if (sim) {
+      // Real addresses, simulated readings: always say so, on every page (plan item 18)
+      noticeEl.textContent = t("notice_sim", {name: LOC.name});
+      noticeEl.style.display = "";
+    } else if (SERVER && LOC) {
       if (LOC.demo) {
         noticeEl.textContent = `${LOC.name} · ${t("notice_demo")}`;
         noticeEl.style.display = "";
@@ -1744,8 +1804,8 @@ function renderAll(){
         noticeEl.style.display = "none";
       }
     } else {
-      // Static hosting: keep the original notice
-      noticeEl.style.display = "";
+      // Static hosting: keep the original notice (it credits the Rive-Claire data; Geneva has its own credit on the map)
+      noticeEl.style.display = (LOC && !LOC.demo && VIEW !== "carte") ? "none" : "";
       noticeEl.textContent = t(VIEW==="carte" ? "notice_map" : "notice");
     }
   }
@@ -1753,7 +1813,7 @@ function renderAll(){
   markMapButton();   // disable the Carte-3D button while this locality's map import is running
   document.getElementById("crumb").textContent = t(NAVKEY[VIEW]);
   const cl = document.getElementById("crumb-loc");
-  if (cl) cl.textContent = LOC ? LOC.name : (D?.meta?.commune || "");
+  if (cl) { if (LOCALITIES.length > 1) cl.innerHTML = locButton("loc-select-top"); else cl.textContent = LOC ? LOC.name : (D?.meta?.commune || ""); }
   renderLocality();
   side(false); renderAcct();
   if (VIEW==="accueil") renderWelcome(); else if (VIEW==="gestion") renderManager(); else if (VIEW==="donnees") renderData(); else if (VIEW==="qualite") renderQuality(); else if (VIEW==="citoyens") renderCitizen(); else if (VIEW==="carte") renderMap(); else if (VIEW==="localites") renderLocalities(); else if (VIEW==="utilisateurs") renderUsers(); else renderAbout();
@@ -1790,7 +1850,8 @@ function loadData(){
   const slug = LOC?.slug;
   const base = SERVER
     ? (slug ? `api/data.json?locality=${slug}&v=${V}&r=${ROLE()}` : `api/data.json?v=${V}&r=${ROLE()}`)
-    : `data.json?v=${V}`;
+    : `${LOC?.data || "data.json"}?v=${V}`;
+  if (!SERVER && LOC && !LOC.data) { D = emptyData(LOC.name); compute(); return Promise.resolve(); }
   return fetch(base, SERVER ? {cache:"no-cache"} : {})
     .then(r => {
       if (!r.ok) {
@@ -1849,7 +1910,16 @@ function openLogin(want){
   document.querySelectorAll("[data-demo]").forEach(b => b.onclick = () => api("api/demo-login", {role:b.dataset.demo}).then(u => setUser(u, want)).catch(() => {}));
 }
 function closeLogin(){ document.getElementById("login").classList.remove("open"); }
+// Static copy (GitHub Pages): no server, so no upload and no municipality management; say so instead of failing
+const SERVER_URL = "https://openedm.davidcarvalho.work/";
+function staticOnly(view, title){
+  if (SERVER) return false;
+  document.getElementById("v-"+view).innerHTML = `<h1>${esc(t(title))}</h1><div class="card" style="max-width:640px"><h2>${esc(t("static_h"))}</h2>
+    <p class="sub" style="margin:6px 0 12px">${esc(t("static_p"))}</p><a class="btn" href="${SERVER_URL}" target="_blank" rel="noopener">${esc(t("static_btn"))}</a></div>`;
+  return true;
+}
 function renderLocalities(){
+  if (staticOnly("localites", "nav_localities")) return;
   const tb = document.getElementById("loc-table");
   const msg = (s, err=false) => { const el = document.getElementById("loc-msg"); el.textContent = s; el.style.color = err ? "var(--c-fossil,#c00)" : "var(--c-mut,#888)"; };
   applyT(document.getElementById("v-localites"));
@@ -1858,11 +1928,12 @@ function renderLocalities(){
   fetch("api/localities", {cache:"no-store"}).then(r => r.ok ? r.json() : Promise.reject()).then(list => {
     if (!list.length) { tb.innerHTML = `<p class="sub">${esc(t("loc_no_data"))}</p>`; return; }
     tb.innerHTML = `<div class="tablewrap"><table><thead><tr>
-      <th>${esc(t("loc_h_name"))}</th><th>${esc(t("loc_h_slug"))}</th>
+      <th>${esc(t("loc_h_name"))}</th><th>${esc(t("loc_h_slug"))}</th><th>${esc(t("loc_h_map"))}</th>
       <th>${esc(t("loc_h_data"))}</th><th>${esc(t("loc_h_actions"))}</th>
     </tr></thead><tbody>${list.map(l => `<tr>
       <td><b>${esc(l.name)}</b> <span class="pill" style="font-style:normal;background:var(--surface-2)">${l.country==="FR"?"🇫🇷 FR":"🇨🇭 CH"}</span>${LOC?.slug===l.slug ? ` <span class="pill p-ren" style="font-style:normal">${esc(t("loc_active"))}</span>`:""}</td>
       <td><code>${esc(l.slug)}</code></td>
+      <td>${esc(l.map_config?.key === "imported" ? t("loc_f_map") : t(l.map_config?.key ? "loc_map_"+l.map_config.key : "loc_map_none"))}</td>
       <td id="loc-st-${esc(l.slug)}">${esc(t("loc_no_data"))}</td>
       <td style="white-space:nowrap">
         <button class="chip" style="margin-right:4px" onclick="switchToLocality('${esc(l.slug)}')">${esc(t("loc_open"))}</button>
@@ -1890,8 +1961,9 @@ function renderLocalities(){
     const name = document.getElementById("loc-f-name").value.trim();
     const slug = document.getElementById("loc-f-slug").value.trim();
     const country = (document.getElementById("loc-f-country")||{}).value || "CH";
+    const map = (document.getElementById("loc-f-map")||{}).value || null;
     try {
-      await api("api/localities", {slug, name, country}, "POST");
+      await api("api/localities", {slug, name, country, map}, "POST");
       const lr = await fetch("api/localities",{cache:"no-store"}); if(lr.ok) LOCALITIES = await lr.json();
       msg(t("loc_created")); formCard.classList.add("hide");
       document.getElementById("loc-f-name").value = ""; document.getElementById("loc-f-slug").value = "";
@@ -2061,7 +2133,7 @@ function locDelete(slug, name) {
       // Active locality was deleted: switch to first remaining
       LOC = remaining.length ? remaining[0] : null;
       if (LOC) try { localStorage.setItem("edm-locality", LOC.slug); } catch(e) {}
-      if (MAP) { MAP.destroy(); MAP = null; MAP_LOADING = false; }
+      if (!MAP_LOADING) resetMap();
       await loadData();
       renderAll();          // refreshes sidebar + all views
     }
@@ -2075,7 +2147,7 @@ async function switchToLocality(slug) {
   LOC = LOCALITIES.find(l => l.slug === slug) || LOC;
   if (!LOC) return;
   try { localStorage.setItem("edm-locality", LOC.slug); } catch(e) {}
-  if (MAP) { MAP.destroy(); MAP = null; MAP_LOADING = false; }   // drop the previous municipality's 3D map
+  if (!MAP_LOADING) resetMap();   // drop the previous municipality's 3D map
   await loadData(); renderAll();
   location.hash = "#gestion";
 }
@@ -2093,7 +2165,7 @@ async function recoverLocality() {
       LOC = list[0] || null;
       if (LOC) { try { localStorage.setItem("edm-locality", LOC.slug); } catch(e){} }
       else { try { localStorage.removeItem("edm-locality"); } catch(e){} }
-      if (MAP) { MAP.destroy(); MAP = null; MAP_LOADING = false; }
+      if (!MAP_LOADING) resetMap();
       await loadData();
       renderAll();
     }
@@ -2143,6 +2215,7 @@ function dmIssueStyle(issues){
 }
 
 function renderData(){
+  if (staticOnly("donnees", "nav_data")) return;
   applyT(document.getElementById("v-donnees"));
   document.getElementById("dm-viewer-card").classList.add("hide");
 
@@ -2553,7 +2626,7 @@ let RZ, LASTW = innerWidth;
 window.addEventListener("resize", () => { clearTimeout(RZ); RZ = setTimeout(() => { if (Math.abs(innerWidth - LASTW) < 40 || !D) return; LASTW = innerWidth; const open = document.getElementById("drawer").classList.contains("open"); renderAll(); if (open) reopen(); }, 200); });
 matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", renderAll);
 
-const V = "60";
+const V = "61";
 (async () => {
   try {
     const c = await fetch("api/config.json?v="+V, {cache:"no-store"}).then(r => r.json());
@@ -2568,6 +2641,11 @@ const V = "60";
         const saved = localStorage.getItem("edm-locality");
         LOC = LOCALITIES.find(l => l.slug === saved) || LOCALITIES[0];
       }
+    } else if (c.localities?.length) {
+      // Static host: the municipalities and their files are listed in api/config.json
+      LOCALITIES = c.localities;
+      let saved = null; try { saved = localStorage.getItem("edm-locality"); } catch(e) {}
+      LOC = LOCALITIES.find(l => l.slug === saved) || LOCALITIES[0];
     }
   } catch (e) {}
   await loadData(); route();

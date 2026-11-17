@@ -23,7 +23,7 @@ import fetch_france_map as geomap_fr  # noqa: E402  (fetch(): the IGN Géoplatef
 REF = {
     "batiments": ("building", "id_batiment", [
         "id_batiment", "id_site", "nom_site", "quartier", "typologie", "nom_batiment", "annee_construction",
-        "annee_renovation", "sre_m2", "niveaux", "label", "logements", "ouverture", "x_km", "y_km", "remarque", "egid"]),
+        "annee_renovation", "sre_m2", "niveaux", "label", "logements", "ouverture", "x_km", "y_km", "remarque", "egid"]),  # egid: optional, the public building id
     "installations": ("installation", "id_installation", [
         "id_installation", "id_site", "type", "libelle", "vecteur", "puissance_kw", "mise_en_service", "retrait", "remarque"]),
     "compteurs": ("meter", "id_compteur", [
@@ -76,26 +76,31 @@ def localities(conn, user=None):
     """List localities accessible to user. Platform admin sees all."""
     if user and user["role"] == "admin":
         return conn.execute(
-            "SELECT l.id, l.slug, l.name, l.country, l.map_config, l.demo, 'admin' AS role "
-            "FROM locality l ORDER BY l.name").fetchall()
+            "SELECT l.id, l.slug, l.name, l.country, l.map_config, l.demo, l.simulated, 'admin' AS role "
+            "FROM locality l ORDER BY l.id").fetchall()
     if user:
         return conn.execute(
-            "SELECT l.id, l.slug, l.name, l.country, l.map_config, l.demo, ul.role "
+            "SELECT l.id, l.slug, l.name, l.country, l.map_config, l.demo, l.simulated, ul.role "
             "FROM locality l JOIN user_locality ul ON l.id = ul.locality_id "
-            "WHERE ul.user_id = %s ORDER BY l.name", (user["id"],)).fetchall()
+            "WHERE ul.user_id = %s ORDER BY l.id", (user["id"],)).fetchall()
     return []
 
 
 def locality_by_slug(conn, slug):
     return conn.execute(
-        "SELECT id, slug, name, country, map_config, demo FROM locality WHERE slug = %s",
+        "SELECT id, slug, name, country, map_config, demo, simulated FROM locality WHERE slug = %s",
         (slug,)).fetchone()
 
 
-def create_locality(conn, slug, name, country="CH"):
+# The 3D maps this server ships (folders under prototype/). A municipality points to one, or to none.
+MAPS = {"rc": {"key": "rc", "dir": "map-rc/"}, "ge": {"key": "ge", "dir": "map/"}}
+
+
+def create_locality(conn, slug, name, country="CH", map_key=None):
+    mc = Jsonb(MAPS[map_key]) if map_key else None
     loc = conn.execute(
-        "INSERT INTO locality (slug, name, country) VALUES (%s, %s, %s) "
-        "RETURNING id, slug, name, country", (slug, name, country)).fetchone()
+        "INSERT INTO locality (slug, name, country, map_config) VALUES (%s, %s, %s, %s) "
+        "RETURNING id, slug, name, country, map_config", (slug, name, country, mc)).fetchone()
     # Grant all existing users access (admins=admin, technique=manager, others=viewer)
     conn.execute(
         "INSERT INTO user_locality (user_id, locality_id, role) "
@@ -130,8 +135,10 @@ def _upsert(cur, table, key, cols, rows):
         f"ON CONFLICT ({', '.join(key)}) DO UPDATE SET {sets}", rows)
 
 
-def load(conn, T, source, locality_id):
-    """Import the tables T ({name: [row dicts]}). Returns the import_run row. All or nothing."""
+def load(conn, T, source, locality_id, replace=False):
+    """Import the tables T ({name: [row dicts]}). Returns the import_run row. All or nothing.
+    replace: first remove the locality's sites, meters and readings (a regenerated, fully simulated dataset whose
+    sites may differ from the stored ones); added/unchanged/changed still compare with what was stored."""
     report, rej = rc.check(T)
     why = {}                                           # (meter, month) -> check that rejected the row
     for ch in report["checks"]:
@@ -142,6 +149,13 @@ def load(conn, T, source, locality_id):
         run = cur.execute(
             "INSERT INTO import_run (source, locality_id) VALUES (%s, %s) RETURNING id",
             (source, locality_id)).fetchone()["id"]
+        have = {(r["id_compteur"], r["mois"]): (text(r["valeur"]), text(r["energie_kwh"]), text(r["qualite"]))
+                for r in cur.execute(
+                    "SELECT id_compteur, mois, valeur, energie_kwh, qualite FROM reading WHERE locality_id = %s",
+                    (locality_id,)).fetchall()}
+        if replace:
+            for table in ("reading", "meter", "installation", "building"):
+                cur.execute(f"DELETE FROM {table} WHERE locality_id = %s", (locality_id,))
         for name, (table, key, cols) in REF.items():
             _upsert(cur, table, ["locality_id", key], cols + ["pos", "locality_id"],
                     [[null(r.get(c)) for c in cols] + [n, locality_id] for n, r in enumerate(T[name])])
@@ -149,10 +163,6 @@ def load(conn, T, source, locality_id):
         cur.executemany("INSERT INTO reference (name, pos, row, locality_id) VALUES (%s, %s, %s, %s)",
                         [(name, n, Jsonb(r), locality_id) for name in LOOKUPS for n, r in enumerate(T[name])])
 
-        have = {(r["id_compteur"], r["mois"]): (text(r["valeur"]), text(r["energie_kwh"]), text(r["qualite"]))
-                for r in cur.execute(
-                    "SELECT id_compteur, mois, valeur, energie_kwh, qualite FROM reading WHERE locality_id = %s",
-                    (locality_id,)).fetchall()}
         added = same = changed = 0
         rows, refused = [], []
         for n, r in enumerate(T["mesures"]):
@@ -203,8 +213,8 @@ def tables(conn, locality_id):
     return T, report, {n for n, m in enumerate(mes) if m[2]}
 
 
-def dataset(conn, locality_id):
-    return rc.build(*tables(conn, locality_id))
+def dataset(conn, locality_id, slug=None):
+    return rc.build(*tables(conn, locality_id), slug)
 
 
 # ── staging (sas de chargement) ───────────────────────────────────────────────
@@ -338,7 +348,7 @@ def reimport_bundled(conn, locality_id):
     return load(conn, T, "rive-claire (bundled guide, re-imported via API)", locality_id)
 
 
-# ── imported 3D map (Swiss geo platform) ──────────────────────────────────────
+# ── imported 3D map (Swiss geo platform / France IGN) ─────────────────────────
 
 def map_import(conn, locality_id, bbox, step=16, px=1.0, tiles=1, name=None, progress=None, osm=True, country="CH"):
     """Fetch a zone from the national platform for `country` (CH: geo.admin.ch, FR: IGN), store it (replacing any
@@ -433,7 +443,7 @@ def map_automatch(conn, locality_id):
         "UPDATE map_building mb SET id_site = b.id_site, match_kind = 'egid' "
         "FROM map_import mi, building b "
         "WHERE mb.map_import_id = mi.id AND mi.locality_id = %s "
-        "  AND b.locality_id = %s AND b.egid IS NOT NULL AND b.id_site IS NOT NULL AND mb.egid = b.egid",
+        "  AND b.locality_id = %s AND b.egid IS NOT NULL AND b.id_site IS NOT NULL AND mb.egid = b.egid::text",
         (locality_id, locality_id))
     # 2) saved manual matches override
     conn.execute(

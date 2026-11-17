@@ -5,6 +5,8 @@
 #      raw readings and the quality report
 #   3. importing the same dataset again adds 0 rows
 #   4. roles (issue #15): password login, demo logins, what each role is refused, role changes by an admin
+#   5. several municipalities: create one, upload the fictional Geneva ZIP to staging, commit, read it next to
+#      Rive-Claire (unchanged), delete it
 # Usage: tools/check_stack.sh [--keep]     (--keep leaves the stack running on http://127.0.0.1:18088/)
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -87,5 +89,34 @@ post -c "$TMP/real" -d "{\"username\":\"check\",\"password\":\"$PW\"}" "$URL/api
 as real -X POST "$URL/api/logout" >/dev/null
 [ "$(as real "$URL/api/me")" = null ]
 [ "$(code -b "$TMP/real" "$URL/api/users")" = 401 ]
+
+echo "5. several municipalities"
+L="$URL/api/localities"
+curl -fsS "$L" | grep -q '"slug":"geneve","name":"Genève"' || { echo "built-in Geneva not listed to visitors"; exit 1; }
+curl -fsS "$L" | grep -q '"dir":"map/"' || { echo "Geneva has no map"; exit 1; }
+[ "$(code "$URL/api/data.json?locality=geneve")" = 503 ]                                             # no readings yet
+# Genève (démo): seeded from geneve/csv/, must equal the static copy GitHub Pages serves
+curl -fsS "$L" | grep -q '"slug":"geneve-demo".*"simulated":true' || { echo "Genève (démo) not listed as simulated"; exit 1; }
+as technique --compressed "$URL/api/data.json?locality=geneve-demo" -o "$TMP/gdemo.json"
+"$PY" -c 'import json, sys; a, b = (json.load(open(f, encoding="utf-8")) for f in sys.argv[1:]); assert a == b, "Genève (démo) differs from prototype/data-geneve-demo.json: " + ", ".join(k for k in b if a.get(k) != b[k])' "$TMP/gdemo.json" prototype/data-geneve-demo.json
+[ "$(code -b "$TMP/admin" -H 'content-type: application/json' -d '{"slug":"x","name":"X","map":"nope"}' "$L")" = 422 ]
+NEW='{"slug":"test-fict","name":"Test (fictional)"}'
+[ "$(code -b "$TMP/technique" -H 'content-type: application/json' -d "$NEW" "$L")" = 403 ]         # admins only
+post -b "$TMP/admin" -d "$NEW" "$L" | grep -q '"slug":"test-fict"'
+[ "$(code "$L/test-fict/staging")" = 401 ]
+[ "$(code -b "$TMP/elu" "$L/test-fict/staging")" = 403 ]
+[ "$(code -b "$TMP/technique" -F "file=@README.md" "$L/test-fict/staging")" = 422 ]                   # not a ZIP
+as technique -F "file=@geneve/geneve-energy-data.zip" "$L/test-fict/staging" -o "$TMP/staged.json"
+sid=$("$PY" -c 'import json, sys; d = json.load(open(sys.argv[1])); assert len(d["files"]) == 10 and not d["unrecognised"], d; print(d["staging_id"])' "$TMP/staged.json")
+if curl -fsS "$L" | grep -q '"slug":"test-fict"'; then echo "a municipality without data is listed to visitors"; exit 1; fi
+as technique -X POST "$L/test-fict/staging/$sid/commit" | grep -q '"added":8061'
+[ "$(code -b "$TMP/technique" -X POST "$L/test-fict/staging/$sid/commit")" = 422 ]                     # already committed
+as technique --compressed "$URL/api/data.json?locality=test-fict" -o "$TMP/geneve.json"
+"$PY" -c 'import json, sys; d = json.load(open(sys.argv[1])); n = len(d["sites"]); assert n == 40, n' "$TMP/geneve.json"
+as technique --compressed "$URL/api/data.json?locality=rive-claire" | cmp -s - "$TMP/full.json" || { echo "Rive-Claire changed after the Geneva import"; exit 1; }
+[ "$(code -b "$TMP/technique" -X DELETE "$L/test-fict")" = 403 ]
+[ "$(code -b "$TMP/admin" -X DELETE "$L/test-fict")" = 200 ]
+[ "$(code -b "$TMP/technique" "$URL/api/data.json?locality=test-fict")" = 404 ]
+as technique --compressed "$URL/data.json" | cmp -s - "$TMP/full.json" || { echo "Rive-Claire changed after deleting Geneva"; exit 1; }
 
 echo "stack check OK"

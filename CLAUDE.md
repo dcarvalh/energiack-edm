@@ -4,8 +4,10 @@ Public repo. Live at https://dcarvalh.github.io/energiack-edm/ (GitHub Pages, de
 What it does and how to run it: `README.md`. Team plan, decisions and next steps: `plan.md`. Dataset notes: `docs/rive-claire-data.md`.
 
 ## Rules
-- **Public repo: only public or fictional data.** Data received under confidentiality at the event (partner APIs, real
-  municipal cases) never goes into git, the site, or an AI service without the owner's OK.
+- **Public repo: only public or fictional data.** openEDM is built only from the organisers' fictional Rive-Claire
+  dataset and public sources (SITG, swisstopo); no partner data was ever used. Keep it that way: data received under
+  confidentiality at the event (partner APIs, real municipal cases), and any mention of it (name, fields, notes),
+  never goes into git, the site, or an AI service without the owner's OK.
 - **FR and EN are a must.** Every visible string goes through the `T.fr` / `T.en` dictionaries in `prototype/index.html`
   (`map3d.js` uses the same `t()`). `tools/check_page.py` fails if the two key sets differ.
 - Simple, minimalist, modern. Don't add features nobody asked for; list ideas in `plan.md` instead.
@@ -20,17 +22,7 @@ What it does and how to run it: `README.md`. Team plan, decisions and next steps
   Link the issue (`Closes #N`) when there is one. Ideas and bugs from the team arrive as GitHub issues.
 - Before the PR: serve `prototype/` locally and run `tools/check_page.py http://127.0.0.1:PORT/` (screenshots in `shots/`).
   Check FR/EN and phone width. Say what was not verified.
-- Pitch video: `.venv/bin/python tools/record_video.py --lang fr` (storyboard = `SHOTS` in that file; output in the
-  git-ignored `video-out/`). The recorder captures the browser's frames over CDP because Playwright's own
-  recorder is limited to the CSS viewport size.
-- **Pitch deck** = `prototype/pitch/index.html`, live at `/pitch/` (README › Pitch deck). Decided 14 Nov: French only,
-  silent, light, clicked through live; a title slide (not numbered) + 6 slides, one `<section class="slide">` each;
-  short text (summarise, cut minor bullets); app clips only where the storyboard asks for one; slide 1's animations
-  play once, clips loop. The folder must stay self-contained (own `fonts/`, `clips/`, no `../` URL) so it opens from
-  disk offline: test with the network off. Clips (16:9 when two are stacked, 4:3 alone) are the only media committed;
-  record `access` on the server version with `--url` and the demo logins. Headless Chromium cannot play H.264: a
-  screenshot shows the poster frame, so say clips were not seen playing. "Energo" and the team's first names are
-  allowed on the deck (David, 14 Nov).
+- Pitch deck (`prototype/pitch/`) and pitch video (`tools/record_video.py`): read the `pitch-deck` skill first.
 - The site is served under `/energiack-edm/`: keep every URL in the app relative (no leading `/`).
 - After changing data or JS, bump the cache constants: `const V` in `prototype/index.html` and `const V` in `prototype/map3d.js`.
 
@@ -39,15 +31,25 @@ What it does and how to run it: `README.md`. Team plan, decisions and next steps
   that function the single source of the format, so the static site and the server never drift.
 - `tools/check_stack.sh` (also run by the Stack workflow on every PR) must pass: `data.json` from the database equals the
   static build, a re-import adds 0 rows, every role gets what it should. Hosting and deploys: `docs/deploy.md`. Never commit `.env`.
+- The server keeps its database between deploys, and `server/schema.sql` runs at every start: `CREATE TABLE IF NOT EXISTS`
+  does nothing on a table that exists. A changed column or key needs an upgrade step there (see the `DO` block), and
+  `tools/check_upgrade.sh` (Stack workflow, every PR) must pass: database created by `main`, started with the PR, nothing lost.
+- Several municipalities: every data table is keyed by `locality_id`; API under `/api/localities/{slug}/…`.
+- Built-in datasets: `BUNDLED` in `tools/import_rive_claire.py` (Rive-Claire guide; `geneve-demo` from `geneve/csv/`).
+  After changing `tools/make_geneva_fake.py`, rerun it, rebuild `prototype/data-geneve-demo.json`
+  (`import_rive_claire.py --locality geneve-demo --out …`) and the zip; `check_stack.sh` compares server and static. A `simulated` built-in dataset is replaced at every start
+  (`store.load(..., replace=True)`), so changed demo sites never linger in the database.
+  `locality.simulated` = real addresses with simulated readings: the app shows a banner and tags every figure.
 - Roles (issue #15: admin, technique, elu, public): `server/auth.py` decides, the API enforces it on the data (no raw
   readings or quality report below `technique`); `ACCESS` in `prototype/index.html` only hides menus and must mirror it.
   Change both together. On a static host `prototype/api/config.json` (`{"server": false}`) keeps every page open, no login.
 - UI checks on a running stack: `tools/check_roles.py <url>` and `CHECK_ROLE=technique tools/check_page.py <url>`;
-  in static mode `tools/check_page.py` as before.
+  in static mode `tools/check_page.py` as before. The Stack workflow's `page` job runs all three on every PR.
 
 ## Map (3D tab)
-- Two maps: Rive-Claire (`prototype/map-rc/`, `tools/make_rive_claire_map.py`, default) and Geneva (`prototype/map/`,
-  `tools/make_map.py`). Same schema; `map3d.js` branches on `cfg.key === "rc"`. `initMap` returns `destroy()` for the switch.
+- Two maps, one per municipality (its `map_config`, no switch on the map): Rive-Claire (`prototype/map-rc/`, `tools/make_rive_claire_map.py`, default) and Geneva (`prototype/map/`,
+  `tools/make_map.py`). Same schema; `map3d.js` branches on `cfg.key === "rc"`. `initMap` returns `destroy()`, called when the municipality changes.
+- Site ↔ map building: optional `egid` column in `batiments` (`build()` emits it only when set). `index.html` passes `sites` (EGID → site) to `initMap`; the site page reads the public attributes with `publicBuildings()` from `map3d.js`.
 - Never build straight into `prototype/`: `--out` a scratch folder, test it, then copy.
 - three.js 0.160.0 and three-mesh-bvh 0.7.6 vendored in `prototype/vendor/`. BVH keeps hover picking fast on 10k buildings.
   `OrbitControls.js` only exports `OrbitControls`. Headless 3D needs `--use-angle=swiftshader --enable-unsafe-swiftshader`.

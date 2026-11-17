@@ -2,17 +2,22 @@
 
 Energ-IACK 2026 · Défi 2 « EDM citoyen et souverain ».
 
+**New here? Read [`START_HERE.md`](START_HERE.md)**: what is done and not done, run it in 5 minutes, where the code lives, next steps.
+
 An open-source Energy Data Management tool (EDM) that a commune **owns**: open data format, readable code, runs on any static host
 or on its own server with a database and logins, and the same format lets communes compare and share. Built at the
-Energ-IACK hackathon, Geneva, 13–14 Nov 2026.
+Energ-IACK hackathon, Geneva, 13–14 Nov 2026. **The project goes on after the hackathon: next presentation on Tue 1 Dec 2026.**
 
-**Live demo, open: https://dcarvalh.github.io/energiack-edm/** (FR/EN toggle top right, also `?lang=en`). Static, no login, every page visible.
+**Main link, the server version: https://openedm.davidcarvalho.work/** The app on PostgreSQL, with several
+municipalities, file imports through a staging area, and four roles (admin, technique, elu, public) enforced by the
+server. "Log in" (top right) shows one-click demo accounts for each role. Fictional data only.
 
-**Pitch deck (French): https://dcarvalh.github.io/energiack-edm/pitch/** Seven slides in the browser; it also runs
-offline from `prototype/pitch/index.html` (see "Pitch deck" below).
+**Open static copy: https://dcarvalh.github.io/energiack-edm/** (FR/EN toggle top right, also `?lang=en`). GitHub
+Pages, no login, every page visible; Data and Municipalities (upload, manage municipalities) say they need the
+server version, with a link.
 
-**Live demo with logins: https://openedm.davidcarvalho.work/** The same app on PostgreSQL, with four roles enforced by
-the server. "Log in" (top right) shows one-click demo accounts for each role. Fictional data only.
+**Pitch deck: [French](https://dcarvalh.github.io/energiack-edm/pitch/) · [English](https://dcarvalh.github.io/energiack-edm/pitch/en.html)**
+Seven slides in the browser; it also runs offline from `prototype/pitch/` (see "Pitch deck" below).
 
 ## What it shows
 
@@ -20,10 +25,12 @@ the server. "Log in" (top right) shows one-click demo accounts for each role. Fi
 |---|---|---|
 | **Accueil / Welcome** | everyone | the idea, who it is for (planned indicators per audience), what is online, next steps |
 | **Gestion / Manage** | the commune's energy service | KPIs (energy, estimated cost, CO₂ vs 2030 target, fossil-heated sites, solar), monthly chart by fluid, CO₂ trajectory to 2030, site table with alerts incl. data defects. A site page has its monthly history per fluid, every meter with raw readings and quality flags, buildings, installations, heating history and a CSV download |
-| **Citoyen·ne·s / Citizens** | residents | the year in one sentence, progress to the 2030 targets, numbers per resident, what changed |
-| **Carte 3D / 3D map** | everyone | **Rive-Claire** (default): the challenge's fictional commune as schematic 3D blocks coloured by measured 2025 readings; scenery (lake, roads, trees) is generated. **Geneva**: 10,574 real buildings in central Geneva (SITG footprints and heights) on swisstopo terrain and aerial photo, coloured by heat index, heating energy, solar potential (real) or electricity and water (simulated, flagged) |
+| **Citoyen·ne·s / Citizens** | residents | the year in one sentence, progress to the 2030 targets, numbers per resident (totals when the population is unknown), what changed |
+| **Carte 3D / 3D map** | everyone | **Rive-Claire** (default): the challenge's fictional commune as schematic 3D blocks coloured by measured 2025 readings; scenery (lake, roads, trees) is generated. **Geneva**: 10,574 real buildings in central Geneva (SITG footprints and heights) on swisstopo terrain and aerial photo, coloured by heat index, heating energy, solar potential (real) or electricity and water (simulated, flagged). In Genève (démo) its sites are highlighted; a site's building panel shows its simulated readings and opens its building sheet |
 | **Qualité / Data quality** | energy service, other communes | the import report: rows read, loaded, rejected; re-import of the same file adds 0 rows; 17 checks (reference IDs and links, unknown meter, month, unit, value, duplicates, gaps, estimated, negative, spikes, unusual zeros, two-monthly readings, kWh conversion, sub-meter vs parent, meter dates) with every finding, a link to the site and a CSV |
 | **Comment ça marche / How it works** | jury, other communes | why sovereign, the Geneva context with sources, the open data model |
+| **Données / Data** | energy service (server version only) | upload a ZIP of CSV files for the selected municipality: each table is recognised by its columns, the upload waits in a staging area with its quality report, rows can be corrected or removed, then it is committed or discarded. Also the loaded tables, row by row |
+| **Localités / Municipalities** | administrators (server version only) | the municipalities on this server: create one, delete one with all its data |
 | **Utilisateurs / Users** | administrators (server version only) | every account and its role, roles changed in place, what each role sees |
 
 ### Logins and roles (server version)
@@ -32,12 +39,24 @@ the server. "Log in" (top right) shows one-click demo accounts for each role. Fi
 |---|---|
 | Visitor / Public | Welcome, Citizens, 3D map, How it works; site pages without raw readings |
 | Élu·e / Elected official | + Manage |
-| Service technique / Technical staff | + Data quality, raw meter readings, CSV exports |
-| Administrateur·rice / Administrator | + Users |
+| Service technique / Technical staff | + Data quality, Data (imports), raw meter readings, CSV exports |
+| Administrateur·rice / Administrator | + Municipalities, Users |
 
 The server enforces this on the data: below "technical staff", `data.json` comes without raw readings or the quality
 report. Pages the role cannot open ask for a login. On a static host (the Pages demo) there are no accounts and
 every page is open.
+
+### Several municipalities (server version)
+
+One server holds several municipalities, each with its own buildings, meters, readings, imports and quality report
+(every table is keyed by municipality, so two communes can use the same IDs). Once logged in, a selector in the side
+menu switches between them. Rive-Claire is created at start as the demo. To add one: as administrator, **Localités ›
+New**, then as technical staff **Données** and upload a ZIP in the Rive-Claire CSV format (`rive-claire/csv/`).
+**Genève (démo)** is built in too: 39 real Geneva buildings in one neighbourhood (Plainpalais / Jonction; addresses and EGIDs from SITG) plus public lighting, with
+**fully simulated** meters and readings (`tools/make_geneva_fake.py` → `geneve/csv/`, also zipped as
+`geneve/geneve-energy-data.zip`, a ready-made upload example). A permanent banner and a "simulated" tag on every
+figure say so. The static Pages demo shows Rive-Claire, Genève (map only) and Genève (démo)
+(`prototype/data-geneve-demo.json`). With one-click demo accounts on, any visitor can import and delete data: for public demos only.
 
 Data: the organisers' fictional **Rive-Claire** dataset (CC BY 4.0): 48 sites, 50 buildings, 64 installations, 172 meters,
 9,437 monthly readings 2021–2025. Rules applied from the dataset's dictionary: on-site electricity = EL + PV − EL-INJ;
@@ -65,6 +84,7 @@ cp .env.example .env          # set POSTGRES_PASSWORD (openssl rand -hex 24); DE
 docker compose up -d --build  # open http://127.0.0.1:8088/ (Rive-Claire is loaded at start; re-imports add 0 rows)
 docker compose exec api python -m server.cli adduser <name> --role admin     # a real account; asks for the password
 tools/check_stack.sh          # full check in a throwaway copy of the stack: data, re-import, every role
+tools/check_upgrade.sh        # a database created by origin/main starts with your code and keeps its data
 ```
 
 The same app reads its data from PostgreSQL. Putting it on a server with HTTPS, roles, demo accounts, deploys and
@@ -72,15 +92,17 @@ backups: `docs/deploy.md`.
 
 ## Pitch deck
 
-**Live: https://dcarvalh.github.io/energiack-edm/pitch/** The pitch as a web page, in French: a title slide and six
-slides, with short clips of the app, small animations and a QR code to the version with logins.
+**Live: [French](https://dcarvalh.github.io/energiack-edm/pitch/) (`index.html`) · [English](https://dcarvalh.github.io/energiack-edm/pitch/en.html) (`en.html`)**
+The pitch as a web page: a title slide and six slides, with short clips of the app, small animations and a QR code to
+the server version (openedm.davidcarvalho.work). Both decks use the same clips, recorded with the app in French. A
+change to one deck goes into the other too.
 
 - **Keys:** → / space / click = next, ← (or a click on the left quarter) = back, Home / End, `F` = full screen.
 - **Run it locally, no server and no internet:** `prototype/pitch/` holds everything it needs (font, clips, QR code).
-  Clone the repo (or "Code › Download ZIP" on GitHub), then open `prototype/pitch/index.html` in a browser. That folder
+  Clone the repo (or "Code › Download ZIP" on GitHub), then open `prototype/pitch/index.html` (or `en.html`) in a browser. That folder
   can also be copied alone, to a USB stick for example. Only the QR code needs a connection, on the phone that scans it.
-- **Or through the local server:** `python3 -m http.server 8000 -d prototype`, then http://127.0.0.1:8000/pitch/
-- **Edit a slide:** one `<section class="slide">` per slide in `prototype/pitch/index.html`.
+- **Or through the local server:** `python3 -m http.server 8000 -d prototype`, then http://127.0.0.1:8000/pitch/ (English: /pitch/en.html)
+- **Edit a slide:** one `<section class="slide">` per slide in `prototype/pitch/index.html` and `en.html`.
 - **Re-record a clip** (needs the tools setup under "Files"; then copy the MP4 to `prototype/pitch/clips/`):
 
 ```bash
@@ -101,14 +123,17 @@ tools/import_rive_claire.py    builds data.json from the organisers' Rive-Claire
 tools/make_rive_claire_map.py  builds prototype/map-rc/ from the same guide (--out/--scale/--year)
 tools/make_map.py       builds prototype/map/ from SITG + swisstopo (--box/--out/--step/--px/--tiles)
 tools/check_page.py     headless browser check: all views, FR/EN, desktop/phone, light/dark, JS errors, overflow
-                        (on the server version: CHECK_ROLE=technique logs in first)
+                        (on the server version: CHECK_ROLE=admin logs in first and adds the server-only views)
 tools/record_video.py   records clips of the app: one MP4 per shot + joined file in video-out/
                         (--lang fr|en, --shots, --size, --zoom, --url, --audio); edit SHOTS at the top of the file
-prototype/pitch/        the pitch deck (French), self-contained: index.html, clips/, fonts/, qr-server.svg (see "Pitch deck")
+prototype/pitch/        the pitch deck, self-contained: index.html (French), en.html (English), clips/, fonts/, qr-server.svg (see "Pitch deck")
 prototype/api/config.json  {"server": false} on a static host; on the server the API answers instead (logins on)
 compose.yaml, .env.example the server version: PostgreSQL + API + Caddy
 server/                 the API (FastAPI): schema.sql, store.py (database ↔ data.json), auth.py (accounts, roles), cli.py
-tools/check_stack.sh    end-to-end check of the server version (also run on every pull request)
+tools/check_stack.sh    end-to-end check of the server version, incl. a second municipality from a ZIP (also run on every pull request)
+tools/check_upgrade.sh  upgrade check: a database created by main must start with the new code, nothing lost (every pull request)
+tools/csv_detect.py     recognises which table an uploaded CSV is, from its column names
+tools/make_geneva_fake.py  generates geneve/: the fictional second municipality (CSV tables + ZIP to upload)
 tools/check_roles.py    headless check of the app as a visitor and as each role, FR/EN, desktop/phone
 docs/deploy.md          the server version: run, roles, demo accounts, hosting, deploys, backups
 docs/research.md        what Geneva has today, with sources

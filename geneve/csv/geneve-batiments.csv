@@ -1,0 +1,41 @@
+﻿id_batiment;id_site;nom_site;quartier;typologie;nom_batiment;annee_construction;annee_renovation;sre_m2;niveaux;label;logements;ouverture;x_km;y_km;remarque;egid
+G01-B1;G01;Administration, Rue des Plantaporrêts 4;Jonction;Administration;Administration, Rue des Plantaporrêts 4;;;851;3;;;;1.319;1.791;;1012919
+G02-B1;G02;Administration, Rue du Stand 24-26;Plainpalais;Administration;Administration, Rue du Stand 24-26;;;20841;4;;;;1.644;1.861;;2038232
+G03-B1;G03;Administration, Rue du Stand 15;Plainpalais;Administration;Administration, Rue du Stand 15;2003;;3258;3;;;;1.671;1.916;;295030288
+G04-B1;G04;École primaire, Avenue de Sainte-Clotilde 24;Jonction;École primaire;École primaire, Avenue de Sainte-Clotilde 24;;;4218;2;;;;1.293;1.442;;1013153
+G05-B1;G05;École primaire, Rue du Village-Suisse 5;Plainpalais;École primaire;École primaire, Rue du Village-Suisse 5;;;4820;1;;;;1.636;1.586;;1013255
+G06-B1;G06;École primaire, Rue des Plantaporrêts 1BIS;Jonction;École primaire;École primaire, Rue des Plantaporrêts 1BIS;;;2135;3;;;;1.368;1.776;;1012924
+G07-B1;G07;École primaire, Rue des Jardins 4;Jonction;École primaire;École primaire, Rue des Jardins 4;;;925;3;;;;1.365;1.808;;295081265
+G08-B1;G08;École primaire, Boulevard Carl-Vogt 69;Plainpalais;École primaire;École primaire, Boulevard Carl-Vogt 69;;;1910;3;;;;1.765;1.244;;2037878
+G09-B1;G09;École primaire, Avenue de la Jonction 10;Jonction;École primaire;École primaire, Avenue de la Jonction 10;;;933;1;;;;0.998;1.656;;9082278
+G10-B1;G10;École avec piscine, Avenue de la Jonction 8;Jonction;École avec piscine;École avec piscine, Avenue de la Jonction 8;;;7737;3;;;;1.079;1.662;;295082366
+G11-B1;G11;Crèche (EVE), Avenue de Sainte-Clotilde 14;Jonction;Crèche (EVE);Crèche (EVE), Avenue de Sainte-Clotilde 14;;;820;2;;;;1.453;1.575;;2038339
+G12-B1;G12;Crèche (EVE), Chemin du 23-Août 10-12;Jonction;Crèche (EVE);Crèche (EVE), Chemin du 23-Août 10-12;2021;;4402;4;;;;1.489;1.717;;295513989
+G13-B1;G13;Crèche (EVE), Boulevard D'Yvoy 5;Plainpalais;Crèche (EVE);Crèche (EVE), Boulevard D'Yvoy 5;;;2434;10;;;;1.451;1.439;;1013182
+G14-B1;G14;Crèche (EVE), Boulevard D'Yvoy 3;Plainpalais;Crèche (EVE);Crèche (EVE), Boulevard D'Yvoy 3;;;2811;9;;;;1.435;1.421;;1013183
+G15-B1;G15;Crèche (EVE), Avenue de Sainte-Clotilde 17;Jonction;Crèche (EVE);Crèche (EVE), Avenue de Sainte-Clotilde 17;;;2885;9;;;;1.414;1.47;;1013181
+G16-B1;G16;Maison de quartier, Rue des Bains 28;Plainpalais;Maison de quartier;Maison de quartier, Rue des Bains 28;;;9277;2;;;;1.757;1.406;;2039731
+G17-B1;G17;Maison de quartier, Rue Gourgas 3;Plainpalais;Maison de quartier;Maison de quartier, Rue Gourgas 3;;;1609;2;;;;1.844;1.436;;295097774
+G18-B1;G18;Salle communale, Rue Gourgas 19;Plainpalais;Salle communale;Salle communale, Rue Gourgas 19;;;140;2;;;;1.648;1.52;;295102607
+G19-B1;G19;Salle communale, Chemin de la Gravière 10;Jonction;Salle communale;Salle communale, Chemin de la Gravière 10;;;682;2;;;;1.251;1.241;;2039661
+G20-B1;G20;Bibliothèque, Boulevard Carl-Vogt 22-24;Jonction;Bibliothèque;Bibliothèque, Boulevard Carl-Vogt 22-24;;;2093;3;;;;1.365;1.515;;2037894
+G21-B1;G21;Salle de spectacle, Chemin de la Gravière 7;Jonction;Salle de spectacle;Salle de spectacle, Chemin de la Gravière 7;2006;;674;1;;;;1.217;1.274;;295009947
+G22-B1;G22;Installation sportive, Boulevard Carl-Vogt 7BIS;Jonction;Installation sportive;Installation sportive, Boulevard Carl-Vogt 7BIS;;;617;2;;;;1.295;1.653;;295087875
+G23-B1;G23;Installation sportive, Rue des Vieux-Grenadiers 15;Plainpalais;Installation sportive;Installation sportive, Rue des Vieux-Grenadiers 15;;;1133;4;;;;1.764;1.36;;1012999
+G24-B1;G24;Installation sportive, Rue François-Dussaud 12;Jonction;Installation sportive;Installation sportive, Rue François-Dussaud 12;;;17203;1;;;;1.292;1.135;;2037037
+G25-B1;G25;Piscine couverte, Rue Hans-Wilsdorf 2;Plainpalais;Piscine couverte;Piscine couverte, Rue Hans-Wilsdorf 2;;;8952;2;;;;1.481;1.002;;295078228
+G26-B1;G26;Patinoire, Rue Hans-Wilsdorf 4;Plainpalais;Patinoire;Patinoire, Rue Hans-Wilsdorf 4;;;5575;1;;;;1.527;0.962;Exploitation saisonnière : septembre à mars.;2037485
+G27-B1;G27;Voirie et ateliers, Avenue de Sainte-Clotilde 13;Plainpalais;Voirie et ateliers;Voirie et ateliers, Avenue de Sainte-Clotilde 13;;;807;1;;;;1.5;1.555;;1013237
+G28-B1;G28;Caserne de pompiers, Rue Gourgas 18;Plainpalais;Caserne de pompiers;Caserne de pompiers, Rue Gourgas 18;;;7594;2;;;;1.729;1.543;;2039716
+G29-B1;G29;Immeuble Boulevard D'Yvoy 1;Jonction;Logements communaux;Immeuble Boulevard D'Yvoy 1;2007;;1748;9;;23;;1.391;1.429;;295111384
+G30-B1;G30;Immeuble Rue du Village-Suisse 24;Plainpalais;Logements communaux;Immeuble Rue du Village-Suisse 24;;;2126;8;;28;;1.564;1.503;;1013234
+G31-B1;G31;Immeuble Rue du Village-Suisse 22;Plainpalais;Logements communaux;Immeuble Rue du Village-Suisse 22;;;1488;8;;20;;1.573;1.519;;1013235
+G32-B1;G32;Immeuble Rue du Village-Suisse 20;Plainpalais;Logements communaux;Immeuble Rue du Village-Suisse 20;;;2121;8;;28;;1.582;1.535;;1013236
+G33-B1;G33;Immeuble Boulevard Carl-Vogt 55;Plainpalais;Logements communaux;Immeuble Boulevard Carl-Vogt 55;;;1963;5;;26;;1.624;1.358;;1013212
+G34-B1;G34;Immeuble Boulevard D'Yvoy 29;Plainpalais;Logements communaux;Immeuble Boulevard D'Yvoy 29;;;2018;8;;27;;1.572;1.278;;1013201
+G35-B1;G35;Immeuble Rue de la Baillive 3;Plainpalais;Logements communaux;Immeuble Rue de la Baillive 3;;;1020;6;;14;;1.643;1.357;;1013214
+G36-B1;G36;Administration, Boulevard Carl-Vogt 19-21;Jonction;Administration;Administration, Boulevard Carl-Vogt 19-21;;;3713;4;;;;1.391;1.553;;2037897
+G37-B1;G37;École primaire, Rue de la Coulouvrenière 8-10;Plainpalais;École primaire;École primaire, Rue de la Coulouvrenière 8-10;;;1236;3;;;;1.604;1.944;;2037214
+G38-B1;G38;Bibliothèque, Avenue de Sainte-Clotilde 23;Jonction;Bibliothèque;Bibliothèque, Avenue de Sainte-Clotilde 23;;;603;3;;;;1.345;1.406;;2038338
+G39-B1;G39;Installation sportive, Rue du Tir 5;Plainpalais;Installation sportive;Installation sportive, Rue du Tir 5;;;1842;1;;;;1.713;1.872;;1012959
+G40-B1;G40;Éclairage public;Tous;Éclairage public;Éclairage public;;;;;;;;2.11;1.96;Réseau, pas un bâtiment. Points lumineux LED.;

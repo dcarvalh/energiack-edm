@@ -8,8 +8,8 @@ import { computeBoundsTree, acceleratedRaycast } from "./vendor/three-mesh-bvh.m
 THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
 
-const V = "37";
-const GREY = 0xb9bfbb;
+const V = "38";
+const GREY = 0xb9bfbb, SITE_COL = 0x1f6feb;   // SITE_COL: buildings linked to a site of the municipality (legend swatch)
 const SEL_COL = 0xff2bbf;   // selected/clicked building: a vivid magenta outline rim
 const SITEHI = 0x2a9df4;    // the other blocks of the selected building's site: a thinner blue outline rim
 const RAMP = {
@@ -102,6 +102,14 @@ const LAYER_KEYS = ["idc", "heat", "solar", "elec", "water"];
 const hex = c => "#" + c.toString(16).padStart(6, "0");
 const norm = s => (s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
+// Public attributes of the map's buildings with these EGIDs, for the site page (plan item 16). use is translated.
+const PUB = {};
+export async function publicBuildings(dir, egids, lang) {
+  PUB[dir] = PUB[dir] || fetch(dir + "buildings.json?v=" + V).then(r => r.json()).then(d => new Map(d.buildings.filter(b => b.egid).map(b => [b.egid, b])));
+  const m = await PUB[dir];
+  return egids.map(e => m.get(e)).filter(Boolean).map(b => ({ ...b, use: (lang === "en" && EN[b.use]) || b.use }));
+}
+
 export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
   const { t, nf, esc } = api, RC = cfg.key === "rc", IMP = cfg.key === "imported", RCLIKE = RC || IMP, DIR = cfg.dir;
   const tr = s => (api.lang() === "en" && EN[s]) || s;
@@ -138,6 +146,9 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
     b.rc = b.id_site ? (api.siteData(b.id_site) || null) : null;
   }
   if (RCLIKE) for (const b of B) enrichHeat(b);
+  const SITES = (!RC && !IMP && api.sites) || {};           // EGID -> the municipality's site that owns the building (plan item 16; built-in maps)
+  let NLINK = 0;
+  if (!RC && !IMP) for (const b of B) { const s = SITES[b.egid]; if (s) { b.site = s.id; b.siteName = s.name; b.sheet = s.b; b.nb = s.nb; NLINK++; } }
   const [terr, imgs] = await Promise.all([
     fetch(DIR + "terrain.bin?v=" + V).then(r => r.arrayBuffer()).then(b => new Int16Array(b)),
     Promise.all(Array.from({ length: NT * NT }, (_, k) => new Promise((res) => {
@@ -160,7 +171,7 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
   controls.touches = { ONE: THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_ROTATE };
   controls.enableDamping = true; controls.dampingFactor = 0.12; controls.zoomSpeed = 1.2;
   controls.maxPolarAngle = 1.3; controls.minDistance = 60; controls.maxDistance = Math.max(W, H) * 1.6;
-  const HOME = RC   // Rive-Claire: shift left so the north-west quarter is not under the card
+  let HOME = RC   // Rive-Claire: shift left so the north-west quarter is not under the card
     ? { pos: new THREE.Vector3(-W * 0.3, Math.max(W, H) * 0.62, H * 0.92), target: new THREE.Vector3(-W * 0.13, 0, -H * 0.02) }
     : { pos: new THREE.Vector3(-W * 0.18, Math.max(W, H) * 0.42, H * 0.72), target: new THREE.Vector3(0, 0, -H * 0.04) };
 
@@ -278,7 +289,7 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
     rim.geometry  = biList.length ? hullGeo(biList, thickness) : new THREE.BufferGeometry();  // inflated hull -> rim
     mask.visible = rim.visible = biList.length > 0;
   }
-  const siteOf = b => IMP ? b.id_site : (RC ? b.site : null);
+  const siteOf = b => IMP ? b.id_site : (b.site || null);   // RC: b.site · built-in GE: linked site · imported: id_site
   function updateOutlines() {
     setGroup(selMask, selRim, SEL >= 0 && !isHidden(SEL) ? [SEL] : [], SEL_T);
     let mates = [];
@@ -300,7 +311,8 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
   stage.innerHTML = ""; stage.appendChild(renderer.domElement);
 
   // ---------------------------------------------------------------- colouring + class filter
-  let LAYER = "idc", SEL = -1, HOV = -1, ONLY = null;   // ONLY = isolated class index, or "nd" for no data, or "un" for unmatched
+  const ONLY0 = NLINK ? "site" : null;   // a municipality with linked sites opens with only them lit
+  let LAYER = "idc", SEL = -1, HOV = -1, ONLY = ONLY0;   // ONLY = class index, "nd" no data, "un" unmatched (imported), "site" linked
   let MFILTER = "all";                                   // imported map: "all" | "matched" | "unmatched"
   const col = new THREE.Color(), white = new THREE.Color(0xffffff), ghost = new THREE.Color();
   const WARN = 0xe0893a;                                 // imported map: a building not yet matched to a site
@@ -310,7 +322,7 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
   function isHidden(bi, lay = L()) {                     // currently filtered out of view (ghosted) -> not pickable
     const c = lay.cls(B[bi]), un = unmatched(bi);
     const mfHidden = IMP && (MFILTER === "matched" ? un : MFILTER === "unmatched" ? !un : false);
-    return mfHidden || (ONLY !== null && (ONLY === "un" ? !un : ONLY === "nd" ? (un || c !== -1) : c !== ONLY));
+    return mfHidden || (ONLY !== null && (ONLY === "site" ? !B[bi].site : ONLY === "un" ? !un : ONLY === "nd" ? (un || c !== -1) : c !== ONLY));
   }
   function paint(bi, lay = L()) {
     const c = lay.cls(B[bi]);
@@ -333,6 +345,7 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
     const item = (key, colour, label, n) => `<button class="m3-key ${ONLY === key ? "on" : ""} ${ONLY !== null && ONLY !== key ? "off" : ""}" data-cls="${key}"><i style="background:${hex(colour)}"></i><span>${esc(label)}</span><em>${nf(n)}</em></button>`;
     return `<div class="m3-unit">${esc(t((RCLIKE ? "m_lg_rc_" : "m_lg_") + LAYER))}${lay.unit ? ` · ${esc(lay.unit)}` : ""}${lay.sim ? ` <span class="pill p-warn">${esc(t("m_sim"))}</span>` : ""}</div>`
       + `<div class="m3-keys">${lay.labels.map((l, i) => item(i, lay.ramp[i], l, counts[i])).join("")}${item("nd", GREY, t("m_nodata"), nd)}${IMP ? item("un", WARN, t("m_unmatched"), un) : ""}</div>`
+      + (NLINK ? `<div class="m3-keys">${item("site", SITE_COL, t("m_sites"), NLINK)}</div>` : "")
       + `<div class="m3-fhint">${esc(ONLY === null ? t("m_filter_hint") : t("m_filter_clear"))}</div>`;
   }
   function ui() {
@@ -414,18 +427,27 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
       if (um) um.onclick = () => api.setMatch && api.setMatch(b.id, null, () => { b.id_site = null; b.rc = null; paintAll(); flush(); ui(); panel(bi); });
       return;
     }
+    const site = b.site ? `<div class="m3-sec"><div class="m3-h">${esc(t("m_site_of"))}</div><b>${esc(b.siteName)}</b> <span class="mut">· ${esc(b.site)}</span>
+      <div class="m3-acts">${b.sheet ? `<a class="btn" href="#fiche/${esc(b.sheet)}">${esc(t("fs_title"))}</a>` : ""}<a class="btn ${b.sheet ? "alt" : ""}" href="#site/${esc(b.site)}">${esc(t("m_open_site"))}</a></div></div>` : "";
+    const r = b.site && api.siteYear ? api.siteYear(b.site) : null, mwh = v => v ? nf(v / 1000) + " MWh" : null;
+    const note = k => `<div class="mut" style="font-size:12px;margin:-2px 0 4px">${esc(t(k))}</div>`;
+    const meas = r ? `<div class="m3-sec"><div class="m3-h">${esc(t(r.sim ? "m_p_simread" : "m_p_measured", { y: r.year }))}${b.nb > 1 ? ` · ${esc(t("m_p_site", { n: b.nb }))}` : ""}</div>
+        ${row(t("m_p_hi"), r.hi == null ? esc(t("m_na")) : `<span class="pill ${r.hi >= 800 ? "p-fossil" : r.hi >= 450 ? "p-warn" : "p-ren"}">${nf(r.hi)} MJ/m²</span> ≈ ${nf(r.hi / 3.6)} kWh/m²`, r.sim && r.hi != null)}${r.hi == null ? "" : note(r.hiEst ? "m_n_hi_est" : "m_n_hi")}
+        ${row(t("m_l_int"), r.int == null ? esc(t("m_na")) : nf(r.int) + " kWh/m²", r.sim && r.int != null)}
+        ${row(t("m_p_heatkwh"), mwh(r.heat), r.sim)}${row(t("m_l_elec"), mwh(r.elec), r.sim)}
+        ${row(t("m_p_pvprod"), mwh(r.pv), r.sim)}${row(t("m_l_water"), r.water ? nf(r.water) + " m³" : null, r.sim)}</div>` : "";
     if (RC) { el.innerHTML = panelRC(b); el.classList.remove("hide"); el.querySelector(".m3-close").onclick = () => select(-1); return; }
     const idcClass = b.idc ? (b.idc.mj_m2 >= 800 ? "p-fossil" : b.idc.mj_m2 >= 450 ? "p-warn" : "p-ren") : "";
     const hc = b.heat ? hex(HEAT[b.heat]) : null;
-    el.innerHTML = `<div class="row"><div style="min-width:0"><div class="tsub">${esc(tr(b.use) || "")}</div><h2 style="margin:2px 0 0">${esc(b.addr || "EGID " + (b.egid || "–"))}</h2></div><div class="spacer"></div><button class="x m3-close" aria-label="close">×</button></div>
-      <div class="m3-sec">${row(t("m_p_year"), b.year)}${row(t("m_p_levels"), b.levels)}${row(t("m_p_height"), nf(b.h, 1) + " m")}${row(t("m_p_sre"), b.sre ? nf(b.sre) + " m²" : null)}</div>
+    el.innerHTML = `<div class="row"><div style="min-width:0"><div class="tsub">${esc(tr(b.use) || "")}</div><h2 style="margin:2px 0 0">${esc(b.addr || "EGID " + (b.egid || "–"))}</h2>${b.npa ? `<div class="tsub">${esc(b.npa)}</div>` : ""}</div><div class="spacer"></div><button class="x m3-close" aria-label="close">×</button></div>
+      ${site}<div class="m3-sec">${row(t("m_p_year"), b.year)}${row(t("m_p_levels"), b.levels)}${row(t("m_p_height"), nf(b.h, 1) + " m")}${row(t("m_p_sre"), b.sre ? nf(b.sre) + " m²" : null)}</div>
       <div class="m3-sec"><div class="m3-h">${esc(t("m_l_heat"))}</div>
         ${b.heat ? `<span class="pill" style="background:${hc}22;color:${hc}">${esc(t("m_heat_" + b.heat))}</span>` : `<span class="mut">${esc(t("m_nodata"))}</span>`}
         ${b.idc ? row(t("m_p_idc", { y: b.idc.year }), `<span class="pill ${idcClass}">${nf(b.idc.mj_m2)} MJ/m²</span> ≈ ${nf(b.idc.kwh_m2)} kWh/m²`) + row(t("m_p_carriers"), esc((b.idc.carriers || []).map(tr).join(" · "))) + row(t("m_p_heatkwh"), b.idc.kwh ? nf(b.idc.kwh / 1000) + " MWh" : null) : ""}
         ${(b.boilers || []).map(x => row(t("m_p_boiler"), `${esc(tr(x.fuel))}${x.year ? " · " + x.year : ""}${x.kw ? " · " + nf(x.kw) + " kW" : ""}`)).join("")}
       </div>
       <div class="m3-sec"><div class="m3-h">${esc(t("m_l_solar"))}</div>${b.pv ? row(t("m_p_pv"), nf(b.pv.kwh / 1000) + " MWh/" + yr) + row(t("m_p_kwp"), nf(b.pv.kwp, 1) + " kWp · " + nf(b.pv.m2) + " m²") : `<span class="mut">${esc(t("m_nodata"))}</span>`}</div>
-      ${b.sim ? `<div class="m3-sec">${row(t("m_l_elec"), nf(b.sim.elec_kwh / 1000) + " MWh/" + yr, true)}${row(t("m_l_water"), nf(b.sim.water_m3) + " m³/" + yr, true)}</div>` : ""}
+      ${meas || (b.sim ? `<div class="m3-sec">${row(t("m_l_elec"), nf(b.sim.elec_kwh / 1000) + " MWh/" + yr, true)}${row(t("m_l_water"), nf(b.sim.water_m3) + " m³/" + yr, true)}</div>` : "")}
       <div class="m3-src">EGID ${esc(b.egid || "–")} · ${esc(t("m_src"))}</div>`;
     el.classList.remove("hide");
     el.querySelector(".m3-close").onclick = () => select(-1);
@@ -439,7 +461,7 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
 
   // search by address
   const input = root.querySelector(".m3-search input"), results = root.querySelector(".m3-results");
-  const index = B.map((b, i) => [norm(b.addr), i]).filter(([a]) => a);
+  const index = B.map((b, i) => [norm([b.addr, b.alias].filter(Boolean).join(" · ")), i]).filter(([a]) => a);   // alias: the building's other official addresses
   input.addEventListener("input", () => {
     const q = norm(input.value.trim());
     if (q.length < 3) { results.classList.add("hide"); return; }
@@ -449,11 +471,12 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
   });
   input.addEventListener("keydown", e => { if (e.key === "Enter") { const f = results.querySelector("[data-bi]"); if (f) f.click(); } if (e.key === "Escape") results.classList.add("hide"); });
 
+  const life = new AbortController();   // root outlives this map (same element for the next municipality): drop its listener in destroy()
   root.addEventListener("click", e => {
-    const l = e.target.closest("[data-ml]"); if (l) { LAYER = l.dataset.ml; ONLY = null; ui(); paintAll(); return; }
+    const l = e.target.closest("[data-ml]"); if (l) { LAYER = l.dataset.ml; ONLY = ONLY0; ui(); paintAll(); return; }
     const mf = e.target.closest("[data-mf]"); if (mf) { MFILTER = mf.dataset.mf; ui(); paintAll(); return; }
     const k = e.target.closest("[data-cls]");
-    if (k) { const v = (k.dataset.cls === "nd" || k.dataset.cls === "un") ? k.dataset.cls : +k.dataset.cls; ONLY = ONLY === v ? null : v; root.querySelector(".m3-legend").innerHTML = legendHtml(); paintAll(); return; }
+    if (k) { const v = ["nd", "site", "un"].includes(k.dataset.cls) ? k.dataset.cls : +k.dataset.cls; ONLY = ONLY === v ? null : v; root.querySelector(".m3-legend").innerHTML = legendHtml(); paintAll(); return; }
     const r = e.target.closest("[data-bi]"); if (r) { results.classList.add("hide"); input.value = B[+r.dataset.bi].addr; select(+r.dataset.bi, true); return; }
     const tb = e.target.closest("[data-tool]"); if (!tb) return;
     const tool = tb.dataset.tool;
@@ -463,8 +486,8 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
     else if (tool === "top") orbitTo(isTop() ? { phi: 0.95 } : { phi: 0.0001 });
     else if (tool === "north") orbitTo({ theta: 0 });
     else if (tool === "full") toggleFull();
-    else if (tool === "home") { ONLY = null; ui(); paintAll(); animate(HOME.pos.clone(), HOME.target.clone()); }
-  });
+    else if (tool === "home") { ONLY = ONLY0; ui(); paintAll(); animate(HOME.pos.clone(), HOME.target.clone()); }
+  }, { signal: life.signal });
 
   // ---------------------------------------------------------------- view tools: drag mode, orbit moves, full screen
   function setMode(m) {
@@ -544,7 +567,7 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
       for (const h of hits) { const b = tri2b[h.faceIndex]; if (b >= 0 && !isHidden(b, lay)) { bi = b; break; } }
     }
     lastPickMs = performance.now() - t1;
-    return bi;
+    return bi;   // indirect BVH keeps faceIndex in our order, so tri2b[faceIndex] (-> bi) is already the right building
   }
   let down = null;
   renderer.domElement.tabIndex = 0;
@@ -561,20 +584,26 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
     const bi = pick(e);
     if (bi !== HOV) { const p = HOV; HOV = bi; if (p >= 0) paint(p); if (bi >= 0) paint(bi); flush(); }
     renderer.domElement.style.cursor = bi >= 0 ? "pointer" : "";
-    if (bi >= 0) { const b = B[bi], v = L().val(b); api.showTip(e, `<b>${esc(b.addr || "EGID " + b.egid)}</b><br>${esc(tr(b.use) || "")}${v ? `<br>${esc(v)}` : ""}`); } else api.hideTip();
+    if (bi >= 0) { const b = B[bi], v = L().val(b); api.showTip(e, `<b>${esc(b.addr || "EGID " + b.egid)}</b><br>${esc(tr(b.use) || "")}${b.siteName ? `<br>${esc(b.siteName)}` : ""}${v ? `<br>${esc(v)}` : ""}`); } else api.hideTip();
   });
   renderer.domElement.addEventListener("pointerleave", () => { api.hideTip(); if (HOV >= 0) { const p = HOV; HOV = -1; paint(p); flush(); } });
 
   // ---------------------------------------------------------------- place labels
   const labWrap = root.querySelector(".m3-labels");
   const labs = (M.labels || []).map(l => { const d = document.createElement("div"); d.className = "m3-place"; d.textContent = l.name; labWrap.appendChild(d); return { d, v: new THREE.Vector3(...toV(l.x, l.y, l.z + 30)) }; });
+  const bySite = {};                                          // one label per linked site, over its tallest building
+  B.forEach((b, i) => { if (b.site && (bySite[b.site] === undefined || b.z + b.h > B[bySite[b.site]].z + B[bySite[b.site]].h)) bySite[b.site] = i; });
+  for (const i of Object.values(bySite)) {
+    const d = document.createElement("div"); d.className = "m3-place m3-site"; d.textContent = B[i].siteName; labWrap.appendChild(d);
+    labs.push({ d, site: B[i].site, v: new THREE.Vector3(centers[i].x, centers[i].y + B[i].h / 2 + 12, centers[i].z) });
+  }
   const pv = new THREE.Vector3();
   function placeLabels() {
     const w = stage.clientWidth, h = stage.clientHeight, dist = camera.position.distanceTo(controls.target);
     const pnl = root.querySelector(".m3-panel"), cut = pnl.classList.contains("hide") || w < 720 ? w : w - pnl.offsetWidth - 70;
     for (const l of labs) {
       pv.copy(l.v).project(camera);
-      const vis = pv.z < 1 && Math.abs(pv.x) < 1.05 && Math.abs(pv.y) < 1.05 && dist > 500 && ((pv.x + 1) / 2) * w < cut;
+      const vis = pv.z < 1 && Math.abs(pv.x) < 1.05 && Math.abs(pv.y) < 1.05 && (l.site ? dist < 900 || B[SEL]?.site === l.site || B[HOV]?.site === l.site : dist > 500) && ((pv.x + 1) / 2) * w < cut;
       l.d.style.opacity = vis ? 1 : 0;
       if (vis) l.d.style.transform = `translate(${((pv.x + 1) / 2) * w}px, ${((1 - pv.y) / 2) * h}px) translate(-50%, -100%)`;
     }
@@ -584,8 +613,9 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
   const northSvg = root.querySelector(".m3-north svg"), topBtn = root.querySelector('[data-tool="top"]');
   let lastTop = null;
   let pending = false;
-  function request() { if (!pending) { pending = true; requestAnimationFrame(frame); } }
+  function request() { if (!pending && !life.signal.aborted) { pending = true; requestAnimationFrame(frame); } }
   function frame() {
+    if (life.signal.aborted) return;   // destroyed: a frame queued before destroy() must not touch the lost GL context
     pending = false;
     if (anim) {
       const k = Math.min(1, (performance.now() - anim.t0) / anim.ms), e = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
@@ -617,6 +647,11 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
     renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); request();
   });
   ro.observe(stage);
+  if (NLINK) {   // frame the municipality's sites (Genève démo: one neighbourhood) instead of the whole map
+    const box = new THREE.Box3(); B.forEach((b, i) => { if (b.site) box.expandByPoint(centers[i]); });
+    const c = box.getCenter(new THREE.Vector3()), S = Math.max(600, (box.max.x - box.min.x), (box.max.z - box.min.z)) * 1.25;
+    HOME = { pos: new THREE.Vector3(c.x - S * 0.18, S * 0.55, c.z + S * 0.8), target: new THREE.Vector3(c.x, 0, c.z) };
+  }
   if (cfg.restoreCam) { camera.position.fromArray(cfg.restoreCam.pos); controls.target.fromArray(cfg.restoreCam.target); }
   else { camera.position.copy(HOME.pos); controls.target.copy(HOME.target); }
   controls.update();
@@ -624,7 +659,7 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
   window.__m3 = { buildMs, lastPick: () => lastPickMs, n: B.length, cam: () => { const s = sph(); return [Math.round(s.radius), +s.phi.toFixed(3), +s.theta.toFixed(3), Math.round(controls.target.x), Math.round(controls.target.z)]; } };   // read by the headless check
   function destroy() {   // before switching map: free the GL context and the page-level listeners
     document.removeEventListener("fullscreenchange", onFull); document.removeEventListener("keydown", onEsc);
-    ro.disconnect(); controls.dispose(); api.hideTip();
+    life.abort(); ro.disconnect(); controls.dispose(); api.hideTip();
     if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
     root.classList.remove("m3-full", "is-full"); document.body.appendChild(document.getElementById("tip"));
     scene.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) { if (o.material.map) o.material.map.dispose(); o.material.dispose(); } });

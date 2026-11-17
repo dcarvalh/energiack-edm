@@ -53,6 +53,33 @@ def read_guide(guide=GUIDE):
     return out
 
 
+def read_csv_dir(folder, prefix):
+    """The same tables from a folder of CSV files named <prefix><table>.csv (a built-in data pack)."""
+    out = {}
+    for name in TABLES:
+        with open(Path(folder) / f"{prefix}{name}.csv", encoding="utf-8-sig") as f:
+            out[name] = list(csv.DictReader(f, delimiter=";"))
+    return out
+
+
+# Built-in datasets, by locality slug: what the server seeds and what "reload demo data" reloads
+BUNDLED = {
+    "rive-claire": read_guide,
+    "geneve-demo": lambda: read_csv_dir(ROOT / "geneve" / "csv", "geneve-"),  # tools/make_geneva_fake.py
+}
+
+
+# Who the data describes, per built-in dataset. Any other (uploaded) municipality gets META_NONE: no invented
+# population or source; the app then uses the municipality's own name and leaves out per-resident figures.
+META = {
+    "rive-claire": {"commune": "Rive-Claire", "fictional": True, "inhabitants": 25000,
+                    "source": "Energ-IA Transition, Energ-IACK 2026 · Rive-Claire v2 (CC BY 4.0)"},
+    "geneve-demo": {"commune": "Genève (démo)", "fictional": True, "inhabitants": None,
+                    "source": "Simulated readings (tools/make_geneva_fake.py) on real Geneva buildings: SITG public data"},
+}
+META_NONE = {"commune": None, "fictional": False, "inhabitants": None, "source": None}
+
+
 def check(T):
     """Run the quality checks: (report, set of rejected row indexes in T["mesures"])."""
     return rc_quality.run(T)
@@ -83,7 +110,7 @@ PRICE = {"elec": 0.27, "gas": 0.14, "oil": 0.13, "district": 0.12, "wood": 0.09,
 HEAT_PRICE = {"GZ": "gas", "MZ": "oil", "GR": "wood", "CAD": "district"}
 
 
-def build(T, QUALITY, REJ):
+def build(T, QUALITY, REJ, locality="rive-claire"):
     """data.json as a dict, from the tables (rows as csv.DictReader gives them), the quality report and the rejected
     row indexes. Used by the static build below and by the server (server/store.py), which reads the rows from Postgres."""
     BAT, INST, CPT, MES = T["batiments"], T["installations"], T["compteurs"], T["mesures"]
@@ -156,8 +183,8 @@ def build(T, QUALITY, REJ):
             "buildings": [{"id": b["id_batiment"], "name": b["nom_batiment"], "built": num(b["annee_construction"]),
                            "renovated": num(b["annee_renovation"]), "sre_m2": num(b["sre_m2"]), "levels": num(b["niveaux"]),
                            "label": b["label"] or None, "homes": num(b["logements"]), "open": b["ouverture"] or None,
-                           "x_km": num(b["x_km"]), "y_km": num(b["y_km"]), "egid": b.get("egid") or None,
-                           "note": b["remarque"] or None} for b in rows],
+                           "x_km": num(b["x_km"]), "y_km": num(b["y_km"]), "note": b["remarque"] or None,
+                           **({"egid": int(b["egid"])} if b.get("egid") else {})} for b in rows],
             "installations": [{"id": i["id_installation"], "type": i["type"], "label": {"fr": i["libelle"], "en": EN.get(i["libelle"], i["libelle"])},
                                "carrier": i["vecteur"], "kw": num(i["puissance_kw"]), "from": i["mise_en_service"] or None,
                                "to": i["retrait"] or None, "note": i["remarque"] or None} for i in inst[sid]],
@@ -243,8 +270,7 @@ def build(T, QUALITY, REJ):
 
     data = {
         "meta": {
-            "commune": "Rive-Claire", "fictional": True, "inhabitants": 25000,
-            "source": "Energ-IA Transition, Energ-IACK 2026 · Rive-Claire v2 (CC BY 4.0)",
+            **META.get(locality, META_NONE),
             "generated_by": "tools/import_rive_claire.py",
             "start": "2021-01", "months": MONTHS,
             "units": {"energy": "kWh", "water": "m3", "co2": "kg", "money": "CHF"},
@@ -271,10 +297,12 @@ def build(T, QUALITY, REJ):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default=str(ROOT / "prototype" / "data.json"))
+    ap.add_argument("--locality", default="rive-claire", choices=sorted(BUNDLED),
+                    help="which built-in dataset (geneve-demo: --out prototype/data-geneve-demo.json)")
     A = ap.parse_args()
-    T = read_guide()
+    T = BUNDLED[A.locality]()
     QUALITY, REJ = check(T)
-    data = build(T, QUALITY, REJ)
+    data = build(T, QUALITY, REJ, A.locality)
     series, sites, meters, events = data["series"], data["sites"], data["meters"], data["events"]
     out = Path(A.out)
     out.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")))

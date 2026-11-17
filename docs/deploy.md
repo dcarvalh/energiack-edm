@@ -72,7 +72,9 @@ Recommended: **one small Linux server running this same Compose stack**, deploye
 ### Who can deploy
 
 Nobody deploys by hand and nobody needs server access. Teammates open a pull request: the **Stack** workflow
-(`.github/workflows/stack.yml`) builds the stack and runs `tools/check_stack.sh`. When the PR is merged into `main`,
+(`.github/workflows/stack.yml`) builds the stack and runs `tools/check_stack.sh`, then `tools/check_upgrade.sh` (a database
+created by `main` must start with the PR's code and keep every row: the server's database is not recreated on deploy),
+and the browser checks (`check_page.py`, `check_roles.py`). When the PR is merged into `main`,
 the same workflow connects to the server over SSH and runs `git checkout <commit> && docker compose up -d --build --wait`.
 GitHub Pages keeps deploying the static demo as before.
 

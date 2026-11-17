@@ -65,6 +65,7 @@ class NewLocality(BaseModel):
     slug: str
     name: str
     country: str = "CH"
+    map: str | None = None      # a key of store.MAPS, or none
 
 
 class MapImport(BaseModel):
@@ -138,11 +139,12 @@ def health(conn=Depends(db)):
 def list_localities(u=Depends(current), conn=Depends(db)):
     if u:
         return store.localities(conn, u)
-    # Public: only localities that have imported data, so the default is always usable
+    # Public: localities with imported data, or with a map of public buildings (Geneva); an empty one stays hidden
     return conn.execute(
-        "SELECT l.id, l.slug, l.name, l.country, l.map_config, l.demo, 'viewer' AS role "
-        "FROM locality l WHERE EXISTS (SELECT 1 FROM import_run WHERE locality_id = l.id AND report IS NOT NULL) "
-        "ORDER BY l.name"
+        "SELECT l.id, l.slug, l.name, l.country, l.map_config, l.demo, l.simulated, 'viewer' AS role "
+        "FROM locality l WHERE l.map_config IS NOT NULL "
+        "OR EXISTS (SELECT 1 FROM import_run WHERE locality_id = l.id AND report IS NOT NULL) "
+        "ORDER BY l.id"
     ).fetchall()
 
 
@@ -165,7 +167,9 @@ def put_settings(body: Settings, u=Depends(need("admin")), conn=Depends(db)):
 
 @app.post("/api/localities")
 def create_locality(body: NewLocality, u=Depends(need("admin")), conn=Depends(db)):
-    return store.create_locality(conn, body.slug, body.name, body.country)
+    if body.map and body.map not in store.MAPS:
+        raise HTTPException(422, "unknown map")
+    return store.create_locality(conn, body.slug, body.name, body.country, body.map)
 
 
 @app.delete("/api/localities/{slug}")
@@ -190,6 +194,7 @@ async def import_locality(slug: str, file: UploadFile = File(None),
     loc = store.locality_by_slug(conn, slug)
     if not loc:
         raise HTTPException(404, "locality not found")
+    replace = False
     if file:
         import csv
         import io
@@ -207,13 +212,14 @@ async def import_locality(slug: str, file: UploadFile = File(None),
             else:
                 T[name] = []
         source = f"{slug} (uploaded: {file.filename})"
-    elif loc.get("demo"):
-        # Bundled demo dataset — only available for municipalities flagged as demo
-        T = store.rc.read_guide()
+    elif loc.get("demo") and slug in store.rc.BUNDLED:
+        # Bundled demo dataset — only available for the built-in demo municipalities
+        T = store.rc.BUNDLED[slug]()
         source = f"{slug} (demo dataset reloaded)"
+        replace = bool(loc.get("simulated"))
     else:
         raise HTTPException(422, "A ZIP file is required. Only demo municipalities can use the bundled dataset.")
-    result = store.load(conn, T, source, loc["id"])
+    result = store.load(conn, T, source, loc["id"], replace)
     _cache.clear()
     return dict(result)
 
@@ -253,7 +259,7 @@ def locality_rejected(slug: str, u=Depends(need(*auth.FULL)), conn=Depends(db)):
         (run_id,)).fetchall()
 
 
-# ── Imported 3D map (Swiss geo platform) ─────────────────────────────────────
+# ── Imported 3D map (Swiss geo platform / France IGN) ────────────────────────
 
 MAX_SPAN_M = 10000          # cap the zone side (metres) to bound the fetch (large zones are tiled into several blocks)
 NO_STORE = {"Cache-Control": "no-store"}   # the imported map changes on every re-import: never serve a stale tile/mesh
@@ -763,7 +769,7 @@ def data(request: Request, locality: str = None, u=Depends(current), conn=Depend
     cache_key = (loc["id"], full)
     c = _cache.get(cache_key)
     if not c or c["run"] != run:
-        d = store.dataset(conn, loc["id"])
+        d = store.dataset(conn, loc["id"], loc["slug"])
         if not full:
             d["meters"], d["quality"] = {}, None
             d["meta"]["restricted"] = ["meters", "quality"]
