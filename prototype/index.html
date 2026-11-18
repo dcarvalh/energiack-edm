@@ -501,15 +501,15 @@ footer{color:var(--muted);font-size:12px;border-top:1px solid var(--line);margin
   <section id="v-localites" class="hide">
     <h1 data-t="nav_localities"></h1>
     <p class="lede" data-t="loc_lede"></p>
-    <div class="grid two">
-      <div class="card">
-        <div class="row" style="margin-bottom:12px">
-          <h2 data-t="loc_list"></h2><div class="spacer"></div>
-          <button class="chip" id="loc-new-btn" data-t="loc_create_btn"></button>
-        </div>
-        <div id="loc-table"></div>
-        <p id="loc-msg" style="margin-top:8px;font-size:.9rem"></p>
+    <div class="card">
+      <div class="row" style="margin-bottom:12px">
+        <h2 data-t="loc_list"></h2><div class="spacer"></div>
+        <button class="chip" id="loc-new-btn" data-t="loc_create_btn"></button>
       </div>
+      <div id="loc-table"></div>
+      <p id="loc-msg" style="margin-top:8px;font-size:.9rem"></p>
+    </div>
+    <div class="grid two" style="margin-top:16px">
       <div class="card hide" id="loc-form-card">
         <h2 data-t="loc_create_title" style="margin-bottom:16px"></h2>
         <form id="loc-form">
@@ -537,12 +537,12 @@ footer{color:var(--muted);font-size:12px;border-top:1px solid var(--line);margin
           </div>
         </form>
       </div>
-    </div>
-    <div class="card" id="map-config-card" style="margin-top:16px">
-      <h2 data-t="cfg_title" style="margin-bottom:4px"></h2>
-      <p class="sub" data-t="cfg_sub" style="margin-bottom:14px"></p>
-      <div id="cfg-toggles"></div>
-      <p id="cfg-msg" style="margin-top:10px;font-size:.9rem;color:var(--muted)"></p>
+      <div class="card" id="map-config-card">
+        <h2 data-t="cfg_title" style="margin-bottom:4px"></h2>
+        <p class="sub" data-t="cfg_sub" style="margin-bottom:14px"></p>
+        <div id="cfg-toggles"></div>
+        <p id="cfg-msg" style="margin-top:10px;font-size:.9rem;color:var(--muted)"></p>
+      </div>
     </div>
   </section>
 
@@ -2639,7 +2639,7 @@ let RZ, LASTW = innerWidth;
 window.addEventListener("resize", () => { clearTimeout(RZ); RZ = setTimeout(() => { if (Math.abs(innerWidth - LASTW) < 40 || !D) return; LASTW = innerWidth; const open = document.getElementById("drawer").classList.contains("open"); renderAll(); if (open) reopen(); }, 200); });
 matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", renderAll);
 
-const V = "63";
+const V = "64";
 (async () => {
   try {
     const c = await fetch("api/config.json?v="+V, {cache:"no-store"}).then(r => r.json());
