@@ -56,7 +56,7 @@ New**, then as technical staff **Données** and upload a ZIP in the Rive-Claire 
 **fully simulated** meters and readings (`tools/make_geneva_fake.py` → `geneve/csv/`, also zipped as
 `geneve/geneve-energy-data.zip`, a ready-made upload example). A permanent banner and a "simulated" tag on every
 figure say so. The static Pages demo shows Rive-Claire, Genève (map only) and Genève (démo)
-(`prototype/data-geneve-demo.json`). With one-click demo accounts on, any visitor can import and delete data: for public demos only.
+(`prototype/data-geneve-demo.json`). With one-click demo accounts on, demo accounts can import and delete data in their own municipalities but not in the built-in ones (Rive-Claire, Genève): they are read-only for demo accounts.
 
 Data: the organisers' fictional **Rive-Claire** dataset (CC BY 4.0): 48 sites, 50 buildings, 64 installations, 172 meters,
 9,437 monthly readings 2021–2025. Rules applied from the dataset's dictionary: on-site electricity = EL + PV − EL-INJ;
