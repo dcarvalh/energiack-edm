@@ -2253,10 +2253,8 @@ function tourBox(html){
 function tourOffer(){
   tourBox(`<div class="tour-box tour-offer" role="dialog" aria-label="${esc(t("tour_btn"))}"><p>${esc(t("tour_offer"))}</p><div class="tb"><button class="btn" id="tour-go">${esc(t("tour_go"))}</button><button class="ghost" id="tour-skip">${esc(t("tour_skip"))}</button></div></div>`);
 }
-async function tourStart(){
+function tourStart(){
   tourEnd();
-  // the tour shows the energy manager's pages: on a demo server, sign in as "elu" (read-only) when the visitor can't see them
-  if (SERVER?.demo && !can("gestion")) { try { await setUser(await api("api/demo-login", {role:"elu"})); } catch(e) {} }
   if (VIEW !== "gestion" && can("gestion")) { TOUR_BUSY = true; location.hash = "#gestion"; }
   setTimeout(() => { TOUR_BUSY = false; TOUR_VIS = TOUR.map((s, k) => k).filter(k => tourVisible(TOUR[k])); tourStep(0); }, 150);   // the step list is fixed here, so the count stays right after the view changes
 }
@@ -2309,7 +2307,7 @@ function tourMaybe(){   // first visit only; not in automated checks, not on a d
   setTimeout(tourOffer, 1500);
 }
 
-const V = "51";
+const V = "50";
 (async () => {
   try {
     const c = await fetch("api/config.json?v="+V, {cache:"no-store"}).then(r => r.json());
