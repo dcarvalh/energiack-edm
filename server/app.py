@@ -19,9 +19,10 @@ import json
 import os
 
 from fastapi import Depends, FastAPI, File, HTTPException, Request, Response, UploadFile
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
-from . import auth, store
+from . import auth, mapjobs, store
 
 DEMO = os.environ.get("DEMO_LOGIN", "0") == "1"
 app = FastAPI(title="openEDM API", version="2", docs_url=None, redoc_url=None, openapi_url="/api/openapi.json")
@@ -65,6 +66,23 @@ class NewLocality(BaseModel):
     name: str
     country: str = "CH"
     map: str | None = None      # a key of store.MAPS, or none
+
+
+class MapImport(BaseModel):
+    bbox: str                 # "xmin,ymin,xmax,ymax" in LV95 (EPSG:2056)
+    name: str | None = None
+    tiles: int = 1
+    px: float = 1.0
+
+
+class MapMatch(BaseModel):
+    id_site: str | None = None
+
+
+class MapRegister(BaseModel):
+    mode: str                  # "existing" | "new"
+    id_site: str | None = None # for mode="existing"
+    site_name: str | None = None  # for mode="new"
 
 
 def _start(request, response, conn, token):
@@ -128,6 +146,23 @@ def list_localities(u=Depends(current), conn=Depends(db)):
         "OR EXISTS (SELECT 1 FROM import_run WHERE locality_id = l.id AND report IS NOT NULL) "
         "ORDER BY l.id"
     ).fetchall()
+
+
+class Settings(BaseModel):
+    osm_footprints: bool | None = None
+    country_ch: bool | None = None
+    country_fr: bool | None = None
+
+
+@app.get("/api/settings")
+def get_settings(u=Depends(current), conn=Depends(db)):
+    """Admin map-import preferences (any logged-in user may read; only admins may change)."""
+    return store.get_settings(conn)
+
+
+@app.put("/api/settings")
+def put_settings(body: Settings, u=Depends(need("admin")), conn=Depends(db)):
+    return store.set_settings(conn, {k: v for k, v in body.model_dump().items() if v is not None})
 
 
 @app.post("/api/localities")
@@ -224,6 +259,140 @@ def locality_rejected(slug: str, u=Depends(need(*auth.FULL)), conn=Depends(db)):
     return conn.execute(
         "SELECT pos, reason, row FROM rejected_row WHERE import_id = %s ORDER BY pos",
         (run_id,)).fetchall()
+
+
+# ── Imported 3D map (Swiss geo platform / France IGN) ────────────────────────
+
+MAX_SPAN_M = 10000          # cap the zone side (metres) to bound the fetch (large zones are tiled into several blocks)
+NO_STORE = {"Cache-Control": "no-store"}   # the imported map changes on every re-import: never serve a stale tile/mesh
+
+
+@app.get("/api/geo/search")
+def geo_search(q: str, country: str = "CH", u=Depends(need(*auth.FULL))):
+    """Geocode a place name on the right national platform -> candidate zones. For the UI zone picker."""
+    if not q or len(q) < 2:
+        return []
+    try:
+        return store.geocode(q, country)
+    except Exception as e:
+        raise HTTPException(502, f"geo search failed: {e}")
+
+
+@app.post("/api/localities/{slug}/map/import")
+def map_import(slug: str, body: MapImport, u=Depends(need(*auth.FULL)), conn=Depends(db)):
+    """Fetch a real 3D map for a zone from geo.admin.ch, store it, auto-match by EGID."""
+    loc = store.locality_by_slug(conn, slug)
+    if not loc:
+        raise HTTPException(404, "locality not found")
+    try:
+        bbox = tuple(float(v) for v in body.bbox.split(","))
+        assert len(bbox) == 4
+    except (ValueError, AssertionError):
+        raise HTTPException(422, "bbox must be 'xmin,ymin,xmax,ymax' in LV95")
+    xmin, ymin, xmax, ymax = bbox
+    if xmax <= xmin or ymax <= ymin:
+        raise HTTPException(422, "bbox: xmax>xmin and ymax>ymin required")
+    span = max(xmax - xmin, ymax - ymin)
+    if span > MAX_SPAN_M:
+        raise HTTPException(422, f"zone too large (max {MAX_SPAN_M} m per side)")
+    tiles = max(1, min(round(span / 1000), 10))           # ~1 km aerial block per tile, so large zones stay detailed
+    osm = bool(store.get_settings(conn).get("osm_footprints", True))   # admin preference: real OSM footprints on/off
+    # The fetch is slow: run it in the background and report progress over SSE instead of blocking the request.
+    started = mapjobs.start(loc["id"], slug, bbox, tiles, body.px, body.name, osm=osm, country=loc.get("country") or "CH")
+    if not started:
+        raise HTTPException(409, "an import is already running for this locality")
+    return {"state": "started", "slug": slug}
+
+
+@app.get("/api/localities/{slug}/map/import/status")
+def map_import_status(slug: str, u=Depends(current), conn=Depends(db)):
+    """Current import job for one locality (running | done | error), or idle."""
+    loc = store.locality_by_slug(conn, slug)
+    if not loc:
+        raise HTTPException(404, "locality not found")
+    return mapjobs.get(loc["id"]) or {"state": "idle"}
+
+
+@app.get("/api/map/jobs/stream")
+def map_jobs_stream(u=Depends(current), conn=Depends(db)):
+    """Server-Sent Events: push 3D-map import progress for every locality the user can see. One event per change."""
+    lids = [l["id"] for l in store.localities(conn, u)]
+    return StreamingResponse(mapjobs.sse_stream(lids), media_type="text/event-stream",
+                             headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no", "Connection": "keep-alive"})
+
+
+@app.get("/api/localities/{slug}/map/buildings.json")
+def map_buildings(slug: str, u=Depends(current), conn=Depends(db)):
+    loc = store.locality_by_slug(conn, slug)
+    if not loc:
+        raise HTTPException(404, "locality not found")
+    data = store.map_get(conn, loc["id"])
+    if not data:
+        raise HTTPException(404, "no map imported for this locality")
+    return Response(json.dumps(data, ensure_ascii=False, separators=(",", ":")),
+                    media_type="application/json", headers=NO_STORE)
+
+
+@app.get("/api/localities/{slug}/map/terrain.bin")
+def map_terrain(slug: str, u=Depends(current), conn=Depends(db)):
+    loc = store.locality_by_slug(conn, slug)
+    if not loc:
+        raise HTTPException(404, "locality not found")
+    t = store.map_terrain(conn, loc["id"])
+    if t is None:
+        raise HTTPException(404, "no terrain")
+    return Response(t, media_type="application/octet-stream", headers=NO_STORE)
+
+
+@app.get("/api/localities/{slug}/map/aerial_{i}_{j}.jpg")
+def map_aerial(slug: str, i: int, j: int, u=Depends(current), conn=Depends(db)):
+    loc = store.locality_by_slug(conn, slug)
+    if not loc:
+        raise HTTPException(404, "locality not found")
+    jpg = store.map_tile(conn, loc["id"], i, j)
+    if jpg is None:
+        raise HTTPException(404, "no tile")
+    return Response(jpg, media_type="image/jpeg", headers=NO_STORE)
+
+
+@app.put("/api/localities/{slug}/map/building/{building_id}")
+def map_match(slug: str, building_id: int, body: MapMatch, u=Depends(need(*auth.FULL)), conn=Depends(db)):
+    """Manually attach (or clear) a map building to one of our sites."""
+    loc = store.locality_by_slug(conn, slug)
+    if not loc:
+        raise HTTPException(404, "locality not found")
+    if not store.map_set_site(conn, loc["id"], building_id, body.id_site):
+        raise HTTPException(404, "map building not found")
+    return {"id": building_id, "id_site": body.id_site}
+
+
+@app.post("/api/localities/{slug}/map/building/{building_id}/register")
+def map_register(slug: str, building_id: int, body: MapRegister, u=Depends(need(*auth.FULL)), conn=Depends(db)):
+    """Register a map block as a real building in this municipality (new or existing site) and match it by EGID."""
+    loc = store.locality_by_slug(conn, slug)
+    if not loc:
+        raise HTTPException(404, "locality not found")
+    if body.mode not in ("existing", "new"):
+        raise HTTPException(422, "mode must be 'existing' or 'new'")
+    try:
+        res = store.map_register_building(conn, loc["id"], building_id, body.mode, body.id_site, body.site_name)
+    except LookupError as e:
+        raise HTTPException(404, str(e))
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+    _cache.clear()
+    return res
+
+
+@app.delete("/api/localities/{slug}/map")
+def map_delete(slug: str, u=Depends(need(*auth.FULL)), conn=Depends(db)):
+    loc = store.locality_by_slug(conn, slug)
+    if not loc:
+        raise HTTPException(404, "locality not found")
+    store.map_delete(conn, loc["id"])
+    conn.execute("UPDATE locality SET map_config = NULL WHERE id = %s", (loc["id"],))
+    conn.commit()
+    return {"deleted": slug}
 
 
 # ── Staging (sas de chargement) ──────────────────────────────────────────────

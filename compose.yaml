@@ -13,6 +13,12 @@ x-api: &api
     PGPASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env (copy .env.example)}
     SEED_DEMO: ${SEED_DEMO:-1}
     DEMO_LOGIN: ${DEMO_LOGIN:-0}
+    OSM_CACHE_DIR: /app/cache            # persist OSM footprints per 1 km cell so re-imports are consistent
+  volumes:
+    # OSM footprint cache, keyed by geographic 1 km cell — NOT tied to any municipality. A host bind-mount (not a
+    # Docker volume) so it survives every reset, including `docker compose down -v`. Municipality data lives in the DB
+    # and is cascade-deleted with the locality; this cache is shared across municipalities and never deleted with one.
+    - ${OSM_CACHE_HOST:-./data/osm-cache}:/app/cache
 
 services:
   db:

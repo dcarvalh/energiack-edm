@@ -109,6 +109,16 @@ docker compose exec -T db pg_dump -U openedm -Fc openedm > openedm-$(date +%F).d
 # restore: docker compose exec -T db pg_restore -U openedm -d openedm --clean < openedm-YYYY-MM-DD.dump
 ```
 
+### OSM footprint cache
+
+Real building footprints fetched from OpenStreetMap are cached per geographic 1 km cell under the host directory
+`./data/osm-cache` (override with `OSM_CACHE_HOST`), bind-mounted at `/app/cache`. This cache is keyed by location, not
+by municipality: it is **shared across municipalities and never deleted when a municipality or its 3D map is deleted**,
+and because it is a host directory (not a Docker volume) it also survives `docker compose down -v`. Re-importing a zone
+whose cells are cached reuses the footprints instantly and never re-hits Overpass. It is safe to delete to force a refetch.
+On macOS/Windows (Docker Desktop) it is writable out of the box; on a native-Linux host, make it writable by the container's
+`nobody` user once: `mkdir -p data/osm-cache && sudo chown 65534:65534 data/osm-cache`.
+
 ## Not done yet
 
 - Import a new file through the app (upload): today the import runs on the server (`server.cli import`).
