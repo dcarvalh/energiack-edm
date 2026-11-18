@@ -223,7 +223,7 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;ba
 .m3-results{position:absolute;left:0;right:0;top:calc(100% + 4px);background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:5;max-height:260px;overflow:auto;padding:4px}
 .m3-results button{display:block;width:100%;text-align:left;border:0;background:transparent;padding:6px 8px;border-radius:7px;cursor:pointer;font-size:13.5px}
 .m3-results button:hover{background:var(--surface-2)} .m3-results span{display:block;font-size:12px;color:var(--muted)} .m3-results .mut{padding:6px 8px;font-size:13px}
-.m3-keys{display:grid;grid-template-columns:1fr 1fr;gap:2px 8px}
+.m3-keys{display:grid;grid-template-columns:1fr;gap:1px}
 .m3-key{display:flex;align-items:center;gap:6px;border:0;background:transparent;padding:3px 5px;border-radius:6px;cursor:pointer;font-size:12px;color:var(--text);text-align:left}
 .m3-key:hover{background:var(--surface-2)} .m3-key.on{background:var(--surface-2);outline:1px solid var(--line)} .m3-key.off{opacity:.4}
 .m3-key i{width:10px;height:10px;border-radius:3px;flex:none} .m3-key span{flex:1} .m3-key em{font-style:normal;color:var(--muted);font-variant-numeric:tabular-nums;font-size:11.5px}
@@ -239,9 +239,10 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;ba
 .m3:fullscreen{height:100vh;border-radius:0;border:0}
 .m3.m3-full{position:fixed;inset:0;z-index:100;height:auto;border-radius:0;margin:0;border:0}
 .m3-stage canvas:focus{outline:none}
-.m3-ui{position:absolute;top:12px;left:12px;max-width:360px}
+.m3-ui{position:absolute;top:12px;left:12px;max-width:300px}
 .m3-card,.m3-hint,.m3-attr{background:color-mix(in srgb,var(--surface) 90%,transparent);backdrop-filter:blur(8px);border:1px solid var(--line);box-shadow:var(--shadow)}
-.m3-card{border-radius:12px;padding:12px 14px;max-height:calc(100vh - 190px);overflow:auto}
+.m3-card{border-radius:12px;padding:12px 14px;min-width:210px;max-height:calc(100vh - 190px);overflow:auto}
+.m3-layers{flex-direction:column;align-items:stretch;gap:4px} .m3-layers .chip{text-align:left;width:100%}
 .m3-title{font-weight:680;letter-spacing:-.01em;font-size:16px} .m3-sub{font-size:12.5px;color:var(--muted);margin-bottom:10px}
 .m3-zone{font-size:10.5px;opacity:.65;font-weight:500}
 nav a.disabled{pointer-events:none;opacity:.45}
@@ -256,7 +257,7 @@ nav a.disabled{pointer-events:none;opacity:.45}
 .cfg-row input{margin-top:3px;flex:none}
 .cfg-row .sub{font-size:12px;color:var(--muted)}
 .m3-legend{margin-top:10px;font-size:12px;color:var(--muted)} .m3-unit{font-weight:600;color:var(--text);margin-bottom:6px}
-.m3-key{display:inline-flex;align-items:center;gap:5px;margin:0 10px 4px 0} .m3-key i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.m3-legend .m3-keys+.m3-keys{margin-top:4px;padding-top:4px;border-top:1px solid var(--line)}
 .m3-panel{position:absolute;top:12px;right:12px;bottom:40px;width:340px;overflow-y:auto;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;box-shadow:var(--shadow)}
 .m3-sec{border-top:1px solid var(--line);margin-top:12px;padding-top:10px}
 .m3-h{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600;margin-bottom:6px}
@@ -267,8 +268,8 @@ nav a.disabled{pointer-events:none;opacity:.45}
 .m3-attr{position:absolute;right:12px;bottom:10px;font-size:11px;color:var(--muted);padding:2px 8px;border-radius:6px;max-width:48%}
 @media (max-width:720px){
   .m3{height:calc(100vh - 150px);margin:0 -16px;border-radius:0;border-left:0;border-right:0}
-  .m3-ui{left:8px;right:8px;top:8px;max-width:none} .m3-card{padding:10px 12px;max-height:46vh} .m3-keys{display:flex;flex-wrap:wrap;gap:0 2px} .m3-key{padding:2px 4px} .m3-key em{display:none} .m3-fhint{display:none}
-  .m3-layers{flex-wrap:nowrap;overflow-x:auto} .m3-layers .chip{white-space:nowrap} .m3-sub{margin-bottom:6px} .m3-legend{margin-top:6px}
+  .m3-ui{left:8px;right:8px;top:8px;max-width:none} .m3-card{padding:10px 12px;min-width:0;max-height:46vh} .m3-keys{display:flex;flex-wrap:wrap;gap:0 2px} .m3-key{padding:2px 4px} .m3-key em{display:none} .m3-fhint{display:none}
+  .m3-layers{flex-direction:row;flex-wrap:nowrap;overflow-x:auto} .m3-layers .chip{white-space:nowrap;width:auto} .m3-sub{margin-bottom:6px} .m3-legend{margin-top:6px}
   .m3-panel{left:8px;right:8px;top:auto;bottom:8px;width:auto;max-height:55%}
   .m3-hint,.m3-attr{display:none} .m3-tools{top:auto;bottom:10px;right:8px;transform:none;gap:6px} .m3-g-mode,.m3-g-rot{display:none} .m3-panel:not(.hide)~.m3-tools{display:none}
 }
@@ -2626,7 +2627,7 @@ let RZ, LASTW = innerWidth;
 window.addEventListener("resize", () => { clearTimeout(RZ); RZ = setTimeout(() => { if (Math.abs(innerWidth - LASTW) < 40 || !D) return; LASTW = innerWidth; const open = document.getElementById("drawer").classList.contains("open"); renderAll(); if (open) reopen(); }, 200); });
 matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", renderAll);
 
-const V = "61";
+const V = "62";
 (async () => {
   try {
     const c = await fetch("api/config.json?v="+V, {cache:"no-store"}).then(r => r.json());
