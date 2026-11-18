@@ -397,7 +397,8 @@ def _ring_centroid_area(ring):
 def map_enhance_footprints(conn, locality_id, progress=None):
     """Background pass (after a fast square-block import): fetch real OSM footprints and replace each block's shape
     in place, BIGGEST building first so the most visible blocks get their true shape first. Swiss zones only
-    (France already imports real BD TOPO footprints). Returns the number of blocks given a real footprint."""
+    (France already imports real BD TOPO footprints). progress(pct, done, total) reports both phases, where `done`
+    is the running count of blocks given a real footprint. Returns that final count."""
     mi = conn.execute("SELECT id, meta, bbox FROM map_import WHERE locality_id = %s", (locality_id,)).fetchone()
     if not mi or (mi["meta"].get("crs") != "EPSG:2056"):
         return 0
@@ -409,10 +410,19 @@ def map_enhance_footprints(conn, locality_id, progress=None):
         cx, cy, area = _ring_centroid_area(r["rings"][0])
         items.append((area, r["id"], xmin + cx, ymin + cy))
     items.sort(reverse=True)
+    total = len(items)
 
-    find, nf = geomap._osm_footprints(bbox)                   # cached per 1 km cell; find(E,N) -> LV95 ring | None
+    # Phase A — fetch the OSM footprints (the slow network part): report it as 0..55 %.
+    def fetch_progress(pct, step):
+        if progress:
+            progress(int(pct * 0.55), 0, total)
+    find, nf = geomap._osm_footprints(bbox, fetch_progress, 0, 100)   # cached per 1 km cell; find(E,N) -> LV95 ring | None
     if not nf:
+        if progress:
+            progress(100, 0, total)
         return 0
+
+    # Phase B — swap each block's square for its real footprint, biggest first: report 55..100 % + the running count.
     updated, batch = 0, []
     for k, (area, bid, e, n) in enumerate(items):
         ring = find(e, n)
@@ -422,14 +432,14 @@ def map_enhance_footprints(conn, locality_id, progress=None):
                 ml.append(ml[0])
             batch.append((Jsonb([ml]), bid))
             updated += 1
-        if len(batch) >= 100 or k == len(items) - 1:
+        if len(batch) >= 100 or k == total - 1:
             if batch:
                 with conn.cursor() as cur:
                     cur.executemany("UPDATE map_building SET rings = %s WHERE id = %s", batch)
                 conn.commit()
                 batch = []
             if progress:
-                progress(int(100 * (k + 1) / len(items)))
+                progress(55 + int(45 * (k + 1) / total), updated, total)
     return updated
 
 

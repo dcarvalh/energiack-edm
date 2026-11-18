@@ -60,16 +60,16 @@ def start(locality_id, slug, bbox, tiles, px, name, osm=True, country="CH"):
             conn.commit()
             enhance = osm and is_ch
             _set(locality_id, state="done", pct=100, step="done", n=summary["n"], matched=summary["matched"],
-                 unmatched=summary["unmatched"], fp=("running" if enhance else "none"), fp_pct=0)
+                 unmatched=summary["unmatched"], fp=("running" if enhance else "none"), fp_pct=0, fp_n=0, fp_total=summary["n"])
             # Phase 2 — progressively replace blocks with real OSM footprints, biggest building first.
             if enhance:
-                def fprog(p):
-                    _set(locality_id, fp="running", fp_pct=p)
+                def fprog(pct, done, total):
+                    _set(locality_id, fp="running", fp_pct=pct, fp_n=done, fp_total=total)
                 try:
-                    store.map_enhance_footprints(conn, locality_id, fprog)
+                    nfp = store.map_enhance_footprints(conn, locality_id, fprog)
                 except Exception:
-                    pass
-                _set(locality_id, fp="done", fp_pct=100)
+                    nfp = 0
+                _set(locality_id, fp="done", fp_pct=100, fp_n=nfp)
         except Exception as e:                       # noqa: BLE001 - surface any failure to the client
             try:
                 conn.rollback()

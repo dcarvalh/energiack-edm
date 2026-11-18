@@ -628,6 +628,7 @@ fr:{
   imp_running_short:"Import…", imp_err_short:"Échec", imp_done_short:"{m} rattachés",
   imp_done:"Carte 3D de {name} importée : {n} bâtiments, {m} rattachés.", imp_fail:"Échec de l'import de la carte 3D de {name}.",
   imp_map_wait:"Import de la carte 3D en cours… {pct} %",
+  imp_fp:"Empreintes réelles · {name}", imp_fp_sub:"{n} / {m} bâtiments mis à jour (du plus grand au plus petit)", imp_fp_short:"Empreintes… {n}",
   mp_title:"Rattacher à un site", mp_search:"Rechercher un site…", mp_none:"Aucun site",
   loc_delete_tip:"Supprimer cette localité et toutes ses données",
   loc_delete_confirm:"Supprimer la localité « {name} » et TOUTES ses données (bâtiments, compteurs, mesures, sas) ?\n\nTapez le nom pour confirmer :",
@@ -821,6 +822,7 @@ en:{
   imp_running_short:"Importing…", imp_err_short:"Failed", imp_done_short:"{m} matched",
   imp_done:"3D map for {name} imported: {n} buildings, {m} matched.", imp_fail:"3D map import failed for {name}.",
   imp_map_wait:"3D map import running… {pct}%",
+  imp_fp:"Real footprints · {name}", imp_fp_sub:"{n} / {m} buildings updated (largest first)", imp_fp_short:"Footprints… {n}",
   mp_title:"Match to a site", mp_search:"Search a site…", mp_none:"No site",
   loc_delete_tip:"Delete this locality and all its data",
   loc_delete_confirm:"Delete locality « {name} » and ALL its data (buildings, meters, readings, staging)?\n\nType the name to confirm:",
@@ -1451,18 +1453,28 @@ function markMapButton(){
   const sp = a.querySelector("span"); if (sp) sp.textContent = run ? `${t("nav_map")} · ${(j && j.pct) || 0}%` : t("nav_map");
 }
 function renderImportChip(){
-  const run = Object.values(MAP_IMPORTS).filter(j => j.state === "running");
+  const jobs = Object.values(MAP_IMPORTS);
+  const building = jobs.filter(j => j.state === "running");                       // phase 1: the fast square-block import
+  const fp = jobs.filter(j => j.state === "done" && j.fp === "running");          // phase 2: real footprints, in background
   let chip = document.getElementById("imp-chip");
-  if (!run.length){ if (chip) chip.remove(); return; }
+  if (!building.length && !fp.length){ if (chip) chip.remove(); return; }
   if (!chip){ chip = document.createElement("div"); chip.id = "imp-chip"; document.body.appendChild(chip); }
-  const j = run.sort((a,b)=>(b.pct||0)-(a.pct||0))[0];
-  chip.innerHTML = `<div class="imp-bar"><i style="width:${j.pct||0}%"></i></div>`
-    + `<div class="imp-txt">${esc(t("imp_running", {name: j.name || j.slug}))} · <b>${j.pct||0}%</b></div>`;
+  if (building.length){
+    const j = building.sort((a,b)=>(b.pct||0)-(a.pct||0))[0];
+    chip.innerHTML = `<div class="imp-bar"><i style="width:${j.pct||0}%"></i></div>`
+      + `<div class="imp-txt">${esc(t("imp_running", {name: j.name || j.slug}))} · <b>${j.pct||0}%</b></div>`;
+  } else {
+    const j = fp.sort((a,b)=>(b.fp_pct||0)-(a.fp_pct||0))[0];   // footprints keep streaming in after the map is explorable
+    chip.innerHTML = `<div class="imp-bar"><i style="width:${j.fp_pct||0}%"></i></div>`
+      + `<div class="imp-txt">${esc(t("imp_fp", {name: j.name || j.slug}))} · <b>${j.fp_pct||0}%</b>`
+      + `<br><span style="color:var(--muted)">${esc(t("imp_fp_sub", {n: nf(j.fp_n||0), m: nf(j.fp_total||0)}))}</span></div>`;
+  }
 }
 function importCell(j){
   if (!j) return "";
   if (j.state === "running") return `<span class="pill p-warn" style="font-style:normal">${esc(t("imp_running_short"))} ${j.pct||0}%</span>`;
   if (j.state === "error") return `<span class="pill p-fossil" style="font-style:normal">${esc(t("imp_err_short"))}</span>`;
+  if (j.state === "done" && j.fp === "running") return `<span class="pill p-warn" style="font-style:normal">${esc(t("imp_fp_short", {n: nf(j.fp_n||0)}))} ${j.fp_pct||0}%</span>`;
   if (j.state === "done") return `<span class="pill p-ren" style="font-style:normal">${esc(t("imp_done_short", {m: nf(j.matched||0)}))}</span>`;
   return "";
 }
@@ -2627,7 +2639,7 @@ let RZ, LASTW = innerWidth;
 window.addEventListener("resize", () => { clearTimeout(RZ); RZ = setTimeout(() => { if (Math.abs(innerWidth - LASTW) < 40 || !D) return; LASTW = innerWidth; const open = document.getElementById("drawer").classList.contains("open"); renderAll(); if (open) reopen(); }, 200); });
 matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", renderAll);
 
-const V = "62";
+const V = "63";
 (async () => {
   try {
     const c = await fetch("api/config.json?v="+V, {cache:"no-store"}).then(r => r.json());

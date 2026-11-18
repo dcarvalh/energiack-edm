@@ -36,8 +36,8 @@ OVERPASS = [u.strip() for u in os.environ.get("OVERPASS_URLS", "").split(",") if
     "https://overpass-api.de/api/interpreter", "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
     "https://overpass.kumi.systems/api/interpreter", "https://overpass.private.coffee/api/interpreter"]
 OSM_BUDGET_PER_TILE_S = 12  # best-effort OSM budget scales with the number of ~1 km sub-boxes (big zones get more time)
-OSM_BUDGET_MAX_S = 180      # but never spend more than this on footprints; the rest keep the square shape
-OSM_CALL_S = 20            # per-Overpass-call timeout: fail a dead mirror fast, but long enough for a slow-but-live one
+OSM_BUDGET_MAX_S = 300      # but never spend more than this on footprints; the rest keep the square shape (it runs in the background)
+OSM_CALL_S = 40            # per-Overpass-call timeout: public mirrors can take ~20-30 s, so give a slow-but-live one room
 OSM_CACHE_DIR = os.environ.get("OSM_CACHE_DIR")   # if set, cache OSM footprints per 1 km cell so re-imports are consistent
 GWR_LAYER = "ch.bfs.gebaeude_wohnungs_register"
 IDENTIFY_CAP = 200          # the identify endpoint returns at most ~200 features per call
@@ -92,6 +92,27 @@ def _pt_in_ring(x, y, ring):
     return c
 
 
+def _overpass_race(q, timeout, deadline):
+    """Ask EVERY Overpass mirror at once and return the elements of the first that answers. Most public mirrors are
+    down or slow from any given host, and trying them one by one wastes a full timeout on each dead one before reaching
+    the single live one — racing them means a cell costs the live mirror's latency, not the sum of the dead timeouts."""
+    url_q = "?data=" + urllib.parse.quote(q)
+    ex = concurrent.futures.ThreadPoolExecutor(max_workers=len(OVERPASS))
+    try:
+        futs = [ex.submit(_get, ep + url_q, False, timeout) for ep in OVERPASS]
+        budget = max(1.0, min(timeout + 5, deadline - time.monotonic()))
+        for fut in concurrent.futures.as_completed(futs, timeout=budget):
+            try:
+                return fut.result().get("elements", [])          # first mirror to answer wins
+            except Exception:
+                continue                                         # this mirror failed; wait for the next to complete
+    except Exception:
+        pass                                                     # as_completed timed out: all mirrors too slow this round
+    finally:
+        ex.shutdown(wait=False)                                  # don't block on the dead mirrors' lingering sockets
+    return None
+
+
 def _osm_footprints(bbox, progress=None, p0=0, p1=0):
     """Real OpenStreetMap building footprints in bbox, as LV95 rings behind a spatial index.
     Returns a find(E, N) -> ring|None lookup and the footprint count. ([], 0) if OSM is unreachable.
@@ -119,16 +140,7 @@ def _osm_footprints(bbox, progress=None, p0=0, p1=0):
         c1 = _lv95_to_wgs(cx + 1000, cy + 1000)
         south, west, north, east = min(c0[1], c1[1]), min(c0[0], c1[0]), max(c0[1], c1[1]), max(c0[0], c1[0])
         q = f'[out:json][timeout:25];way["building"]({south:.6f},{west:.6f},{north:.6f},{east:.6f});out geom;'
-        elements = None
-        for k in range(len(OVERPASS)):                        # start at a per-cell mirror, then fall back
-            if time.monotonic() > deadline:
-                break
-            ep = OVERPASS[(idx + k) % len(OVERPASS)]
-            try:
-                elements = _get(f"{ep}?data={urllib.parse.quote(q)}", timeout=OSM_CALL_S).get("elements", [])
-                break
-            except Exception:
-                continue
+        elements = _overpass_race(q, OSM_CALL_S, deadline)    # all mirrors at once; first to answer wins
         if elements is None:
             return []                                          # fetch failed -> do NOT cache, so it is retried next time
         rings = [[[round(x, 1), round(y, 1)] for x, y in (_wgs_to_lv95(p["lon"], p["lat"]) for p in w["geometry"])]
