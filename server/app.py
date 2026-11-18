@@ -174,10 +174,12 @@ def create_locality(body: NewLocality, u=Depends(need("admin")), conn=Depends(db
 
 @app.delete("/api/localities/{slug}")
 def delete_locality(slug: str, u=Depends(need("admin")), conn=Depends(db)):
-    """Delete a locality and all its data (cascade). Admin only. Cannot delete the last locality."""
+    """Delete a locality and all its data (cascade). Admin only. Built-in ones (store.PROTECTED) and the last locality cannot be deleted."""
     loc = store.locality_by_slug(conn, slug)
     if not loc:
         raise HTTPException(404, "locality not found")
+    if slug in store.PROTECTED:
+        raise HTTPException(422, "built-in municipalities cannot be deleted")
     remaining = conn.execute(
         "SELECT count(*) AS n FROM locality WHERE id <> %s", (loc["id"],)).fetchone()["n"]
     if remaining == 0:
