@@ -10,6 +10,7 @@ Coordinates are Lambert-93 (EPSG:2154), the French national projection.
 fetch(bbox, step, px, tiles, name, progress, osm) -> {meta, buildings, terrain (bytes), tiles: [(i, j, jpg)]}
 bbox = (xmin, ymin, xmax, ymax) in Lambert-93 (EPSG:2154).
 """
+import concurrent.futures
 import json
 import math
 import struct
@@ -73,21 +74,23 @@ def _l93_to_wgs(x, y):
 
 
 def _buildings(bbox, progress=None, p0=0, p1=0):
-    """BD TOPO V3 buildings in bbox (Lambert-93), paged. Each: footprint ring + height + floors + ground z + RNB id."""
+    """BD TOPO V3 buildings in bbox (Lambert-93), paged. Each: footprint ring + height + floors + ground z + RNB id.
+    The first page gives numberMatched, then the remaining pages are fetched in parallel (dense zones = many pages)."""
     xmin, ymin, xmax, ymax = bbox
-    rows, start = [], 0
-    while True:
-        _report(progress, p0 + (p1 - p0) * min(1.0, start / 3000.0), "buildings")
+
+    def page(start):
         q = urllib.parse.urlencode({
             "SERVICE": "WFS", "VERSION": "2.0.0", "REQUEST": "GetFeature", "TYPENAMES": BDTOPO,
             "SRSNAME": "EPSG:2154", "COUNT": WFS_PAGE, "STARTINDEX": start,
             "OUTPUTFORMAT": "application/json", "BBOX": f"{xmin},{ymin},{xmax},{ymax},EPSG:2154"})
         try:
-            d = _get(f"{WFS}?{q}")
+            return _get(f"{WFS}?{q}")
         except Exception:
-            break
-        feats = d.get("features", [])
-        for f in feats:
+            return None
+
+    def parse(d):
+        out = []
+        for f in (d.get("features", []) if d else []):
             p = f.get("properties", {})
             g = f.get("geometry", {})
             if g.get("type") == "MultiPolygon":
@@ -97,15 +100,28 @@ def _buildings(bbox, progress=None, p0=0, p1=0):
             else:
                 continue
             rnb = (p.get("identifiants_rnb") or "").strip()
-            rows.append({
+            out.append({
                 "id": (rnb.split("/")[0] if rnb else (p.get("cleabs") or "")),
                 "ring": ring, "h": p.get("hauteur"), "etages": p.get("nombre_d_etages"),
                 "logements": p.get("nombre_de_logements"), "zsol": p.get("altitude_minimale_sol"),
                 "usage": p.get("usage_1"),
             })
-        start += len(feats)
-        if len(feats) < WFS_PAGE or start >= (d.get("numberMatched") or 0):
-            break
+        return out
+
+    first = page(0)
+    if not first:
+        return []
+    rows = parse(first)
+    total = first.get("numberMatched") or len(rows)
+    _report(progress, p0 + (p1 - p0) * (len(rows) / max(1, total)), "buildings")
+    starts = list(range(WFS_PAGE, total, WFS_PAGE))
+    if starts:
+        done = 0
+        with concurrent.futures.ThreadPoolExecutor(max_workers=min(6, len(starts))) as ex:
+            for d in ex.map(page, starts):
+                done += 1
+                rows += parse(d)
+                _report(progress, p0 + (p1 - p0) * min(1.0, (done + 1) / (len(starts) + 1)), "buildings")
     return rows
 
 
@@ -124,8 +140,9 @@ def _terrain(bbox, tiles, progress=None, p0=0, p1=0):
             pts.append((xmin + c * step, n))
     elev = [None] * len(pts)
     B = 150                                                  # points per GET call (the elevation API rejects POST)
-    for i in range(0, len(pts), B):
-        _report(progress, p0 + (p1 - p0) * i / len(pts), "terrain")
+    starts = list(range(0, len(pts), B))
+
+    def fetch_batch(i):                                      # one elevation GET for points [i : i+B] -> (i, values)
         chunk = pts[i:i + B]
         lons, lats = [], []
         for e, n in chunk:
@@ -135,14 +152,20 @@ def _terrain(bbox, tiles, progress=None, p0=0, p1=0):
         q = "lon=" + "|".join(lons) + "&lat=" + "|".join(lats) + "&resource=ign_rge_alti_wld&zonly=true"
         for attempt in range(3):                             # retry: a dropped batch leaves a terrain hole that distorts the drape
             try:
-                vals = _get(f"{ALTI}?{q}").get("elevations", [])
-                for j, v in enumerate(vals):
-                    if isinstance(v, (int, float)) and v > -1000:
-                        elev[i + j] = float(v)
-                break
+                return i, _get(f"{ALTI}?{q}").get("elevations", [])
             except Exception:
                 if attempt < 2:
                     time.sleep(0.6 * (attempt + 1))
+        return i, []
+
+    done = 0
+    with concurrent.futures.ThreadPoolExecutor(max_workers=min(6, len(starts))) as ex:
+        for i, vals in ex.map(fetch_batch, starts):         # batches fetched in parallel (the slow part of a FR import)
+            done += 1
+            _report(progress, p0 + (p1 - p0) * done / len(starts), "terrain")
+            for j, v in enumerate(vals):
+                if isinstance(v, (int, float)) and v > -1000:
+                    elev[i + j] = float(v)
     valid = [v for v in elev if v is not None]
     zmin = math.floor(min(valid)) if valid else 0.0
     # Fill holes (a failed elevation batch) by spreading neighbouring heights in, so the surface stays smooth rather than
@@ -184,28 +207,33 @@ def _aerial(bbox, tiles, px, progress=None, p0=0, p1=0):
     xmin, ymin, xmax, ymax = bbox
     W, H = xmax - xmin, ymax - ymin
     tpx = max(256, min(int(round(max(W, H) / tiles / px)), 1024))
-    out, done, ntiles = [], 0, tiles * tiles
-    for i in range(tiles):
-        for j in range(tiles):
-            _report(progress, p0 + (p1 - p0) * done / ntiles, "aerial")
+    ntiles = tiles * tiles
+    ij = [(i, j) for i in range(tiles) for j in range(tiles)]   # i = column west->east, j = row north->south
+
+    def fetch_tile(ij_):
+        i, j = ij_
+        x0, x1 = xmin + i * W / tiles, xmin + (i + 1) * W / tiles
+        y1, y0 = ymax - j * H / tiles, ymax - (j + 1) * H / tiles
+        q = urllib.parse.urlencode({
+            "SERVICE": "WMS", "VERSION": "1.3.0", "REQUEST": "GetMap", "LAYERS": ORTHO, "STYLES": "",
+            "CRS": "EPSG:2154", "BBOX": f"{x0},{y0},{x1},{y1}",
+            "WIDTH": str(tpx), "HEIGHT": str(tpx), "FORMAT": "image/jpeg"})
+        for attempt in range(4):                              # IGN WMS intermittently 400s on a tile; retry so it is not left blank
+            try:
+                data = _get(f"{WMS}?{q}", binary=True)
+                if len(data) > 2000:                          # a real JPEG, not a WMS error page / blank body
+                    return (i, j, data)
+            except Exception:
+                pass
+            time.sleep(0.5 * (attempt + 1))
+        return (i, j, b"")
+
+    out, done = [], 0
+    with concurrent.futures.ThreadPoolExecutor(max_workers=min(6, ntiles)) as ex:
+        for tile in ex.map(fetch_tile, ij):                   # tiles fetched in parallel (each carries its own i,j)
             done += 1
-            x0, x1 = xmin + i * W / tiles, xmin + (i + 1) * W / tiles
-            y1, y0 = ymax - j * H / tiles, ymax - (j + 1) * H / tiles
-            q = urllib.parse.urlencode({
-                "SERVICE": "WMS", "VERSION": "1.3.0", "REQUEST": "GetMap", "LAYERS": ORTHO, "STYLES": "",
-                "CRS": "EPSG:2154", "BBOX": f"{x0},{y0},{x1},{y1}",
-                "WIDTH": str(tpx), "HEIGHT": str(tpx), "FORMAT": "image/jpeg"})
-            jpg = b""
-            for attempt in range(4):                          # IGN WMS intermittently 400s on a tile; retry so it is not left blank
-                try:
-                    data = _get(f"{WMS}?{q}", binary=True)
-                    if len(data) > 2000:                      # a real JPEG, not a WMS error page / blank body
-                        jpg = data
-                        break
-                except Exception:
-                    pass
-                time.sleep(0.5 * (attempt + 1))
-            out.append((i, j, jpg))
+            _report(progress, p0 + (p1 - p0) * done / ntiles, "aerial")
+            out.append(tile)
     return out, tpx
 
 
