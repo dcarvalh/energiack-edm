@@ -8,7 +8,7 @@ import { computeBoundsTree, acceleratedRaycast } from "./vendor/three-mesh-bvh.m
 THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
 
-const V = "38";
+const V = "39";
 const GREY = 0xb9bfbb, SITE_COL = 0x1f6feb;   // SITE_COL: buildings linked to a site of the municipality (legend swatch)
 const SEL_COL = 0xff2bbf;   // selected/clicked building: a vivid magenta outline rim
 const SITEHI = 0x2a9df4;    // the other blocks of the selected building's site: a thinner blue outline rim
@@ -339,6 +339,20 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
   function flush() { bg.attributes.color.needsUpdate = true; request(); }
 
   // ---------------------------------------------------------------- UI
+  const CH_IMP = IMP && M.crs === "EPSG:2056";    // Swiss imported map: real building footprints come from OSM, lazily
+  function fpStats() {
+    let found = 0, none = 0, pending = 0;
+    for (const b of B) { if (b.fp === "found") found++; else if (b.fp === "none") none++; else pending++; }
+    return { found, none, pending, total: B.length };
+  }
+  function fpLegend() {                           // footprint coverage: found / searched-no-building / not-yet-searched + a resolve button
+    const s = fpStats();
+    const line = (colour, label, n) => `<span class="m3-fp-k"><i style="background:${hex(colour)}"></i>${esc(label)} <b>${nf(n)}</b></span>`;
+    return `<div class="m3-fp"><div class="m3-h">${esc(t("m_fp_title"))} · ${nf(s.found)} / ${nf(s.total)}</div>`
+      + `<div class="m3-fp-rows">${line(0x2a9d5a, t("m_fp_found"), s.found)}${line(WARN, t("m_fp_pending"), s.pending)}${line(GREY, t("m_fp_none"), s.none)}</div>`
+      + (api.resolveFootprints && s.pending > 0 ? `<button class="chip m3-fp-btn" data-fpresolve>${esc(t("m_fp_resolve", { n: nf(s.pending) }))}</button>` : "")
+      + `</div>`;
+  }
   function legendHtml() {
     const lay = L(), counts = new Array(lay.labels.length).fill(0); let nd = 0, un = 0;
     for (let i = 0; i < B.length; i++) { if (unmatched(i)) { un++; continue; } const c = lay.cls(B[i]); if (c < 0) nd++; else counts[c]++; }
@@ -346,7 +360,8 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
     return `<div class="m3-unit">${esc(t((RCLIKE ? "m_lg_rc_" : "m_lg_") + LAYER))}${lay.unit ? ` · ${esc(lay.unit)}` : ""}${lay.sim ? ` <span class="pill p-warn">${esc(t("m_sim"))}</span>` : ""}</div>`
       + `<div class="m3-keys">${lay.labels.map((l, i) => item(i, lay.ramp[i], l, counts[i])).join("")}${item("nd", GREY, t("m_nodata"), nd)}${IMP ? item("un", WARN, t("m_unmatched"), un) : ""}</div>`
       + (NLINK ? `<div class="m3-keys">${item("site", SITE_COL, t("m_sites"), NLINK)}</div>` : "")
-      + `<div class="m3-fhint">${esc(ONLY === null ? t("m_filter_hint") : t("m_filter_clear"))}</div>`;
+      + `<div class="m3-fhint">${esc(ONLY === null ? t("m_filter_hint") : t("m_filter_clear"))}</div>`
+      + (CH_IMP ? fpLegend() : "");
   }
   function ui() {
     // Title = the current municipality; for an imported map the picked zone is shown only small, in the subtitle.
@@ -473,6 +488,7 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
 
   const life = new AbortController();   // root outlives this map (same element for the next municipality): drop its listener in destroy()
   root.addEventListener("click", e => {
+    const fpb = e.target.closest("[data-fpresolve]"); if (fpb) { fpb.disabled = true; fpb.textContent = t("m_fp_resolving"); api.resolveFootprints && api.resolveFootprints(); return; }
     const l = e.target.closest("[data-ml]"); if (l) { LAYER = l.dataset.ml; ONLY = ONLY0; ui(); paintAll(); return; }
     const mf = e.target.closest("[data-mf]"); if (mf) { MFILTER = mf.dataset.mf; ui(); paintAll(); return; }
     const k = e.target.closest("[data-cls]");

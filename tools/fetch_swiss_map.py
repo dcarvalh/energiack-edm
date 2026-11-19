@@ -113,10 +113,16 @@ def _overpass_race(q, timeout, deadline):
     return None
 
 
+def osm_cell(e, n):
+    """The 1 km LV95 cell (origin x, origin y) a point falls in — the unit OSM footprints are fetched and cached by."""
+    return (int(e // 1000) * 1000, int(n // 1000) * 1000)
+
+
 def _osm_footprints(bbox, progress=None, p0=0, p1=0):
-    """Real OpenStreetMap building footprints in bbox, as LV95 rings behind a spatial index.
-    Returns a find(E, N) -> ring|None lookup and the footprint count. ([], 0) if OSM is unreachable.
-    The Overpass query is TILED (~1 km sub-boxes) so a big zone does not blow the per-query timeout/limit."""
+    """Real OpenStreetMap building footprints in bbox, as LV95 rings behind a spatial index. Returns
+    (find(E,N) -> ring|None, footprint count, fetched) where `fetched` is the set of 1 km cells that were actually
+    obtained this call (cache or live) — so the caller can tell a building searched-and-not-found from one not yet
+    searched (its cell was unreachable). The Overpass query is TILED (~1 km sub-boxes) to stay under its timeout/limit."""
     xmin, ymin, xmax, ymax = bbox
     # Fixed 1 km LV95-aligned cells: each cell is fetched from Overpass once and CACHED to disk, so later imports of the
     # same area reuse it instantly and always get the same real footprints (no more intermittent all-cube fallbacks).
@@ -131,18 +137,18 @@ def _osm_footprints(bbox, progress=None, p0=0, p1=0):
         cf = os.path.join(OSM_CACHE_DIR, f"{cx}_{cy}.json") if OSM_CACHE_DIR else None
         if cf and os.path.exists(cf):
             try:
-                return json.loads(open(cf, encoding="utf-8").read())   # cached LV95 rings for this 1 km cell
+                return (cx, cy), json.loads(open(cf, encoding="utf-8").read())   # cached LV95 rings for this 1 km cell
             except Exception:
                 pass
         if time.monotonic() > deadline:
-            return []
+            return (cx, cy), None                              # out of budget -> not searched this call
         c0 = _lv95_to_wgs(cx, cy)
         c1 = _lv95_to_wgs(cx + 1000, cy + 1000)
         south, west, north, east = min(c0[1], c1[1]), min(c0[0], c1[0]), max(c0[1], c1[1]), max(c0[0], c1[0])
         q = f'[out:json][timeout:25];way["building"]({south:.6f},{west:.6f},{north:.6f},{east:.6f});out geom;'
         elements = _overpass_race(q, OSM_CALL_S, deadline)    # all mirrors at once; first to answer wins
         if elements is None:
-            return []                                          # fetch failed -> do NOT cache, so it is retried next time
+            return (cx, cy), None                              # fetch failed -> NOT cached, retried next time, counts as not searched
         rings = [[[round(x, 1), round(y, 1)] for x, y in (_wgs_to_lv95(p["lon"], p["lat"]) for p in w["geometry"])]
                  for w in elements if w.get("geometry") and len(w["geometry"]) >= 4]
         if cf:
@@ -152,15 +158,19 @@ def _osm_footprints(bbox, progress=None, p0=0, p1=0):
                     fh.write(json.dumps(rings))
             except Exception:
                 pass
-        return rings
+        return (cx, cy), rings
 
     rings = []                                                # (bx0, by0, bx1, by1, ring_lv95)
+    fetched = set()                                           # cells actually obtained (cache or live) this call
     done = 0
     with concurrent.futures.ThreadPoolExecutor(max_workers=min(4, len(cells))) as ex:
-        for cell_rings in ex.map(fetch_cell, list(enumerate(cells))):
+        for cell, cell_rings in ex.map(fetch_cell, list(enumerate(cells))):
             done += 1
             _report(progress, p0 + (p1 - p0) * done / len(cells), "footprints")
-            for ring in cell_rings or []:
+            if cell_rings is None:
+                continue                                      # cell not searched (OSM unreachable / out of budget)
+            fetched.add(cell)
+            for ring in cell_rings:
                 xs = [p[0] for p in ring]
                 ys = [p[1] for p in ring]
                 rings.append((min(xs), min(ys), max(xs), max(ys), ring))
@@ -178,7 +188,7 @@ def _osm_footprints(bbox, progress=None, p0=0, p1=0):
                 return ring
         return None
 
-    return find, len(rings)
+    return find, len(rings), fetched
 
 
 def _alti_tiles(bbox, progress=None, p0=0, p1=0):
@@ -512,7 +522,7 @@ def fetch(bbox, step=16, px=1.0, tiles=1, name=None, progress=None, osm=True):
     raw = _buildings((xmin, ymin, xmax, ymax), progress, 38, 55)
     osm_find, osm_n = (None, 0)
     if osm:
-        osm_find, osm_n = _osm_footprints((xmin, ymin, xmax, ymax), progress, 55, 72)
+        osm_find, osm_n, _ = _osm_footprints((xmin, ymin, xmax, ymax), progress, 55, 72)
     _report(progress, 73, "buildings")
     buildings, n_osm = [], 0
     for b in raw:

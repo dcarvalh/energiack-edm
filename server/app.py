@@ -313,6 +313,29 @@ def map_import_status(slug: str, u=Depends(current), conn=Depends(db)):
     return mapjobs.get(loc["id"]) or {"state": "idle"}
 
 
+@app.get("/api/localities/{slug}/map/footprints")
+def map_footprints_stats(slug: str, u=Depends(current), conn=Depends(db)):
+    """OSM footprint coverage of a CH imported map: found / none (searched, no building) / pending (not yet searched)."""
+    loc = store.locality_by_slug(conn, slug)
+    if not loc:
+        raise HTTPException(404, "locality not found")
+    return store.map_footprint_stats(conn, loc["id"]) or {}
+
+
+@app.post("/api/localities/{slug}/map/footprints")
+def map_footprints_resolve(slug: str, u=Depends(need(*auth.FULL)), conn=Depends(db)):
+    """(Re-)run OSM footprint resolution for an existing CH map in the background. Resumable: continues on the blocks
+    still waiting for a footprint. Progress arrives over the same SSE stream as an import (fp_pct, fp_n, fp_total)."""
+    loc = store.locality_by_slug(conn, slug)
+    if not loc:
+        raise HTTPException(404, "locality not found")
+    if store.map_footprint_stats(conn, loc["id"]) is None:
+        raise HTTPException(422, "no Swiss imported map to resolve footprints for")
+    if not mapjobs.start_footprints(loc["id"], slug, loc.get("name") or slug):
+        raise HTTPException(409, "a job is already running for this locality")
+    return {"state": "started", "slug": slug}
+
+
 @app.get("/api/map/jobs/stream")
 def map_jobs_stream(u=Depends(current), conn=Depends(db)):
     """Server-Sent Events: push 3D-map import progress for every locality the user can see. One event per change."""

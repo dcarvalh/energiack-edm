@@ -83,6 +83,34 @@ def start(locality_id, slug, bbox, tiles, px, name, osm=True, country="CH"):
     return True
 
 
+def start_footprints(locality_id, slug, name=""):
+    """Re-run just the OSM footprint resolution for an existing (CH) map, in the background. Resumable: it only tries
+    blocks still 'pending', so it continues where a partial OSM outage left off. False if a job is already running."""
+    with _LOCK:
+        j = JOBS.get(locality_id) or {}
+        if j.get("state") == "running" or j.get("fp") == "running":
+            return False
+        JOBS[locality_id] = {"slug": slug, "name": name or j.get("name") or slug, "state": "done", "pct": 100,
+                             "step": "done", "fp": "running", "fp_pct": 0, "fp_n": 0, "fp_total": 0,
+                             "started": time.time(), "updated": time.time()}
+
+    def run():
+        conn = store.connect()
+        try:
+            def fprog(pct, done, total):
+                _set(locality_id, fp="running", fp_pct=pct, fp_n=done, fp_total=total)
+            try:
+                nfp = store.map_enhance_footprints(conn, locality_id, fprog)
+            except Exception:
+                nfp = 0
+            _set(locality_id, fp="done", fp_pct=100, fp_n=nfp)
+        finally:
+            conn.close()
+
+    threading.Thread(target=run, daemon=True, name=f"mapfp-{slug}").start()
+    return True
+
+
 def sse_stream(lids):
     """Yield Server-Sent Events for the given localities' jobs: one event whenever a job changes, plus heartbeats.
     Runs until the client disconnects (the generator is then dropped). lids is captured once at subscription time."""

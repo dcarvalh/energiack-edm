@@ -228,6 +228,11 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;ba
 .m3-key:hover{background:var(--surface-2)} .m3-key.on{background:var(--surface-2);outline:1px solid var(--line)} .m3-key.off{opacity:.4}
 .m3-key i{width:10px;height:10px;border-radius:3px;flex:none} .m3-key span{flex:1} .m3-key em{font-style:normal;color:var(--muted);font-variant-numeric:tabular-nums;font-size:11.5px}
 .m3-fhint{font-size:11.5px;color:var(--muted);margin-top:6px}
+.m3-fp{margin-top:8px;padding-top:8px;border-top:1px solid var(--line)}
+.m3-fp .m3-h{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600;margin-bottom:5px}
+.m3-fp-rows{display:flex;flex-direction:column;gap:3px;font-size:11.5px;color:var(--muted)}
+.m3-fp-k{display:flex;align-items:center;gap:6px} .m3-fp-k i{width:10px;height:10px;border-radius:3px;flex:none} .m3-fp-k b{color:var(--text);font-variant-numeric:tabular-nums;margin-left:auto}
+.m3-fp-btn{margin-top:8px;width:100%;text-align:center;font-size:12px}
 .m3-tools{position:absolute;right:12px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:8px;z-index:3;transition:right .2s}
 .m3-panel:not(.hide)~.m3-tools{right:364px}
 .m3-grp{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);overflow:hidden}
@@ -761,6 +766,8 @@ fr:{
   m_attr_imp:"Bâtiments : Registre fédéral des bâtiments (RegBL) · photo aérienne : swisstopo SWISSIMAGE · geo.admin.ch",
   m_unmatched:"Non rattaché", m_imp_matched:"Rattaché au site", m_imp_unmatch:"Détacher",
   m_mf_all:"Tous", m_mf_matched:"Rattachés", m_mf_unmatched:"Non rattachés",
+  m_fp_title:"Empreintes réelles (OSM)", m_fp_found:"forme réelle", m_fp_pending:"à chercher", m_fp_none:"absent d'OSM",
+  m_fp_resolve:"Résoudre les empreintes ({n})", m_fp_resolving:"Recherche…", m_fp_started:"Recherche des empreintes lancée en arrière-plan.",
   m_imp_unmatched_hint:"Ce bâtiment n'est pas encore rattaché à un de vos sites. Cliquez sur « Rattacher » pour lui associer un site et afficher ses données.",
   m_imp_match_btn:"Rattacher à un site…", m_imp_register_btn:"Ajouter comme nouveau bâtiment",
   mr_title:"Ajouter un bâtiment", mr_new:"Nouveau site", mr_existing:"Site existant", mr_sitename:"Nom du site", mr_create:"Créer", mr_saving:"Enregistrement…", mr_fail:"Échec :",
@@ -963,6 +970,8 @@ en:{
   m_attr_imp:"Buildings: Federal Register of Buildings (RegBL) · aerial photo: swisstopo SWISSIMAGE · geo.admin.ch",
   m_unmatched:"Not matched", m_imp_matched:"Matched to site", m_imp_unmatch:"Detach",
   m_mf_all:"All", m_mf_matched:"Matched", m_mf_unmatched:"Unmatched",
+  m_fp_title:"Real footprints (OSM)", m_fp_found:"real shape", m_fp_pending:"to search", m_fp_none:"not in OSM",
+  m_fp_resolve:"Resolve footprints ({n})", m_fp_resolving:"Searching…", m_fp_started:"Footprint search started in the background.",
   m_imp_unmatched_hint:"This building is not yet linked to one of your sites. Click \"Match\" to assign a site and show its data.",
   m_imp_match_btn:"Match to a site…", m_imp_register_btn:"Add as new building",
   mr_title:"Add a building", mr_new:"New site", mr_existing:"Existing site", mr_sitename:"Site name", mr_create:"Create", mr_saving:"Saving…", mr_fail:"Failed:",
@@ -1411,7 +1420,8 @@ function renderMap(){
     siteData:mapSiteData, siteName:mapSiteName, canMatch,  // imported maps: manual match UI
     matchBuilding: (b, done) => mapPickSite(b, done),
     registerBuilding: (b, done) => mapRegisterDialog(b, done),
-    setMatch: (buildingId, idSite, done) => mapSetMatch(buildingId, idSite, done)};
+    setMatch: (buildingId, idSite, done) => mapSetMatch(buildingId, idSite, done),
+    resolveFootprints: canMatch ? () => mapResolveFootprints() : null};  // (re-)run OSM footprint resolution in the background
   import("./map3d.js?v="+V).then(m => m.initMap(el, apiObj, mapCfg))
     .then(x => { MAP = x; MAP_LOADING = false; if (MAP_FOR !== LOC?.slug && VIEW === "carte") renderMap(); })
     .catch(e => { MAP_LOADING = false; MAP_FOR = null; el.innerHTML = `<div class="m3-loading">${esc(String(e))}</div>`; });
@@ -1512,6 +1522,18 @@ function toast(kind, msg){
   el.textContent = msg; document.body.appendChild(el);
   requestAnimationFrame(() => el.classList.add("show"));
   setTimeout(() => { el.classList.remove("show"); setTimeout(() => el.remove(), 350); }, kind === "warn" ? 9000 : 6000);
+}
+// (Re-)run OSM footprint resolution for the current municipality's map, in the background; progress shows in the import chip.
+async function mapResolveFootprints(){
+  if (!LOC) return;
+  try {
+    const r = await fetch(`api/localities/${LOC.slug}/map/footprints`, {method:"POST"});
+    if (!r.ok){ toast("warn", t("mi_fail") + " " + ((await r.json().catch(()=>({}))).detail || r.status)); return; }
+    MAP_IMPORTS[LOC.id] = {...(MAP_IMPORTS[LOC.id]||{}), slug: LOC.slug, name: LOC.name, state:"done", fp:"running", fp_pct:0, fp_n:0, fp_total:0};
+    mapImportsSubscribe(); renderImportChip();
+    if (VIEW === "carte") scheduleFootprintReload(LOC.slug);   // reveal new footprints on the open map as they land
+    toast("ok", t("m_fp_started"));
+  } catch(e){ toast("warn", String(e)); }
 }
 // Assign (or clear) the site of a map building via the API, then let the map recolour.
 async function mapSetMatch(buildingId, idSite, done){
@@ -2748,7 +2770,7 @@ function tourMaybe(){   // first visit only; not in automated checks, not on a d
   setTimeout(tourOffer, 1500);
 }
 
-const V = "65";
+const V = "66";
 (async () => {
   try {
     const c = await fetch("api/config.json?v="+V, {cache:"no-store"}).then(r => r.json());

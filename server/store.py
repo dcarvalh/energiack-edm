@@ -398,53 +398,83 @@ def _ring_centroid_area(ring):
     return cx / (6 * a), cy / (6 * a), abs(a)
 
 
+def map_footprint_stats(conn, locality_id):
+    """Footprint coverage of a CH imported map: found (real OSM shape) / none (cell searched, no OSM building) /
+    pending (square, not yet searched), with the total. None for non-CH maps (France already has real footprints)."""
+    mi = conn.execute("SELECT id, meta FROM map_import WHERE locality_id = %s", (locality_id,)).fetchone()
+    if not mi or (mi["meta"].get("crs") != "EPSG:2056"):
+        return None
+    r = conn.execute(
+        "SELECT count(*) AS total, "
+        "count(*) FILTER (WHERE fp = 'found') AS found, "
+        "count(*) FILTER (WHERE fp = 'none') AS none, "
+        "count(*) FILTER (WHERE fp IS NULL OR fp = 'pending') AS pending "
+        "FROM map_building WHERE map_import_id = %s", (mi["id"],)).fetchone()
+    return {"total": r["total"], "found": r["found"], "none": r["none"], "pending": r["pending"]}
+
+
 def map_enhance_footprints(conn, locality_id, progress=None):
-    """Background pass (after a fast square-block import): fetch real OSM footprints and replace each block's shape
-    in place, BIGGEST building first so the most visible blocks get their true shape first. Swiss zones only
-    (France already imports real BD TOPO footprints). progress(pct, done, total) reports both phases, where `done`
-    is the running count of blocks given a real footprint. Returns that final count."""
+    """Fetch real OSM footprints and replace each still-square block with its true shape, BIGGEST first. RESUMABLE:
+    only blocks still 'pending' (no footprint yet) are tried, so it can be re-run to continue after a partial OSM
+    outage. Each block ends 'found' (got a footprint), 'none' (its 1 km cell was searched but had no OSM building) or
+    stays 'pending' (cell unreachable this run, retried later). Swiss zones only. progress(pct, found, total). Returns found."""
     mi = conn.execute("SELECT id, meta, bbox FROM map_import WHERE locality_id = %s", (locality_id,)).fetchone()
     if not mi or (mi["meta"].get("crs") != "EPSG:2056"):
         return 0
     xmin, ymin = mi["meta"]["origin"]
     bbox = tuple(float(v) for v in mi["bbox"].split(","))
-    rows = conn.execute("SELECT id, rings FROM map_building WHERE map_import_id = %s", (mi["id"],)).fetchall()
+    rows = conn.execute(
+        "SELECT id, rings FROM map_building WHERE map_import_id = %s AND (fp IS NULL OR fp = 'pending')",
+        (mi["id"],)).fetchall()
     items = []                                                # (area, id, E, N) in LV95, biggest first
     for r in rows:
         cx, cy, area = _ring_centroid_area(r["rings"][0])
         items.append((area, r["id"], xmin + cx, ymin + cy))
     items.sort(reverse=True)
     total = len(items)
+    if not total:
+        if progress:
+            progress(100, 0, 0)
+        return 0
 
     # Phase A — fetch the OSM footprints (the slow network part): report it as 0..55 %.
     def fetch_progress(pct, step):
         if progress:
             progress(int(pct * 0.55), 0, total)
-    find, nf = geomap._osm_footprints(bbox, fetch_progress, 0, 100)   # cached per 1 km cell; find(E,N) -> LV95 ring | None
-    if not nf:
+    find, nf, fetched = geomap._osm_footprints(bbox, fetch_progress, 0, 100)
+    if not fetched:                                           # OSM entirely unreachable this run: nothing searched, keep pending
         if progress:
             progress(100, 0, total)
         return 0
 
-    # Phase B — swap each block's square for its real footprint, biggest first: report 55..100 % + the running count.
-    updated, batch = 0, []
+    # Phase B — resolve each pending block, biggest first. Report 55..100 % + the running found count.
+    found, found_batch, none_batch = 0, [], []
+
+    def flush():
+        with conn.cursor() as cur:
+            if found_batch:
+                cur.executemany("UPDATE map_building SET rings = %s, fp = 'found' WHERE id = %s", found_batch)
+            if none_batch:
+                cur.executemany("UPDATE map_building SET fp = 'none' WHERE id = %s", [(i,) for i in none_batch])
+        conn.commit()
+        found_batch.clear(); none_batch.clear()
+
     for k, (area, bid, e, n) in enumerate(items):
         ring = find(e, n)
         if ring:
             ml = [[round(px - xmin, 1), round(py - ymin, 1)] for px, py in ring]
             if ml[0] != ml[-1]:
                 ml.append(ml[0])
-            batch.append((Jsonb([ml]), bid))
-            updated += 1
-        if len(batch) >= 100 or k == total - 1:
-            if batch:
-                with conn.cursor() as cur:
-                    cur.executemany("UPDATE map_building SET rings = %s WHERE id = %s", batch)
-                conn.commit()
-                batch = []
+            found_batch.append((Jsonb([ml]), bid))
+            found += 1
+        elif geomap.osm_cell(e, n) in fetched:               # cell was searched but no OSM building covers this point
+            none_batch.append(bid)
+        # else: cell not reached this run -> stays pending, retried next time
+        if len(found_batch) + len(none_batch) >= 100 or k == total - 1:
+            flush()
             if progress:
-                progress(55 + int(45 * (k + 1) / total), updated, total)
-    return updated
+                progress(55 + int(45 * (k + 1) / total), found, total)
+    return found
 
 
 def map_automatch(conn, locality_id):
@@ -480,7 +510,7 @@ def map_get(conn, locality_id):
     if not mi:
         return None
     rows = conn.execute(
-        "SELECT id, egid, rings, h, z, attrs, id_site, match_kind FROM map_building "
+        "SELECT id, egid, rings, h, z, attrs, id_site, match_kind, fp FROM map_building "
         "WHERE map_import_id = %s ORDER BY id", (mi["id"],)).fetchall()
     buildings = []
     for r in rows:
@@ -490,7 +520,7 @@ def map_get(conn, locality_id):
             "h": float(r["h"]) if r["h"] is not None else 6.0,
             "z": float(r["z"]) if r["z"] is not None else 0.0,
             "use": a.get("use"), "year": a.get("year"), "levels": a.get("levels"), "addr": a.get("addr"),
-            "id_site": r["id_site"], "match_kind": r["match_kind"],
+            "id_site": r["id_site"], "match_kind": r["match_kind"], "fp": r["fp"],   # footprint state: found | none | null(pending)
         })
     return {"meta": mi["meta"], "buildings": buildings}
 

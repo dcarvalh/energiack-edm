@@ -242,6 +242,10 @@ CREATE TABLE IF NOT EXISTS map_building (
     match_kind    text                  -- 'egid' | 'manual' | null
 );
 CREATE INDEX IF NOT EXISTS map_building_import ON map_building (map_import_id);
+-- footprint state (CH maps): null/'pending' = square, not yet searched · 'found' = real OSM footprint · 'none' = searched, no OSM building
+ALTER TABLE map_building ADD COLUMN IF NOT EXISTS fp text;
+-- backfill once: a ring that is not a 4-corner square already carries a real footprint (import-time OSM or French BD TOPO)
+UPDATE map_building SET fp = 'found' WHERE fp IS NULL AND jsonb_array_length(rings->0) <> 5;
 
 CREATE TABLE IF NOT EXISTS map_tile (
     map_import_id integer NOT NULL REFERENCES map_import ON DELETE CASCADE,
