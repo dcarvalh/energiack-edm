@@ -2716,10 +2716,16 @@ function tourOffer(){
 }
 async function tourStart(){
   tourEnd();
-  // the tour shows the energy manager's pages: on a demo server, sign in as "elu" (read-only) when the visitor can't see them
-  if (SERVER?.demo && !can("gestion")) { try { await setUser(await api("api/demo-login", {role:"elu"})); } catch(e) {} }
-  if (VIEW !== "gestion" && can("gestion")) { TOUR_BUSY = true; location.hash = "#gestion"; }
-  setTimeout(() => { TOUR_BUSY = false; TOUR_VIS = TOUR.map((s, k) => k).filter(k => tourVisible(TOUR[k])); tourStep(0); }, 150);   // the step list is fixed here, so the count stays right after the view changes
+  const open = can("gestion");   // what the visitor sees now decides the steps (a logged-out visitor gets the short tour)
+  if (open && VIEW !== "gestion") { TOUR_BUSY = true; location.hash = "#gestion"; }
+  const wait = open ? 150 : 0;
+  setTimeout(async () => {
+    TOUR_BUSY = false; TOUR_VIS = TOUR.map((s, k) => k).filter(k => tourVisible(TOUR[k]));   // the step list is fixed here, so the count stays right after the view changes
+    // on a demo server the tour also signs the visitor in as admin and opens Genève (démo), so the sheets and menus it points at open for them
+    if (SERVER?.demo && ROLE() !== "admin") { try { await setUser(await api("api/demo-login", {role:"admin"})); } catch(e) {} }
+    if (SERVER?.demo && LOC?.slug !== "geneve-demo" && LOCALITIES.some(l => l.slug === "geneve-demo")) await chooseLocality("geneve-demo");   // and opens on Genève (démo)
+    tourStep(0);
+  }, wait);
 }
 async function tourGo(s){   // open the step's view and municipality, wait for the (lazy) map
   TOUR_BUSY = true;
@@ -2770,7 +2776,7 @@ function tourMaybe(){   // first visit only; not in automated checks, not on a d
   setTimeout(tourOffer, 1500);
 }
 
-const V = "66";
+const V = "67";
 (async () => {
   try {
     const c = await fetch("api/config.json?v="+V, {cache:"no-store"}).then(r => r.json());

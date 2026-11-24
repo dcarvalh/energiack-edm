@@ -52,6 +52,13 @@ def need(*roles):
     return check
 
 
+def builtin_readonly(slug: str, u=Depends(user)):
+    """Demo accounts (one-click logins, any role) cannot write to the built-in municipalities: the public demo must stay
+    as it is. They can still create their own municipality and try imports there; real accounts are not restricted."""
+    if u.get("demo") and slug in store.PROTECTED:
+        raise HTTPException(403, "the built-in demo data is read-only for demo accounts: create your own municipality to try imports")
+
+
 class Login(BaseModel):
     username: str
     password: str
@@ -190,7 +197,7 @@ def delete_locality(slug: str, u=Depends(need("admin")), conn=Depends(db)):
     return {"deleted": slug}
 
 
-@app.post("/api/localities/{slug}/import")
+@app.post("/api/localities/{slug}/import", dependencies=[Depends(builtin_readonly)])
 async def import_locality(slug: str, file: UploadFile = File(None),
                            u=Depends(need(*auth.FULL)), conn=Depends(db)):
     loc = store.locality_by_slug(conn, slug)
@@ -430,7 +437,7 @@ def _load_csv_detect():
     return csv_detect
 
 
-@app.post("/api/localities/{slug}/staging")
+@app.post("/api/localities/{slug}/staging", dependencies=[Depends(builtin_readonly)])
 async def staging_upload(slug: str, file: UploadFile = File(...),
                           u=Depends(need(*auth.FULL)), conn=Depends(db)):
     """Upload a ZIP → create a staged import with quality check. No production write."""
@@ -548,7 +555,7 @@ def staging_anomalies(slug: str, staging_id: int, table: str,
     return {"total": len(result), "rows": result}
 
 
-@app.put("/api/localities/{slug}/staging/{staging_id}/files/{table}/{row_idx}")
+@app.put("/api/localities/{slug}/staging/{staging_id}/files/{table}/{row_idx}", dependencies=[Depends(builtin_readonly)])
 def staging_update_row(slug: str, staging_id: int, table: str, row_idx: int,
                         body: dict, u=Depends(need(*auth.FULL)), conn=Depends(db)):
     loc = _get_loc(slug, conn)
@@ -558,7 +565,7 @@ def staging_update_row(slug: str, staging_id: int, table: str, row_idx: int,
     return {"updated": row_idx}
 
 
-@app.delete("/api/localities/{slug}/staging/{staging_id}/files/{table}/{row_idx}")
+@app.delete("/api/localities/{slug}/staging/{staging_id}/files/{table}/{row_idx}", dependencies=[Depends(builtin_readonly)])
 def staging_delete_row(slug: str, staging_id: int, table: str, row_idx: int,
                         u=Depends(need(*auth.FULL)), conn=Depends(db)):
     loc = _get_loc(slug, conn)
@@ -568,7 +575,7 @@ def staging_delete_row(slug: str, staging_id: int, table: str, row_idx: int,
     return {"deleted": row_idx}
 
 
-@app.post("/api/localities/{slug}/staging/{staging_id}/check")
+@app.post("/api/localities/{slug}/staging/{staging_id}/check", dependencies=[Depends(builtin_readonly)])
 def staging_check(slug: str, staging_id: int, u=Depends(need(*auth.FULL)), conn=Depends(db)):
     """Re-run quality checks on the staged data."""
     loc = _get_loc(slug, conn)
@@ -578,7 +585,7 @@ def staging_check(slug: str, staging_id: int, u=Depends(need(*auth.FULL)), conn=
     return report
 
 
-@app.post("/api/localities/{slug}/staging/{staging_id}/commit")
+@app.post("/api/localities/{slug}/staging/{staging_id}/commit", dependencies=[Depends(builtin_readonly)])
 def staging_commit(slug: str, staging_id: int, u=Depends(need(*auth.FULL)), conn=Depends(db)):
     """Move staged data to production. Invalidates data cache."""
     loc = _get_loc(slug, conn)
@@ -590,7 +597,7 @@ def staging_commit(slug: str, staging_id: int, u=Depends(need(*auth.FULL)), conn
     return dict(result)
 
 
-@app.delete("/api/localities/{slug}/staging/{staging_id}")
+@app.delete("/api/localities/{slug}/staging/{staging_id}", dependencies=[Depends(builtin_readonly)])
 def staging_discard(slug: str, staging_id: int, u=Depends(need(*auth.FULL)), conn=Depends(db)):
     """Discard a staged import without touching production."""
     loc = _get_loc(slug, conn)
@@ -724,7 +731,7 @@ def locality_data_rows(slug: str, table: str, page: int = 1, per_page: int = 50,
     raise HTTPException(404, f"unknown table '{table}'")
 
 
-@app.delete("/api/localities/{slug}/data/{table}/{key}")
+@app.delete("/api/localities/{slug}/data/{table}/{key}", dependencies=[Depends(builtin_readonly)])
 def delete_data_row(slug: str, table: str, key: str,
                     u=Depends(need(*auth.FULL)), conn=Depends(db)):
     """Delete one row. key = natural id (id_batiment, id_compteur, etc.) or 'meter:mois' for mesures."""
@@ -747,7 +754,7 @@ def delete_data_row(slug: str, table: str, key: str,
     return {"deleted": key}
 
 
-@app.post("/api/localities/{slug}/data/{table}/replace")
+@app.post("/api/localities/{slug}/data/{table}/replace", dependencies=[Depends(builtin_readonly)])
 async def replace_table(slug: str, table: str, file: UploadFile = File(...),
                          u=Depends(need(*auth.FULL)), conn=Depends(db)):
     """Replace one table's data for this locality with a new CSV file."""

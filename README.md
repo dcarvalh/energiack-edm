@@ -56,7 +56,7 @@ New**, then as technical staff **Données** and upload a ZIP in the Rive-Claire 
 **fully simulated** meters and readings (`tools/make_geneva_fake.py` → `geneve/csv/`, also zipped as
 `geneve/geneve-energy-data.zip`, a ready-made upload example). A permanent banner and a "simulated" tag on every
 figure say so. The static Pages demo shows Rive-Claire, Genève (map only) and Genève (démo)
-(`prototype/data-geneve-demo.json`). With one-click demo accounts on, any visitor can import and delete data: for public demos only.
+(`prototype/data-geneve-demo.json`). With one-click demo accounts on, demo accounts can import and delete data in their own municipalities but not in the built-in ones (Rive-Claire, Genève): they are read-only for demo accounts.
 
 **Import a real 3D map per municipality (server version).** As administrator, **Localités › Carte 3D…**: search a
 place and pick a zone size (up to 10 km), on the national platform of the municipality's country — **Switzerland**
