@@ -654,8 +654,8 @@ fr:{
   loc_delete_mismatch:"Nom incorrect — suppression annulée.",
   nav_users:"Utilisateurs", login:"Se connecter", logout:"Se déconnecter", login_title:"Connexion", login_user:"Nom d'utilisateur",
   login_pw:"Mot de passe", login_go:"Se connecter", login_err:"Nom ou mot de passe incorrect, ou compte bloqué quelques minutes. Pas de mot de passe ? Demandez-le aux développeurs.",
-  login_need:"« {p} » est réservé aux rôles : {r}.", login_demo:"Comptes de démonstration",
-  login_demo_sub:"Un clic, sans mot de passe : essayez chaque rôle sur la commune fictive.",
+  login_need:"« {p} » est réservé aux rôles : {r}.", login_demo:"Comptes de démonstration (lecture seule)",
+  login_demo_sub:"Un clic, sans mot de passe : voyez chaque rôle sur la commune fictive. Rien ne peut y être modifié.",
   login_write:"Administrateur·rice (accès complet)", login_write_sub:"Peut tout modifier. Mot de passe requis : demandez-le aux développeurs.",
   role_admin:"Administrateur·rice", role_technique:"Service technique", role_elu:"Élu·e", role_public:"Public",
   rd_admin:"Tout, plus l'attribution des rôles", rd_technique:"Gestion, qualité des données, relevés bruts et exports CSV",
@@ -859,8 +859,8 @@ en:{
   loc_delete_mismatch:"Name mismatch — deletion cancelled.",
   nav_users:"Users", login:"Log in", logout:"Log out", login_title:"Log in", login_user:"Username",
   login_pw:"Password", login_go:"Log in", login_err:"Wrong username or password, or account locked for a few minutes. No password? Ask the developers.",
-  login_need:"“{p}” is for these roles: {r}.", login_demo:"Demo accounts",
-  login_demo_sub:"One click, no password: try each role on the fictional municipality.",
+  login_need:"“{p}” is for these roles: {r}.", login_demo:"Demo accounts (view only)",
+  login_demo_sub:"One click, no password: see each role on the fictional municipality. Nothing can be changed.",
   login_write:"Administrator (full access)", login_write_sub:"Can change everything. Needs a password: ask the developers.",
   role_admin:"Administrator", role_technique:"Technical staff", role_elu:"Elected official", role_public:"Public",
   rd_admin:"Everything, plus assigning roles", rd_technique:"Manage, data quality, raw readings and CSV exports",
@@ -2810,7 +2810,7 @@ function tourMaybe(){   // first visit only; not in automated checks, not on a d
   setTimeout(tourOffer, 1500);
 }
 
-const V = "69";
+const V = "70";
 (async () => {
   try {
     const c = await fetch("api/config.json?v="+V, {cache:"no-store"}).then(r => r.json());
