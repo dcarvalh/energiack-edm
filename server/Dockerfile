@@ -4,10 +4,11 @@ WORKDIR /app
 ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
 COPY server/requirements.txt server/
 RUN pip install --no-cache-dir -r server/requirements.txt
-COPY tools/import_rive_claire.py tools/rc_quality.py tools/csv_detect.py tools/
+COPY tools/import_rive_claire.py tools/rc_quality.py tools/csv_detect.py tools/fetch_swiss_map.py tools/fetch_france_map.py tools/
 COPY rive-claire/EIAK-RC-Guide-Donnees-vf.html rive-claire/
 COPY geneve/csv/ geneve/csv/
 COPY server/ server/
+RUN mkdir -p /app/cache && chown nobody /app/cache   # OSM footprint cache (a host folder is bind-mounted here: see docs/deploy.md)
 USER nobody
 EXPOSE 8000
 HEALTHCHECK --interval=10s --timeout=3s --start-period=5s --retries=6 \

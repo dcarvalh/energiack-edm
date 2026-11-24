@@ -30,7 +30,7 @@ Seven slides in the browser; it also runs offline from `prototype/pitch/` (see "
 | **Qualité / Data quality** | energy service, other communes | the import report: rows read, loaded, rejected; re-import of the same file adds 0 rows; 17 checks (reference IDs and links, unknown meter, month, unit, value, duplicates, gaps, estimated, negative, spikes, unusual zeros, two-monthly readings, kWh conversion, sub-meter vs parent, meter dates) with every finding, a link to the site and a CSV |
 | **Comment ça marche / How it works** | jury, other communes | why sovereign, the Geneva context with sources, the open data model |
 | **Données / Data** | energy service (server version only) | upload a ZIP of CSV files for the selected municipality: each table is recognised by its columns, the upload waits in a staging area with its quality report, rows can be corrected or removed, then it is committed or discarded. Also the loaded tables, row by row |
-| **Localités / Municipalities** | administrators (server version only) | the municipalities on this server: create one, delete one with all its data |
+| **Localités / Municipalities** | administrators (server version only) | the municipalities on this server: create one (country: Switzerland or France), import a real 3D map for it from the national platform, delete one with all its data |
 | **Utilisateurs / Users** | administrators (server version only) | every account and its role, roles changed in place, what each role sees |
 
 ### Logins and roles (server version)
@@ -56,7 +56,16 @@ New**, then as technical staff **Données** and upload a ZIP in the Rive-Claire 
 **fully simulated** meters and readings (`tools/make_geneva_fake.py` → `geneve/csv/`, also zipped as
 `geneve/geneve-energy-data.zip`, a ready-made upload example). A permanent banner and a "simulated" tag on every
 figure say so. The static Pages demo shows Rive-Claire, Genève (map only) and Genève (démo)
-(`prototype/data-geneve-demo.json`). With one-click demo accounts on, demo accounts can import and delete data in their own municipalities but not in the built-in ones (Rive-Claire, Genève): they are read-only for demo accounts.
+(`prototype/data-geneve-demo.json`). With one-click demo accounts on, demo accounts are view-only: they see every page their role allows but change nothing (no import, delete, 3D map or role change); making changes needs a real account.
+
+**Import a real 3D map per municipality (server version).** As administrator, **Localités › Carte 3D…**: search a
+place and pick a zone size (up to 10 km), on the national platform of the municipality's country — **Switzerland**
+(`geo.admin.ch`: GWR buildings, swissALTI3D terrain, SWISSIMAGE aerial) or **France** (IGN: BD TOPO, RGE ALTI, BD
+ORTHO). The fetch runs in the background with a progress bar (in a floating chip and the Municipalities list); the
+buildings are matched to the municipality's sites by their federal id (EGID in CH, RNB in FR), and real
+**OpenStreetMap** footprints are draped over the blocks where available. The map is stored per municipality and
+re-import replaces it. Needs outbound internet from the server; the OSM footprints are a best-effort overlay cached
+per 1 km cell (see `docs/deploy.md`). Code: `tools/fetch_swiss_map.py`, `tools/fetch_france_map.py`, `server/mapjobs.py`.
 
 Data: the organisers' fictional **Rive-Claire** dataset (CC BY 4.0): 48 sites, 50 buildings, 64 installations, 172 meters,
 9,437 monthly readings 2021–2025. Rules applied from the dataset's dictionary: on-site electricity = EL + PV − EL-INJ;
@@ -122,6 +131,8 @@ prototype/map-rc/       Rive-Claire map data      prototype/map/   Geneva map da
 tools/import_rive_claire.py    builds data.json from the organisers' Rive-Claire guide
 tools/make_rive_claire_map.py  builds prototype/map-rc/ from the same guide (--out/--scale/--year)
 tools/make_map.py       builds prototype/map/ from SITG + swisstopo (--box/--out/--step/--px/--tiles)
+tools/fetch_swiss_map.py   fetches a real 3D map for any Swiss zone at import time (GWR + swissALTI3D + SWISSIMAGE + OSM footprints)
+tools/fetch_france_map.py  same for France (IGN BD TOPO + RGE ALTI + BD ORTHO); server/mapjobs.py runs the import in the background
 tools/check_page.py     headless browser check: all views, FR/EN, desktop/phone, light/dark, JS errors, overflow
                         (on the server version: CHECK_ROLE=admin logs in first and adds the server-only views)
 tools/record_video.py   records clips of the app: one MP4 per shot + joined file in video-out/
@@ -142,7 +153,7 @@ docs/rive-claire-data.md  the Rive-Claire dataset: tables, rules, known defects
 plan.md                 team plan, decisions, state, what's missing, next steps
 ```
 
-The two Rive-Claire tools read the organisers' guide from `rive-claire/` (the dataset, CC BY 4.0, with its CSV tables).
+The two Rive-Claire tools read the organisers' guide from `data/rive-claire/` (the dataset, CC BY 4.0, with its CSV tables).
 Set up the tools:
 
 ```bash

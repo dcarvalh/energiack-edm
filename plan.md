@@ -1,6 +1,6 @@
 # Team plan · openEDM (Défi 2 « EDM citoyen et souverain »)
 
-Updated 15 Nov 2026. What exists and how to run it: `README.md`. What is left: see "To do" below.
+Updated 18 Nov 2026. What exists and how to run it: `README.md`. What is left: see "To do" below.
 
 ## Deadlines
 - Hackathon pitch: done, Sat 14 Nov (deliverables in by 14:00: prototype, code with `THIRD_PARTY.md`, slides, project sheet).
@@ -81,6 +81,7 @@ hosting, and it **complements** existing tools as an aggregator instead of repla
 | Logins and roles (#15): admin, technique, élu·e, public; menus filtered, data filtered by the server, Users page, one-click demo accounts | done 14 Nov (#25), live on the server version with demo accounts on; GitHub Pages stays open without login |
 | Several municipalities on one server (#43): municipality selector, Municipalities page, ZIP upload into a staging area, row review/edit, commit; 3D map per municipality | merged 14 Nov; checked by CI (`tools/check_stack.sh`, #45). Live: the server answers `/api/localities` with `map_config` (checked 15 Nov) |
 | Pitch deck (`prototype/pitch/`, French only, runs offline) with app clips and two QR codes | done 14 Nov (#33–#46) |
+| Import a real 3D map per municipality: the admin picks a zone from the national platform (Switzerland `geo.admin.ch`, or France IGN); the server fetches real buildings, terrain and aerial photo in the background (progress in a chip + the Municipalities list), matches them to the municipality's sites by **EGID** (CH) or **RNB** (FR), and overlays real **OpenStreetMap** footprints where available | on `feat/map-3d-improvements` (this PR). Swiss pipeline: GWR buildings + swissALTI3D terrain + SWISSIMAGE aerial (`tools/fetch_swiss_map.py`); French: BD TOPO + RGE ALTI + BD ORTHO (`tools/fetch_france_map.py`); async job with SSE progress (`server/mapjobs.py`), zones up to 10 km, footprints streamed biggest-first, OSM cached per 1 km cell on a host volume. Checked headless, not on a real phone GPU |
 
 **Main link: the server version** https://openedm.isdeveloped.app/ (database, logins, roles, one-click demo
 accounts; David, 15 Nov). GitHub Pages stays as an open static copy (no login). The old redirect domain is retired.
@@ -229,12 +230,22 @@ builder `tools/make_map.py`, the IDC threshold applies only where the pack says 
     map.geo.admin.ch. Build into a scratch folder, then copy; bump both `V`; add `CAD_ADRESSE` to `THIRD_PARTY.md`.
     To decide: write names in normal case ("Samuel-Constant", recommended) or as the register does ("Samuel-CONSTANT").
 
+A first step toward this exists on `feat/map-3d-improvements`: an on-demand importer that fetches a real 3D map
+(buildings, terrain, aerial) for any Swiss or French zone from the national platforms and matches it to the
+municipality's sites by EGID/RNB — the "national sources" layer of a pack, per municipality instead of per canton.
+Still to do for a true pack: the commune boundary as the extent, cantonal extras, caching a whole canton offline.
+
 Later, after 1 Dec: a pack builder per commune from its federal statistical number (BFS number): national sources
 first, cantonal extras when present, generated once into a shared `map/<canton>/<commune>/` (a whole canton is too
 heavy for the browser); DE/IT UI (Swiss-wide means German and Italian communes); CO₂ factors and prices per pack
 or commune (see #11 hand-over); add or remove buildings by clicking the map; sharing between
 municipalities (e.g. commune → canton; accounts already get a role per municipality). Every "to check" in the table above is from memory, not
 verified: check it before building a non-Geneva pack.
+
+**3D-map import, later (from the PR #73 review, 24 Nov):** today the real footprints come from the public
+OpenStreetMap Overpass servers, asked one at a time (fair use), cached per 1 km cell. To stop depending on them:
+(1) an offline OpenStreetMap extract for Switzerland (e.g. a Geofabrik download, refreshed now and then) read on our
+server; (2) swisstopo building shapes as an alternative source for Swiss zones. Licence of each to check first.
 
 **Ideas, not planned:** consumption breaks after renovations, synergies between buildings, price scenarios, indirect CO₂,
 DE/IT, place Rive-Claire in a recognisable Geneva neighbourhood on the map.

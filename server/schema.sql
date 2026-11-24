@@ -216,6 +216,55 @@ CREATE TABLE IF NOT EXISTS staged_file (
 );
 CREATE INDEX IF NOT EXISTS staged_file_import ON staged_file (staged_import_id);
 
+-- ── imported 3D map (Swiss geo platform / France IGN) ─────────────────────────
+-- One imported map per municipality. Buildings are fetched from the national GWR
+-- (ch.bfs.gebaeude_wohnungs_register) or BD TOPO (France) and matched to our sites by EGID/RNB or by hand.
+CREATE TABLE IF NOT EXISTS map_import (
+    id          integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    locality_id integer NOT NULL REFERENCES locality ON DELETE CASCADE,
+    at          timestamptz NOT NULL DEFAULT now(),
+    bbox        text NOT NULL,          -- "xmin,ymin,xmax,ymax" in LV95 (EPSG:2056)
+    meta        jsonb NOT NULL,         -- buildings.json "meta" (origin, size, terrain grid, labels)
+    terrain     bytea,                  -- terrain.bin (Int16 little-endian)
+    n_buildings integer,
+    UNIQUE (locality_id)                -- one map per municipality; re-import replaces it
+);
+
+CREATE TABLE IF NOT EXISTS map_building (
+    id            integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    map_import_id integer NOT NULL REFERENCES map_import ON DELETE CASCADE,
+    egid          text,                 -- federal building id (may be null)
+    rings         jsonb NOT NULL,       -- footprint [[[x,y],...]] in map-local metres
+    h             numeric,              -- height (m)
+    z             numeric,              -- base elevation (m, map-local)
+    attrs         jsonb,                -- use, year, levels, addr from GWR
+    id_site       text,                 -- matched site in our data (null = unmatched)
+    match_kind    text                  -- 'egid' | 'manual' | null
+);
+CREATE INDEX IF NOT EXISTS map_building_import ON map_building (map_import_id);
+-- footprint state (CH maps): null/'pending' = square, not yet searched · 'found' = real OSM footprint · 'none' = searched, no OSM building
+ALTER TABLE map_building ADD COLUMN IF NOT EXISTS fp text;
+-- backfill once: a ring that is not a 4-corner square already carries a real footprint (import-time OSM or French BD TOPO)
+UPDATE map_building SET fp = 'found' WHERE fp IS NULL AND jsonb_array_length(rings->0) <> 5;
+
+CREATE TABLE IF NOT EXISTS map_tile (
+    map_import_id integer NOT NULL REFERENCES map_import ON DELETE CASCADE,
+    i             integer NOT NULL,
+    j             integer NOT NULL,
+    jpg           bytea NOT NULL,
+    PRIMARY KEY (map_import_id, i, j)
+);
+
+-- Durable building ↔ site matches, keyed by the federal building id (EGID) so they survive a map re-import.
+-- (map_building.id is a transient serial; the EGID is the stable identifier.)
+CREATE TABLE IF NOT EXISTS map_match (
+    locality_id integer NOT NULL REFERENCES locality ON DELETE CASCADE,
+    egid        text NOT NULL,
+    id_site     text NOT NULL,
+    at          timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (locality_id, egid)
+);
+
 -- ── seed ──────────────────────────────────────────────────────────────────────
 -- Grant all existing (non-demo) users access to the built-in municipalities (Rive-Claire, Geneva, Genève démo).
 -- Demo accounts are granted in cli.py AFTER auth.reset_demo() creates them.
@@ -225,3 +274,9 @@ SELECT u.id, l.id,
 FROM app_user u CROSS JOIN locality l
 WHERE l.slug IN ('rive-claire', 'geneve', 'geneve-demo') AND u.demo = false
 ON CONFLICT DO NOTHING;
+
+-- App-wide admin settings (map import preferences): key -> JSON value.
+CREATE TABLE IF NOT EXISTS setting (
+    key   text PRIMARY KEY,
+    value jsonb NOT NULL
+);

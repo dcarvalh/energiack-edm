@@ -223,11 +223,16 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;ba
 .m3-results{position:absolute;left:0;right:0;top:calc(100% + 4px);background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:5;max-height:260px;overflow:auto;padding:4px}
 .m3-results button{display:block;width:100%;text-align:left;border:0;background:transparent;padding:6px 8px;border-radius:7px;cursor:pointer;font-size:13.5px}
 .m3-results button:hover{background:var(--surface-2)} .m3-results span{display:block;font-size:12px;color:var(--muted)} .m3-results .mut{padding:6px 8px;font-size:13px}
-.m3-keys{display:grid;grid-template-columns:1fr 1fr;gap:2px 8px}
+.m3-keys{display:grid;grid-template-columns:1fr;gap:1px}
 .m3-key{display:flex;align-items:center;gap:6px;border:0;background:transparent;padding:3px 5px;border-radius:6px;cursor:pointer;font-size:12px;color:var(--text);text-align:left}
 .m3-key:hover{background:var(--surface-2)} .m3-key.on{background:var(--surface-2);outline:1px solid var(--line)} .m3-key.off{opacity:.4}
 .m3-key i{width:10px;height:10px;border-radius:3px;flex:none} .m3-key span{flex:1} .m3-key em{font-style:normal;color:var(--muted);font-variant-numeric:tabular-nums;font-size:11.5px}
 .m3-fhint{font-size:11.5px;color:var(--muted);margin-top:6px}
+.m3-fp{margin-top:8px;padding-top:8px;border-top:1px solid var(--line)}
+.m3-fp .m3-h{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600;margin-bottom:5px}
+.m3-fp-rows{display:flex;flex-direction:column;gap:3px;font-size:11.5px;color:var(--muted)}
+.m3-fp-k{display:flex;align-items:center;gap:6px} .m3-fp-k i{width:10px;height:10px;border-radius:3px;flex:none} .m3-fp-k b{color:var(--text);font-variant-numeric:tabular-nums;margin-left:auto}
+.m3-fp-btn{margin-top:8px;width:100%;text-align:center;font-size:12px}
 .m3-tools{position:absolute;right:12px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:8px;z-index:3;transition:right .2s}
 .m3-panel:not(.hide)~.m3-tools{right:364px}
 .m3-grp{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);overflow:hidden}
@@ -239,12 +244,25 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;ba
 .m3:fullscreen{height:100vh;border-radius:0;border:0}
 .m3.m3-full{position:fixed;inset:0;z-index:100;height:auto;border-radius:0;margin:0;border:0}
 .m3-stage canvas:focus{outline:none}
-.m3-ui{position:absolute;top:12px;left:12px;max-width:360px}
+.m3-ui{position:absolute;top:12px;left:12px;max-width:300px}
 .m3-card,.m3-hint,.m3-attr{background:color-mix(in srgb,var(--surface) 90%,transparent);backdrop-filter:blur(8px);border:1px solid var(--line);box-shadow:var(--shadow)}
-.m3-card{border-radius:12px;padding:12px 14px;max-height:calc(100vh - 190px);overflow:auto}
+.m3-card{border-radius:12px;padding:12px 14px;min-width:210px;max-height:calc(100vh - 190px);overflow:auto}
+.m3-layers{flex-direction:column;align-items:stretch;gap:4px} .m3-layers .chip{text-align:left;width:100%}
 .m3-title{font-weight:680;letter-spacing:-.01em;font-size:16px} .m3-sub{font-size:12.5px;color:var(--muted);margin-bottom:10px}
+.m3-zone{font-size:10.5px;opacity:.65;font-weight:500}
+nav a.disabled{pointer-events:none;opacity:.45}
+.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,16px);background:var(--text);color:var(--bg);padding:10px 16px;border-radius:8px;box-shadow:var(--shadow);font-size:13.5px;font-weight:550;z-index:300;opacity:0;transition:opacity .3s,transform .3s;max-width:90vw;text-align:center}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.toast.ok{background:var(--accent);color:#fff} .toast.warn{background:var(--warn);color:#fff}
+#imp-chip{position:fixed;right:16px;bottom:16px;width:250px;max-width:80vw;background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:var(--shadow);padding:10px 12px;z-index:150}
+#imp-chip .imp-bar{height:6px;background:var(--surface-2);border-radius:3px;overflow:hidden;margin-bottom:6px}
+#imp-chip .imp-bar i{display:block;height:100%;background:var(--accent);border-radius:3px;transition:width .4s}
+#imp-chip .imp-txt{font-size:12px;color:var(--muted)}
+.cfg-row{display:flex;gap:10px;align-items:flex-start;padding:7px 0;cursor:pointer;font-size:13.5px}
+.cfg-row input{margin-top:3px;flex:none}
+.cfg-row .sub{font-size:12px;color:var(--muted)}
 .m3-legend{margin-top:10px;font-size:12px;color:var(--muted)} .m3-unit{font-weight:600;color:var(--text);margin-bottom:6px}
-.m3-key{display:inline-flex;align-items:center;gap:5px;margin:0 10px 4px 0} .m3-key i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.m3-legend .m3-keys+.m3-keys{margin-top:4px;padding-top:4px;border-top:1px solid var(--line)}
 .m3-panel{position:absolute;top:12px;right:12px;bottom:40px;width:340px;overflow-y:auto;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;box-shadow:var(--shadow)}
 .m3-sec{border-top:1px solid var(--line);margin-top:12px;padding-top:10px}
 .m3-h{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600;margin-bottom:6px}
@@ -255,8 +273,8 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;ba
 .m3-attr{position:absolute;right:12px;bottom:10px;font-size:11px;color:var(--muted);padding:2px 8px;border-radius:6px;max-width:48%}
 @media (max-width:720px){
   .m3{height:calc(100vh - 150px);margin:0 -16px;border-radius:0;border-left:0;border-right:0}
-  .m3-ui{left:8px;right:8px;top:8px;max-width:none} .m3-card{padding:10px 12px;max-height:46vh} .m3-keys{display:flex;flex-wrap:wrap;gap:0 2px} .m3-key{padding:2px 4px} .m3-key em{display:none} .m3-fhint{display:none}
-  .m3-layers{flex-wrap:nowrap;overflow-x:auto} .m3-layers .chip{white-space:nowrap} .m3-sub{margin-bottom:6px} .m3-legend{margin-top:6px}
+  .m3-ui{left:8px;right:8px;top:8px;max-width:none} .m3-card{padding:10px 12px;min-width:0;max-height:46vh} .m3-keys{display:flex;flex-wrap:wrap;gap:0 2px} .m3-key{padding:2px 4px} .m3-key em{display:none} .m3-fhint{display:none}
+  .m3-layers{flex-direction:row;flex-wrap:nowrap;overflow-x:auto} .m3-layers .chip{white-space:nowrap;width:auto} .m3-sub{margin-bottom:6px} .m3-legend{margin-top:6px}
   .m3-panel{left:8px;right:8px;top:auto;bottom:8px;width:auto;max-height:55%}
   .m3-hint,.m3-attr{display:none} .m3-tools{top:auto;bottom:10px;right:8px;transform:none;gap:6px} .m3-g-mode,.m3-g-rot{display:none} .m3-panel:not(.hide)~.m3-tools{display:none}
 }
@@ -500,15 +518,15 @@ footer{color:var(--muted);font-size:12px;border-top:1px solid var(--line);margin
   <section id="v-localites" class="hide">
     <h1 data-t="nav_localities"></h1>
     <p class="lede" data-t="loc_lede"></p>
-    <div class="grid two">
-      <div class="card">
-        <div class="row" style="margin-bottom:12px">
-          <h2 data-t="loc_list"></h2><div class="spacer"></div>
-          <button class="chip" id="loc-new-btn" data-t="loc_create_btn"></button>
-        </div>
-        <div id="loc-table"></div>
-        <p id="loc-msg" style="margin-top:8px;font-size:.9rem"></p>
+    <div class="card">
+      <div class="row" style="margin-bottom:12px">
+        <h2 data-t="loc_list"></h2><div class="spacer"></div>
+        <button class="chip" id="loc-new-btn" data-t="loc_create_btn"></button>
       </div>
+      <div id="loc-table"></div>
+      <p id="loc-msg" style="margin-top:8px;font-size:.9rem"></p>
+    </div>
+    <div class="grid two" style="margin-top:16px">
       <div class="card hide" id="loc-form-card">
         <h2 data-t="loc_create_title" style="margin-bottom:16px"></h2>
         <form id="loc-form">
@@ -521,6 +539,10 @@ footer{color:var(--muted);font-size:12px;border-top:1px solid var(--line);margin
             <input id="loc-f-slug" type="text" required pattern="[a-z0-9-]+" style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px">
           </label>
           <label style="display:block;margin-bottom:16px">
+            <span data-t="loc_f_country" style="font-size:.85rem;color:#888;display:block;margin-bottom:4px"></span>
+            <select id="loc-f-country" style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px"></select>
+          </label>
+          <label style="display:block;margin-bottom:16px">
             <span data-t="loc_f_map" style="font-size:.85rem;color:#888;display:block;margin-bottom:4px"></span>
             <select id="loc-f-map" style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px">
               <option value="" data-t="loc_map_none"></option><option value="ge" data-t="loc_map_ge"></option><option value="rc" data-t="loc_map_rc"></option>
@@ -531,6 +553,12 @@ footer{color:var(--muted);font-size:12px;border-top:1px solid var(--line);margin
             <button type="button" class="chip" id="loc-f-cancel" data-t="loc_f_cancel"></button>
           </div>
         </form>
+      </div>
+      <div class="card" id="map-config-card">
+        <h2 data-t="cfg_title" style="margin-bottom:4px"></h2>
+        <p class="sub" data-t="cfg_sub" style="margin-bottom:14px"></p>
+        <div id="cfg-toggles"></div>
+        <p id="cfg-msg" style="margin-top:10px;font-size:.9rem;color:var(--muted)"></p>
       </div>
     </div>
   </section>
@@ -593,13 +621,32 @@ fr:{
   nd_title:"Aucun relevé pour {name}", nd_load:"Chargez des données via le module Données pour commencer.", nd_none:"Cette commune n'a pas encore publié de relevés.", nd_map:"La carte 3D montre déjà ses bâtiments (données publiques).", nd_go_map:"Voir la carte 3D", nd_go_data:"Aller aux Données",
   loc_lede:"Chaque localité possède ses propres bâtiments, compteurs et données. L'administrateur voit toutes les localités.",
   loc_list:"Localités disponibles", loc_create_btn:"+ Nouvelle localité",
+  cfg_title:"Préférences d'import carte 3D", cfg_sub:"Réglages administrateur appliqués aux imports de cartes 3D.",
+  cfg_osm:"Empreintes OpenStreetMap", cfg_osm_hint:"Utiliser les vraies empreintes de bâtiments (OSM, ODbL) ; sinon des blocs carrés.",
+  cfg_country_ch:"Territoire Suisse (geo.admin.ch · EGID)", cfg_country_fr:"Territoire France (IGN · RNB)",
+  cfg_country_fr_hint:"Source IGN Géoplateforme (BD TOPO / RNB) — en préparation.", cfg_saved:"Préférence enregistrée.", cfg_err:"Échec de l'enregistrement.",
   loc_create_title:"Créer une localité", loc_f_name:"Nom affiché", loc_f_slug:"Identifiant (slug, ex : ma-commune, lettres minuscules et tirets)",
+  loc_f_country:"Pays / plateforme", country_ch_name:"Suisse (geo.admin.ch)", country_fr_name:"France (IGN / BAN)", loc_h_country:"Pays",
+  loc_f_map:"Carte 3D", loc_map_none:"Aucune carte", loc_map_ge:"Genève (bâtiments publics SITG)", loc_map_rc:"Rive-Claire (schématique)", loc_h_map:"Carte",
   loc_f_submit:"Créer", loc_f_cancel:"Annuler",
   loc_h_name:"Nom", loc_h_slug:"Slug", loc_h_data:"Données chargées", loc_h_actions:"Actions",
   loc_no_data:"Aucun import",
-  loc_f_map:"Carte 3D", loc_map_none:"Aucune carte", loc_map_ge:"Genève (bâtiments publics SITG)", loc_map_rc:"Rive-Claire (schématique)", loc_h_map:"Carte",
   loc_created:"Localité créée.", loc_create_err:"Erreur lors de la création.",
   loc_readings:"{n} relevés", loc_active:"actif", loc_open:"Ouvrir",
+  loc_map_btn:"Carte 3D…", loc_map_tip:"Importer une carte 3D réelle depuis geo.admin.ch et la rattacher aux sites",
+  mi_title:"Importer une carte 3D", mi_sub:"Choisissez une zone à importer (recherche sur la plateforme du pays)",
+  mi_search:"Rechercher un lieu", mi_search_ph:"Commune, quartier, rue…", mi_noresult:"Aucun résultat",
+  mi_scale:"Taille de la zone", mi_scale_s:"Petite (≈600 m)", mi_scale_m:"Moyenne (≈1 km)", mi_scale_l:"Grande (≈2 km)",
+  mi_scale_xl:"Très grande (≈3 km)", mi_scale_xxl:"Étendue (≈5 km)", mi_scale_3xl:"Vaste (≈7 km)", mi_scale_4xl:"Maximale (≈10 km)",
+  mi_zone:"Zone : {label} · ≈{m} m de côté", mi_big:"Zone étendue : import découpé en plusieurs blocs, cela peut prendre plusieurs minutes.",
+  mi_import:"Importer la carte 3D", mi_importing:"Import en cours (bâtiments, photo aérienne)…", mi_starting:"Lancement de l'import…",
+  mi_done:"{n} bâtiments · {m} rattachés par EGID · {u} à rattacher. Ouverture de la carte…", mi_fail:"Échec :",
+  imp_started:"Import de la carte 3D de {name} lancé en arrière-plan.", imp_running:"Import carte 3D · {name}",
+  imp_running_short:"Import…", imp_err_short:"Échec", imp_done_short:"{m} rattachés",
+  imp_done:"Carte 3D de {name} importée : {n} bâtiments, {m} rattachés.", imp_fail:"Échec de l'import de la carte 3D de {name}.",
+  imp_map_wait:"Import de la carte 3D en cours… {pct} %",
+  imp_fp:"Empreintes réelles · {name}", imp_fp_sub:"{n} / {m} bâtiments mis à jour (du plus grand au plus petit)", imp_fp_short:"Empreintes… {n}",
+  mp_title:"Rattacher à un site", mp_search:"Rechercher un site…", mp_none:"Aucun site",
   loc_delete_tip:"Supprimer cette localité et toutes ses données",
   loc_delete_confirm:"Supprimer la localité « {name} » et TOUTES ses données (bâtiments, compteurs, mesures, sas) ?\n\nTapez le nom pour confirmer :",
   loc_delete_ok:"Localité supprimée.", loc_delete_err:"Erreur lors de la suppression.",
@@ -614,13 +661,13 @@ fr:{
   u_title:"Utilisateurs et rôles", u_lede:"Chacun voit seulement ce dont il a besoin. Le serveur applique ces droits sur les données, pas seulement à l'écran.",
   u_accounts:"Comptes", u_roles:"Ce que voit chaque rôle", u_h_user:"Utilisateur", u_h_role:"Rôle", u_h_sees:"Accès",
   u_demo:"compte de démonstration", u_saved:"Rôle enregistré.", u_err:"Modification refusée.",
-  u_note:"Les comptes « demo-… » gardent leur rôle. Un compte de démonstration ne modifie que les comptes fictifs. Les vrais comptes se créent sur le serveur.",
+  u_note:"Les comptes « demo-… » sont en lecture seule et gardent leur rôle. Les vrais comptes se créent sur le serveur.",
   d_raw:"Relevés bruts", d_raw_locked:"Réservés aux rôles Service technique et Administrateur·rice.",
   qr_title:"Qualité des données", qr_lede:"Chaque ligne est contrôlée avant d'entrer dans les chiffres. Ce rapport vient du dernier import.",
   qr_k_read:"Relevés lus", qr_k_read_sub:"+ {b} bâtiments, {c} compteurs, {i} installations", qr_k_loaded:"Chargés", qr_k_loaded_sub:"entrent dans les chiffres",
   qr_k_rejected:"Rejetés", qr_k_rejected_sub:"jamais dans les chiffres", qr_k_flagged:"À vérifier", qr_k_flagged_sub:"dont {e} remplacés par une estimation", qr_k_reimport:"Ré-import du même fichier",
   qr_k_reimport_sub:"{s} identiques, {c} conflit(s)", qr_k_coverage:"Couverture", qr_k_coverage_sub:"{p} % · {e} mois actifs, {l} présents, {m} manquants",
-  qr_reimport_btn:"Re-importer les données", qr_reimport_ok:"Import terminé.", qr_reimport_err:"Échec de l'import.",
+  qr_reimport_btn:"Re-importer les données", qr_reimport_ok:"Import terminé.", qr_reimport_err:"Échec de l'import.", demo_readonly:"Compte de démonstration : lecture seule. Connectez-vous avec un vrai compte pour modifier.",
   qr_rows:"lignes", qr_row:"ligne", qr_points:"points",
   qr_upload_btn:"Importer un fichier ZIP", qr_upload_ok:"Fichier importé.", qr_upload_err:"Échec de l'import (fichier).",
   qr_checks:"Les contrôles", qr_checks_sub:"Cliquez sur un contrôle pour le détail, puis sur une ligne pour ouvrir le site.", qr_csv:"Télécharger (CSV)",
@@ -659,7 +706,7 @@ fr:{
   hi_est:"* Chaleur de la pompe à chaleur estimée (électricité de la pompe × COP mesuré sur les sites équipés d'un compteur de chaleur).",
   d_hi:"Indice de chaleur {y}", d_hi_sub:"approximatif · non corrigé du climat", d_hi_deliv:"livraisons de l'année", h_flag:"",
   alert:"Alerte", up:"hausse",
-  type_administration:"Administration", type_ecole:"École primaire", type_ecole_primaire:"École primaire", type_ecole_piscine:"École avec piscine", type_creche:"Crèche", type_maison_quartier:"Maison de quartier", type_salle_communale:"Salle communale", type_bibliotheque:"Bibliothèque", type_salle_spectacle:"Salle de spectacle", type_installation_sportive:"Installation sportive", type_piscine:"Piscine couverte", type_patinoire:"Patinoire", type_voirie:"Voirie et ateliers", type_caserne:"Caserne de pompiers", type_logements:"Logements communaux", type_abri_pc:"Abri PC", type_cimetiere:"Cimetière", type_parking:"Parking souterrain", type_eclairage_public:"Éclairage public",
+  type_administration:"Administration", type_ecole:"École primaire", type_ecole_primaire:"École primaire", type_ecole_piscine:"École avec piscine", type_creche:"Crèche", type_maison_quartier:"Maison de quartier", type_salle_communale:"Salle communale", type_bibliotheque:"Bibliothèque", type_salle_spectacle:"Salle de spectacle", type_installation_sportive:"Installation sportive", type_piscine:"Piscine couverte", type_patinoire:"Patinoire", type_voirie:"Voirie et ateliers", type_caserne:"Caserne de pompiers", type_logements:"Logements communaux", type_abri_pc:"Abri PC", type_cimetiere:"Cimetière", type_parking:"Parking souterrain", type_eclairage_public:"Éclairage public", type_autre:"Autre",
   car_oil:"Mazout", car_gas:"Gaz", car_district:"Chauffage à distance", car_heat_pump:"Pompe à chaleur", car_wood:"Bois (granulés)", car_electric:"Électrique direct", car_none:"Non chauffé",
   d_area:"Surface (SRE)", d_built:"Construction", d_pv:"Solaire", d_quarter:"Quartier", d_int:"Énergie par m² {y}",
   d_series:"Historique mensuel 2021–2025", fl_elec_grid:"Électricité réseau", fl_heat:"Chaleur", fl_heat_est:"pompe à chaleur : estimée", fl_pv_prod:"Solaire produit", fl_water:"Eau", fl_co2:"CO₂ (kg)",
@@ -715,6 +762,15 @@ fr:{
   m_nomap:"Pas encore de carte 3D pour cette commune.", m_map_title_rc:"Rive-Claire · patrimoine communal",
   m_sub_rc:"{n} bâtiments · {s} sites · relevés {y} · plan fictif, volumes schématiques", m_search_rc:"Rechercher un site…",
   m_attr_rc:"Données : Energ-IA Transition, Energ-IACK 2026 (CC BY 4.0) · volumes déduits de la SRE et des niveaux, agrandis ×{k} · lac, routes et arbres inventés",
+  m_map_title_imp:"Carte 3D importée", m_sub_imp:"{n} bâtiments · {m} rattachés · {u} à rattacher",
+  m_attr_imp:"Bâtiments : Registre fédéral des bâtiments (RegBL) · photo aérienne : swisstopo SWISSIMAGE · geo.admin.ch",
+  m_unmatched:"Non rattaché", m_imp_matched:"Rattaché au site", m_imp_unmatch:"Détacher",
+  m_mf_all:"Tous", m_mf_matched:"Rattachés", m_mf_unmatched:"Non rattachés",
+  m_fp_title:"Empreintes réelles (OSM)", m_fp_found:"forme réelle", m_fp_pending:"à chercher", m_fp_none:"absent d'OSM",
+  m_fp_resolve:"Résoudre les empreintes ({n})", m_fp_resolving:"Recherche…", m_fp_started:"Recherche des empreintes lancée en arrière-plan.",
+  m_imp_unmatched_hint:"Ce bâtiment n'est pas encore rattaché à un de vos sites. Cliquez sur « Rattacher » pour lui associer un site et afficher ses données.",
+  m_imp_match_btn:"Rattacher à un site…", m_imp_register_btn:"Ajouter comme nouveau bâtiment",
+  mr_title:"Ajouter un bâtiment", mr_new:"Nouveau site", mr_existing:"Site existant", mr_sitename:"Nom du site", mr_create:"Créer", mr_saving:"Enregistrement…", mr_fail:"Échec :",
   m_src_rc:"Source : Energ-IA Transition, Energ-IACK 2026 (CC BY 4.0)", m_l_int:"Énergie / m²", m_l_hi:"Indice de chaleur", m_p_hi:"Indice de chaleur", m_n_hi:"Approximatif, non corrigé du climat : pas l'IDC officiel.", m_n_hi_est:"Approximatif, non corrigé du climat : pas l'IDC officiel. Chaleur de la pompe à chaleur estimée.",
   m_lg_rc_idc:"Indice de chaleur approximatif, non corrigé du climat", m_lg_rc_heat:"Chauffage en service", m_lg_rc_solar:"Production solaire mesurée",
   m_lg_rc_elec:"Électricité consommée sur site", m_lg_rc_water:"Consommation d'eau",
@@ -769,13 +825,32 @@ en:{
   nd_title:"No readings for {name}", nd_load:"Load data via the Data module to get started.", nd_none:"This municipality has not published readings yet.", nd_map:"The 3D map already shows its buildings (public data).", nd_go_map:"Open the 3D map", nd_go_data:"Go to Data",
   loc_lede:"Each locality has its own buildings, meters and data. Administrators see all localities.",
   loc_list:"Available localities", loc_create_btn:"+ New locality",
+  cfg_title:"3D map import preferences", cfg_sub:"Administrator settings applied to 3D map imports.",
+  cfg_osm:"OpenStreetMap footprints", cfg_osm_hint:"Use real building footprints (OSM, ODbL); otherwise square blocks.",
+  cfg_country_ch:"Swiss territory (geo.admin.ch · EGID)", cfg_country_fr:"French territory (IGN · RNB)",
+  cfg_country_fr_hint:"IGN Géoplateforme source (BD TOPO / RNB) — in preparation.", cfg_saved:"Preference saved.", cfg_err:"Could not save.",
   loc_create_title:"Create a locality", loc_f_name:"Display name", loc_f_slug:"Identifier (slug, e.g. my-municipality, lowercase letters and dashes)",
+  loc_f_country:"Country / platform", country_ch_name:"Switzerland (geo.admin.ch)", country_fr_name:"France (IGN / BAN)", loc_h_country:"Country",
+  loc_f_map:"3D map", loc_map_none:"No map", loc_map_ge:"Geneva (SITG public buildings)", loc_map_rc:"Rive-Claire (schematic)", loc_h_map:"Map",
   loc_f_submit:"Create", loc_f_cancel:"Cancel",
   loc_h_name:"Name", loc_h_slug:"Slug", loc_h_data:"Loaded data", loc_h_actions:"Actions",
   loc_no_data:"No import yet",
-  loc_f_map:"3D map", loc_map_none:"No map", loc_map_ge:"Geneva (SITG public buildings)", loc_map_rc:"Rive-Claire (schematic)", loc_h_map:"Map",
   loc_created:"Locality created.", loc_create_err:"Error creating locality.",
   loc_readings:"{n} readings", loc_active:"active", loc_open:"Open",
+  loc_map_btn:"3D map…", loc_map_tip:"Import a real 3D map from geo.admin.ch and match it to the sites",
+  mi_title:"Import a 3D map", mi_sub:"Pick a zone to import (search on the country platform)",
+  mi_search:"Search a place", mi_search_ph:"Municipality, district, street…", mi_noresult:"No result",
+  mi_scale:"Zone size", mi_scale_s:"Small (≈600 m)", mi_scale_m:"Medium (≈1 km)", mi_scale_l:"Large (≈2 km)",
+  mi_scale_xl:"Very large (≈3 km)", mi_scale_xxl:"Extra large (≈5 km)", mi_scale_3xl:"Huge (≈7 km)", mi_scale_4xl:"Maximum (≈10 km)",
+  mi_zone:"Zone: {label} · ≈{m} m per side", mi_big:"Wide zone: import is split into several blocks, it can take several minutes.",
+  mi_import:"Import the 3D map", mi_importing:"Importing (buildings, aerial photo)…", mi_starting:"Starting the import…",
+  mi_done:"{n} buildings · {m} matched by EGID · {u} to match. Opening the map…", mi_fail:"Failed:",
+  imp_started:"3D map import for {name} started in the background.", imp_running:"3D map import · {name}",
+  imp_running_short:"Importing…", imp_err_short:"Failed", imp_done_short:"{m} matched",
+  imp_done:"3D map for {name} imported: {n} buildings, {m} matched.", imp_fail:"3D map import failed for {name}.",
+  imp_map_wait:"3D map import running… {pct}%",
+  imp_fp:"Real footprints · {name}", imp_fp_sub:"{n} / {m} buildings updated (largest first)", imp_fp_short:"Footprints… {n}",
+  mp_title:"Match to a site", mp_search:"Search a site…", mp_none:"No site",
   loc_delete_tip:"Delete this locality and all its data",
   loc_delete_confirm:"Delete locality « {name} » and ALL its data (buildings, meters, readings, staging)?\n\nType the name to confirm:",
   loc_delete_ok:"Locality deleted.", loc_delete_err:"Delete failed.",
@@ -790,13 +865,13 @@ en:{
   u_title:"Users and roles", u_lede:"Everyone sees only what they need. The server enforces these rights on the data, not just on screen.",
   u_accounts:"Accounts", u_roles:"What each role sees", u_h_user:"User", u_h_role:"Role", u_h_sees:"Access",
   u_demo:"demo account", u_saved:"Role saved.", u_err:"Change refused.",
-  u_note:"The “demo-…” accounts keep their role. A demo account only changes the fictional accounts. Real accounts are created on the server.",
+  u_note:"The “demo-…” accounts are view-only and keep their role. Real accounts are created on the server.",
   d_raw:"Raw readings", d_raw_locked:"For the Technical staff and Administrator roles.",
   qr_title:"Data quality", qr_lede:"Every row is checked before it reaches the figures. This report comes from the last import.",
   qr_k_read:"Readings read", qr_k_read_sub:"+ {b} buildings, {c} meters, {i} installations", qr_k_loaded:"Loaded", qr_k_loaded_sub:"used in the figures",
   qr_k_rejected:"Rejected", qr_k_rejected_sub:"never in the figures", qr_k_flagged:"To check", qr_k_flagged_sub:"of which {e} replaced by an estimate", qr_k_reimport:"Re-import of the same file",
   qr_k_reimport_sub:"{s} unchanged, {c} conflict(s)", qr_k_coverage:"Coverage", qr_k_coverage_sub:"{p} % · {e} active months, {l} present, {m} missing",
-  qr_reimport_btn:"Re-import data", qr_reimport_ok:"Import complete.", qr_reimport_err:"Import failed.",
+  qr_reimport_btn:"Re-import data", qr_reimport_ok:"Import complete.", qr_reimport_err:"Import failed.", demo_readonly:"Demo account: view only. Sign in with a real account to make changes.",
   qr_rows:"rows", qr_row:"row", qr_points:"points",
   qr_upload_btn:"Import a ZIP file", qr_upload_ok:"File imported.", qr_upload_err:"Import failed (file).",
   qr_checks:"The checks", qr_checks_sub:"Click a check for the details, then a row to open the site.", qr_csv:"Download (CSV)",
@@ -835,7 +910,7 @@ en:{
   hi_est:"* Heat-pump heat estimated (pump electricity × the COP measured at the sites with a heat meter).",
   d_hi:"Heat index {y}", d_hi_sub:"approximate · not weather-corrected", d_hi_deliv:"year's deliveries", h_flag:"",
   alert:"Alert", up:"up",
-  type_administration:"Administration", type_ecole:"Primary school", type_ecole_primaire:"Primary school", type_ecole_piscine:"School with pool", type_creche:"Nursery", type_maison_quartier:"Community centre", type_salle_communale:"Community hall", type_bibliotheque:"Library", type_salle_spectacle:"Theatre", type_installation_sportive:"Sports facility", type_piscine:"Indoor pool", type_patinoire:"Ice rink", type_voirie:"Works depot", type_caserne:"Fire station", type_logements:"Municipal housing", type_abri_pc:"Civil-defence shelter", type_cimetiere:"Cemetery", type_parking:"Underground car park", type_eclairage_public:"Street lighting",
+  type_administration:"Administration", type_ecole:"Primary school", type_ecole_primaire:"Primary school", type_ecole_piscine:"School with pool", type_creche:"Nursery", type_maison_quartier:"Community centre", type_salle_communale:"Community hall", type_bibliotheque:"Library", type_salle_spectacle:"Theatre", type_installation_sportive:"Sports facility", type_piscine:"Indoor pool", type_patinoire:"Ice rink", type_voirie:"Works depot", type_caserne:"Fire station", type_logements:"Municipal housing", type_abri_pc:"Civil-defence shelter", type_cimetiere:"Cemetery", type_parking:"Underground car park", type_eclairage_public:"Street lighting", type_autre:"Other",
   car_oil:"Heating oil", car_gas:"Gas", car_district:"District heating", car_heat_pump:"Heat pump", car_wood:"Wood pellets", car_electric:"Direct electric", car_none:"Unheated",
   d_area:"Floor area (ERA)", d_built:"Built", d_pv:"Solar", d_quarter:"District", d_int:"Energy per m² {y}",
   d_series:"Monthly history 2021–2025", fl_elec_grid:"Grid electricity", fl_heat:"Heat", fl_heat_est:"heat pump: estimated", fl_pv_prod:"Solar produced", fl_water:"Water", fl_co2:"CO₂ (kg)",
@@ -891,6 +966,15 @@ en:{
   m_nomap:"No 3D map for this municipality yet.", m_map_title_rc:"Rive-Claire · municipal buildings",
   m_sub_rc:"{n} buildings · {s} sites · {y} readings · fictional plan, schematic volumes", m_search_rc:"Search a site…",
   m_attr_rc:"Data: Energ-IA Transition, Energ-IACK 2026 (CC BY 4.0) · volumes from floor area and levels, enlarged ×{k} · lake, roads and trees invented",
+  m_map_title_imp:"Imported 3D map", m_sub_imp:"{n} buildings · {m} matched · {u} to match",
+  m_attr_imp:"Buildings: Federal Register of Buildings (RegBL) · aerial photo: swisstopo SWISSIMAGE · geo.admin.ch",
+  m_unmatched:"Not matched", m_imp_matched:"Matched to site", m_imp_unmatch:"Detach",
+  m_mf_all:"All", m_mf_matched:"Matched", m_mf_unmatched:"Unmatched",
+  m_fp_title:"Real footprints (OSM)", m_fp_found:"real shape", m_fp_pending:"to search", m_fp_none:"not in OSM",
+  m_fp_resolve:"Resolve footprints ({n})", m_fp_resolving:"Searching…", m_fp_started:"Footprint search started in the background.",
+  m_imp_unmatched_hint:"This building is not yet linked to one of your sites. Click \"Match\" to assign a site and show its data.",
+  m_imp_match_btn:"Match to a site…", m_imp_register_btn:"Add as new building",
+  mr_title:"Add a building", mr_new:"New site", mr_existing:"Existing site", mr_sitename:"Site name", mr_create:"Create", mr_saving:"Saving…", mr_fail:"Failed:",
   m_src_rc:"Source: Energ-IA Transition, Energ-IACK 2026 (CC BY 4.0)", m_l_int:"Energy / m²", m_l_hi:"Heat index", m_p_hi:"Heat index", m_n_hi:"Approximate, not weather-corrected: not the official IDC.", m_n_hi_est:"Approximate, not weather-corrected: not the official IDC. Heat-pump heat estimated.",
   m_lg_rc_idc:"Approximate heat index, not weather-corrected", m_lg_rc_heat:"Heating in service", m_lg_rc_solar:"Measured solar output",
   m_lg_rc_elec:"Electricity used on site", m_lg_rc_water:"Water use",
@@ -921,6 +1005,7 @@ const pct = (x, d=0) => new Intl.NumberFormat(locale(), {style:"percent", maximu
 const pct0 = (x) => new Intl.NumberFormat(locale(), {style:"percent", maximumFractionDigits:0}).format(x);
 const monthName = (m) => new Intl.DateTimeFormat(locale(), {month:"short"}).format(new Date(2021, m, 1));
 const monthYear = (i) => new Intl.DateTimeFormat(locale(), {month:"short", year:"numeric"}).format(new Date(2021, i, 1));
+const jsq = (s) => esc(JSON.stringify(String(s)));   // a JS string literal safe inside onclick="..."
 const esc = (s) => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 /* icons: Lucide (ISC licence, see THIRD_PARTY.md), inner SVG only */
 const ICONS = {
@@ -1220,7 +1305,8 @@ function renderQuality(){
       importBtn.disabled = true; importBtn.textContent = "…";
       try {
         const slug = LOC?.slug || "rive-claire";
-        await fetch(`api/localities/${slug}/import`, {method:"POST"});
+        const r0 = await fetch(`api/localities/${slug}/import`, {method:"POST"});
+        if (!r0.ok) throw r0;
         const d2 = await fetch(`api/data.json?locality=${slug}`).then(r=>r.json());
         D = d2; renderQuality();
         importBtn.textContent = t("qr_reimport_ok");
@@ -1279,6 +1365,19 @@ function renderAbout(){
 /* ---------------------------------------------------------------- 3D map (loaded on first visit) */
 let MAP = null, MAP_LOADING = false;
 const isDark = () => { const a = document.documentElement.dataset.theme; return a ? a === "dark" : matchMedia("(prefers-color-scheme: dark)").matches; };
+// Carrier (oil/gas/district/heat_pump/wood/electric/none) -> the 5 map heat kinds
+const CARRIER_KIND = {oil:"fossil", gas:"fossil", district:"district", heat_pump:"heatpump", wood:"wood", electric:"electric"};
+// Per-site figures in the shape the 3D map expects as b.rc (matches make_rive_claire_map output)
+function mapSiteData(sid){
+  const s = D.sites.find(x=>x.id===sid), cur = M.sites[sid] && M.sites[sid][YEAR];
+  if (!s || !cur) return null;
+  const car = carrierAt(sid, (YEAR-2021)*12+11);
+  return { year: YEAR, heat: CARRIER_KIND[car] || null, heat_kwh: cur.heat, elec_kwh: cur.elec,
+           pv_kwh: cur.pv, water_m3: cur.water, kwh_m2: cur.int, mj_m2: cur.hi, hiEst: cur.hiEst };
+}
+function mapSiteName(sid){ const s = D.sites.find(x=>x.id===sid); return s ? s.name[LANG] : sid; }
+
+let MAP_RELOAD_CAM = null;   // camera to restore when the imported map is reloaded to show new footprints
 // One map per municipality: its map_config picks one of these (no switch on the map)
 const MAPS = {rc:{key:"rc", dir:"map-rc/"}, ge:{key:"ge", dir:"map/"}};
 try { localStorage.removeItem("energiack-map"); } catch(e) {}   // the old map switch's saved choice
@@ -1306,14 +1405,236 @@ function sitePublic(s){
 let MAP_FOR = null;   // slug of the municipality the shown (or loading) map belongs to
 function resetMap(){ if (MAP) MAP.destroy(); MAP = null; MAP_FOR = null; }
 function renderMap(){
-  const mapCfg = MAPS[LOC?.map_config?.key], el = document.getElementById("m3");
+  const el = document.getElementById("m3"), mc = LOC?.map_config, imported = mc?.key === "imported";
+  // imported maps are served per-municipality by the API; built-in maps (rc/ge) are static folders; else: no map yet
+  const mapCfg = imported ? {key:"imported", dir:`api/localities/${LOC.slug}/map/`, restoreCam: MAP_RELOAD_CAM}
+    : (mc?.key && MAPS[mc.key]) ? MAPS[mc.key] : null;
   if (!MAP_LOADING && MAP_FOR && MAP_FOR !== LOC?.slug) resetMap();
   if (!mapCfg) { el.innerHTML = `<div class="m3-loading">${esc(t("m_nomap"))}</div>`; return; }
   if (MAP || MAP_LOADING) return;
+  MAP_RELOAD_CAM = null;
   MAP_LOADING = true; MAP_FOR = LOC.slug;
-  import("./map3d.js?v="+V).then(m => m.initMap(el, {t, nf, esc, showTip, hideTip, dark:isDark, lang:()=>LANG, heatIndex:(sid, y)=>(M.sites[sid]||{})[y], sites:egidSites(), siteYear}, mapCfg))
+  const canMatch = SERVER && USER && (USER.role==="admin" || USER.role==="technique");
+  const apiObj = {t, nf, esc, showTip, hideTip, dark:isDark, lang:()=>LANG,
+    locName: (LOC && LOC.name) || (D?.meta?.commune) || "",
+    heatIndex:(sid, y)=>(M.sites[sid]||{})[y],
+    sites:egidSites(), siteYear,                           // built-in maps: EGID-linked sites of the municipality
+    siteData:mapSiteData, siteName:mapSiteName, canMatch,  // imported maps: manual match UI
+    matchBuilding: (b, done) => mapPickSite(b, done),
+    registerBuilding: (b, done) => mapRegisterDialog(b, done),
+    setMatch: (buildingId, idSite, done) => mapSetMatch(buildingId, idSite, done),
+    resolveFootprints: canMatch ? () => mapResolveFootprints() : null};  // (re-)run OSM footprint resolution in the background
+  import("./map3d.js?v="+V).then(m => m.initMap(el, apiObj, mapCfg))
     .then(x => { MAP = x; MAP_LOADING = false; if (MAP_FOR !== LOC?.slug && VIEW === "carte") renderMap(); })
     .catch(e => { MAP_LOADING = false; MAP_FOR = null; el.innerHTML = `<div class="m3-loading">${esc(String(e))}</div>`; });
+}
+
+/* ---------------------------------------------------------------- 3D-map import: async, progress polled
+   The import runs in the background on the server. Only the person who started it sees its progress: while one of
+   their imports runs we poll GET /api/map/jobs every few seconds (nothing stays open otherwise), and check once on
+   load and after login in case they come back. Progress shows in a floating chip, the Carte-3D nav button
+   (disabled + %) and the Localités list, then a toast on success/failure. */
+let MAP_IMPORTS = {};        // locality_id -> {slug,name,state,pct,step,n,matched,unmatched,error,fp,...}
+let MAP_POLL = null;
+function mapImportsSubscribe(){   // (re)start: after login, on load, after starting an import
+  clearTimeout(MAP_POLL); MAP_POLL = null;
+  if (!SERVER || !USER || USER.demo || !full()){ MAP_IMPORTS = {}; renderImportChip(); markMapButton(); return; }
+  mapImportsPoll();
+}
+async function mapImportsPoll(){
+  MAP_POLL = null;
+  let jobs = null;
+  try {
+    const r = await fetch("api/map/jobs", {cache:"no-store"});
+    if (r.status === 401 || r.status === 403){ MAP_IMPORTS = {}; renderImportChip(); markMapButton(); return; }
+    if (r.ok) jobs = await r.json();
+  } catch(e){}
+  if (jobs){
+    for (const lid of Object.keys(MAP_IMPORTS)) if (!(lid in jobs)) delete MAP_IMPORTS[lid];   // e.g. server restarted
+    for (const [lid, j] of Object.entries(jobs)) await onImportEvent({...j, locality_id: Number(lid)});
+    renderImportChip(); markMapButton();
+  }
+  const live = Object.values(MAP_IMPORTS).some(j => j.state === "running" || j.fp === "running");
+  if (live && USER && !MAP_POLL) MAP_POLL = setTimeout(mapImportsPoll, 3000);
+}
+function importRunning(id){ const j = MAP_IMPORTS[id]; return !!(j && j.state === "running"); }
+async function onImportEvent(j){
+  const prev = MAP_IMPORTS[j.locality_id];
+  MAP_IMPORTS[j.locality_id] = j;
+  markMapButton();
+  renderImportChip();
+  const cell = document.getElementById(`loc-imp-${j.slug}`); if (cell) cell.innerHTML = importCell(j);
+  if (j.state === "done" && prev && prev.state === "running"){
+    toast("ok", t("imp_done", {name: j.name || j.slug, n: nf(j.n||0), m: nf(j.matched||0)}));
+    const lr = await fetch("api/localities",{cache:"no-store"}); if (lr.ok) LOCALITIES = await lr.json();
+    if (LOC && LOC.slug === j.slug){
+      LOC = LOCALITIES.find(l=>l.slug===j.slug) || LOC;
+      // drop the now-stale map so it is rebuilt from the fresh import, whether or not we are on the map view
+      if (MAP){ MAP.destroy(); MAP = null; } MAP_LOADING = false;
+      if (VIEW === "carte"){ await loadData(); renderMap(); }       // on the map view: reload it right away
+    }
+  } else if (j.state === "error" && prev && prev.state === "running"){
+    toast("warn", t("imp_fail", {name: j.name || j.slug}) + (j.error ? " — " + j.error : ""));
+  }
+  // Progressive footprints (phase 2): the squares map is already shown; as real OSM footprints land in the
+  // background (biggest building first), periodically rebuild the open map to reveal them — keeping the camera.
+  if (LOC && LOC.slug === j.slug && VIEW === "carte"){
+    if (j.state === "done" && j.fp === "running") scheduleFootprintReload(j.slug);
+    else if (j.fp === "done"){ clearFootprintReload(); if (prev && prev.fp === "running") reloadMapKeepCam(); }
+  }
+}
+let FP_RELOAD_TIMER = null;   // periodic rebuild while footprints stream in
+function reloadMapKeepCam(){
+  if (VIEW !== "carte") return;
+  if (!MAP){ renderMap(); return; }
+  try { MAP_RELOAD_CAM = MAP.cam(); } catch(e){ MAP_RELOAD_CAM = null; }
+  MAP.destroy(); MAP = null; MAP_LOADING = false;
+  renderMap();
+}
+function scheduleFootprintReload(slug){
+  if (FP_RELOAD_TIMER) return;
+  FP_RELOAD_TIMER = setInterval(() => {
+    const j = MAP_IMPORTS[LOC && LOC.id];
+    if (!(LOC && LOC.slug === slug && VIEW === "carte" && MAP && j && j.fp === "running")){ clearFootprintReload(); return; }
+    reloadMapKeepCam();
+  }, 30000);
+}
+function clearFootprintReload(){ if (FP_RELOAD_TIMER){ clearInterval(FP_RELOAD_TIMER); FP_RELOAD_TIMER = null; } }
+function markMapButton(){
+  const a = document.querySelector('nav a[data-view="carte"]'); if (!a) return;
+  const run = LOC && importRunning(LOC.id), j = LOC && MAP_IMPORTS[LOC.id];
+  a.classList.toggle("disabled", !!run);
+  a.title = run ? t("imp_map_wait", {pct: (j && j.pct) || 0}) : "";
+  const sp = a.querySelector("span"); if (sp) sp.textContent = run ? `${t("nav_map")} · ${(j && j.pct) || 0}%` : t("nav_map");
+}
+function renderImportChip(){
+  const jobs = Object.values(MAP_IMPORTS);
+  const building = jobs.filter(j => j.state === "running");                       // phase 1: the fast square-block import
+  const fp = jobs.filter(j => j.state === "done" && j.fp === "running");          // phase 2: real footprints, in background
+  let chip = document.getElementById("imp-chip");
+  if (!building.length && !fp.length){ if (chip) chip.remove(); return; }
+  if (!chip){ chip = document.createElement("div"); chip.id = "imp-chip"; document.body.appendChild(chip); }
+  if (building.length){
+    const j = building.sort((a,b)=>(b.pct||0)-(a.pct||0))[0];
+    chip.innerHTML = `<div class="imp-bar"><i style="width:${j.pct||0}%"></i></div>`
+      + `<div class="imp-txt">${esc(t("imp_running", {name: j.name || j.slug}))} · <b>${j.pct||0}%</b></div>`;
+  } else {
+    const j = fp.sort((a,b)=>(b.fp_pct||0)-(a.fp_pct||0))[0];   // footprints keep streaming in after the map is explorable
+    chip.innerHTML = `<div class="imp-bar"><i style="width:${j.fp_pct||0}%"></i></div>`
+      + `<div class="imp-txt">${esc(t("imp_fp", {name: j.name || j.slug}))} · <b>${j.fp_pct||0}%</b>`
+      + `<br><span style="color:var(--muted)">${esc(t("imp_fp_sub", {n: nf(j.fp_n||0), m: nf(j.fp_total||0)}))}</span></div>`;
+  }
+}
+function importCell(j){
+  if (!j) return "";
+  if (j.state === "running") return `<span class="pill p-warn" style="font-style:normal">${esc(t("imp_running_short"))} ${j.pct||0}%</span>`;
+  if (j.state === "error") return `<span class="pill p-fossil" style="font-style:normal">${esc(t("imp_err_short"))}</span>`;
+  if (j.state === "done" && j.fp === "running") return `<span class="pill p-warn" style="font-style:normal">${esc(t("imp_fp_short", {n: nf(j.fp_n||0)}))} ${j.fp_pct||0}%</span>`;
+  if (j.state === "done") return `<span class="pill p-ren" style="font-style:normal">${esc(t("imp_done_short", {m: nf(j.matched||0)}))}</span>`;
+  return "";
+}
+function toast(kind, msg){
+  const el = document.createElement("div"); el.className = "toast " + (kind || "");
+  el.textContent = msg; document.body.appendChild(el);
+  requestAnimationFrame(() => el.classList.add("show"));
+  setTimeout(() => { el.classList.remove("show"); setTimeout(() => el.remove(), 350); }, kind === "warn" ? 9000 : 6000);
+}
+// (Re-)run OSM footprint resolution for the current municipality's map, in the background; progress shows in the import chip.
+async function mapResolveFootprints(){
+  if (!LOC) return;
+  try {
+    const r = await fetch(`api/localities/${LOC.slug}/map/footprints`, {method:"POST"});
+    if (!r.ok){ toast("warn", t("mi_fail") + " " + ((await r.json().catch(()=>({}))).detail || r.status)); return; }
+    MAP_IMPORTS[LOC.id] = {...(MAP_IMPORTS[LOC.id]||{}), slug: LOC.slug, name: LOC.name, state:"done", fp:"running", fp_pct:0, fp_n:0, fp_total:0};
+    mapImportsSubscribe(); renderImportChip();
+    if (VIEW === "carte") scheduleFootprintReload(LOC.slug);   // reveal new footprints on the open map as they land
+    toast("ok", t("m_fp_started"));
+  } catch(e){ toast("warn", String(e)); }
+}
+// Assign (or clear) the site of a map building via the API, then let the map recolour.
+async function mapSetMatch(buildingId, idSite, done){
+  try {
+    const r = await fetch(`api/localities/${LOC.slug}/map/building/${buildingId}`, {method:"PUT", headers:{"Content-Type":"application/json"}, body:JSON.stringify({id_site:idSite})});
+    if (r.ok && done) done(idSite);
+  } catch(e){}
+}
+// Searchable site picker modal: click an (unmatched) map building -> choose which of our sites it is.
+function mapPickSite(b, done){
+  const modal = document.getElementById("login");
+  const addr = b.addr || (b.egid ? "EGID "+b.egid : "");
+  const render = (q="") => {
+    const needle = q.trim().toLowerCase();
+    const list = D.sites.filter(s => !needle || s.id.toLowerCase().includes(needle)
+      || s.name[LANG].toLowerCase().includes(needle) || (t("type_"+s.type)||"").toLowerCase().includes(needle)).slice(0, 40);
+    document.getElementById("mp-list").innerHTML = list.map(s =>
+      `<button class="chip" style="display:block;width:100%;text-align:left;margin:2px 0" data-sid="${esc(s.id)}">
+        <b>${esc(s.name[LANG])}</b> <span class="mut">· ${esc(s.id)} · ${esc(t("type_"+s.type))}</span></button>`).join("")
+      || `<p class="sub">${esc(t("mp_none"))}</p>`;
+    document.querySelectorAll("#mp-list [data-sid]").forEach(btn => btn.onclick = () => {
+      modal.classList.remove("open");
+      mapSetMatch(b.id, btn.dataset.sid, () => done && done(btn.dataset.sid));
+    });
+  };
+  document.getElementById("login-in").innerHTML = `
+    <h2 style="margin-bottom:4px">${esc(t("mp_title"))}</h2>
+    <p class="sub" style="margin-bottom:10px">${esc(addr)}</p>
+    <input id="mp-q" type="text" placeholder="${esc(t("mp_search"))}" style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px">
+    <div id="mp-list" style="max-height:320px;overflow:auto"></div>
+    <div class="row" style="margin-top:10px"><button id="mp-cancel" class="chip">${esc(t("loc_f_cancel"))}</button></div>`;
+  modal.classList.add("open");
+  document.getElementById("mp-cancel").onclick = () => modal.classList.remove("open");
+  document.getElementById("mp-q").oninput = (e) => render(e.target.value);
+  render();
+  setTimeout(()=>document.getElementById("mp-q").focus(), 50);
+}
+
+// Register a map block as a new building in the current municipality: new site, or under an existing one.
+function mapRegisterDialog(b, done){
+  const modal = document.getElementById("login");
+  const addr = b.addr || (b.egid ? "EGID "+b.egid : "");
+  let mode = "new";
+  const draw = () => {
+    const existing = mode === "existing";
+    document.getElementById("mr-body").innerHTML = existing
+      ? `<input id="mr-q" type="text" placeholder="${esc(t("mp_search"))}" style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px">
+         <div id="mr-list" style="max-height:220px;overflow:auto"></div>`
+      : `<label style="display:block;font-size:.9rem">${esc(t("mr_sitename"))}
+           <input id="mr-name" type="text" value="${esc(addr)}" style="display:block;width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px;margin-top:4px"></label>`;
+    document.querySelectorAll("#mr-mode [data-m]").forEach(x=>x.classList.toggle("on", x.dataset.m===mode));
+    if (existing) {
+      const render = (q="") => {
+        const n = q.trim().toLowerCase();
+        const list = D.sites.filter(s=>!n||s.id.toLowerCase().includes(n)||s.name[LANG].toLowerCase().includes(n)).slice(0,40);
+        document.getElementById("mr-list").innerHTML = list.map(s=>`<button class="chip" style="display:block;width:100%;text-align:left;margin:2px 0" data-sid="${esc(s.id)}"><b>${esc(s.name[LANG])}</b> <span class="mut">· ${esc(s.id)}</span></button>`).join("") || `<p class="sub">${esc(t("mp_none"))}</p>`;
+        document.querySelectorAll("#mr-list [data-sid]").forEach(btn=>btn.onclick=()=>submit("existing", btn.dataset.sid, null));
+      };
+      document.getElementById("mr-q").oninput = e=>render(e.target.value); render();
+    }
+  };
+  const submit = async (m, idSite, siteName) => {
+    const msg = document.getElementById("mr-msg"); msg.textContent = t("mr_saving"); msg.style.color="var(--muted)";
+    try {
+      const body = m==="existing" ? {mode:"existing", id_site:idSite} : {mode:"new", site_name:(document.getElementById("mr-name")?.value||addr).trim()};
+      const r = await fetch(`api/localities/${LOC.slug}/map/building/${b.id}/register`, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)});
+      if (!r.ok) throw new Error((await r.json()).detail || r.status);
+      const res = await r.json();
+      modal.classList.remove("open");
+      await loadData();                 // the dataset changed (new site/building) — reload so the map can colour it
+      if (done) done(res.id_site);
+    } catch(e){ msg.style.color="var(--warn)"; msg.textContent = t("mr_fail")+" "+e.message; }
+  };
+  document.getElementById("login-in").innerHTML = `
+    <h2 style="margin-bottom:4px">${esc(t("mr_title"))}</h2>
+    <p class="sub" style="margin-bottom:10px">${esc(addr)}${b.egid?` · EGID ${esc(b.egid)}`:""}</p>
+    <div class="seg" id="mr-mode" style="margin-bottom:10px"><button data-m="new">${esc(t("mr_new"))}</button><button data-m="existing">${esc(t("mr_existing"))}</button></div>
+    <div id="mr-body"></div>
+    <div class="row" style="gap:8px;margin-top:10px"><button id="mr-go" class="chip" style="background:var(--accent);color:#fff">${esc(t("mr_create"))}</button><button id="mr-cancel" class="chip">${esc(t("loc_f_cancel"))}</button></div>
+    <p id="mr-msg" style="margin-top:8px;font-size:.9rem"></p>`;
+  modal.classList.add("open");
+  document.getElementById("mr-cancel").onclick = ()=>modal.classList.remove("open");
+  document.getElementById("mr-mode").onclick = (e)=>{ const x=e.target.closest("[data-m]"); if(x){ mode=x.dataset.m; draw(); } };
+  document.getElementById("mr-go").onclick = ()=>{ if(mode==="new") submit("new"); else { const first=document.querySelector("#mr-list [data-sid]"); if(first) first.click(); } };
+  draw();
 }
 
 /* ---------------------------------------------------------------- site drawer */
@@ -1569,6 +1890,7 @@ function renderAll(){
     }
   }
   document.querySelectorAll("nav a").forEach(a=>{ a.classList.toggle("on", a.dataset.view===VIEW); a.classList.toggle("hide", !can(a.dataset.view)); });
+  markMapButton();   // disable the Carte-3D button while this locality's map import is running
   document.getElementById("crumb").textContent = t(NAVKEY[VIEW]);
   const cl = document.getElementById("crumb-loc");
   if (cl) { if (LOCALITIES.length > 1) cl.innerHTML = locButton("loc-select-top"); else cl.textContent = LOC ? LOC.name : (D?.meta?.commune || ""); }
@@ -1589,6 +1911,17 @@ let LOC = null;        // currently selected locality
 const ROLE = () => USER ? USER.role : "public";
 const can = (v) => SERVER ? !ACCESS[v] || ACCESS[v].includes(ROLE()) : v !== "utilisateurs";
 const full = () => !SERVER || ["admin","technique"].includes(ROLE());       // raw readings, quality report, exports
+// Demo accounts are view-only (the server refuses their writes too): stop the request here and say why, in FR/EN.
+const NET_FETCH = window.fetch.bind(window);
+window.fetch = (input, init) => {
+  const m = String((init && init.method) || (input && input.method) || "GET").toUpperCase();
+  const url = typeof input === "string" ? input : (input && input.url) || "";
+  if (USER && USER.demo && !["GET","HEAD","OPTIONS"].includes(m) && !/api\/(login|logout|demo-login)$/.test(url)){
+    toast("warn", t("demo_readonly"));
+    return Promise.resolve(new Response(JSON.stringify({detail: t("demo_readonly")}), {status: 403, headers: {"content-type": "application/json"}}));
+  }
+  return NET_FETCH(input, init);
+};
 async function api(path, body, method = "POST"){
   const r = await fetch(path, {method, headers:{"content-type":"application/json"}, body: body ? JSON.stringify(body) : undefined, cache:"no-store"});
   if (!r.ok) throw r;
@@ -1639,6 +1972,7 @@ async function setUser(u, want){
     }
   }
   await loadData();
+  mapImportsSubscribe();   // this user's 3D-map imports still running, if any
   if (want && can(want) && location.hash !== "#"+want) location.hash = "#"+want; else route();
 }
 function renderAcct(){
@@ -1680,6 +2014,7 @@ function renderLocalities(){
   const tb = document.getElementById("loc-table");
   const msg = (s, err=false) => { const el = document.getElementById("loc-msg"); el.textContent = s; el.style.color = err ? "var(--c-fossil,#c00)" : "var(--c-mut,#888)"; };
   applyT(document.getElementById("v-localites"));
+  renderMapConfig();
 
   fetch("api/localities", {cache:"no-store"}).then(r => r.ok ? r.json() : Promise.reject()).then(list => {
     if (!list.length) { tb.innerHTML = `<p class="sub">${esc(t("loc_no_data"))}</p>`; return; }
@@ -1687,13 +2022,15 @@ function renderLocalities(){
       <th>${esc(t("loc_h_name"))}</th><th>${esc(t("loc_h_slug"))}</th><th>${esc(t("loc_h_map"))}</th>
       <th>${esc(t("loc_h_data"))}</th><th>${esc(t("loc_h_actions"))}</th>
     </tr></thead><tbody>${list.map(l => `<tr>
-      <td><b>${esc(l.name)}</b>${LOC?.slug===l.slug ? ` <span class="pill p-ren" style="font-style:normal">${esc(t("loc_active"))}</span>`:""}</td>
+      <td><b>${esc(l.name)}</b> <span class="pill" style="font-style:normal;background:var(--surface-2)">${l.country==="FR"?"🇫🇷 FR":"🇨🇭 CH"}</span>${LOC?.slug===l.slug ? ` <span class="pill p-ren" style="font-style:normal">${esc(t("loc_active"))}</span>`:""}</td>
       <td><code>${esc(l.slug)}</code></td>
-      <td>${esc(t(l.map_config?.key ? "loc_map_"+l.map_config.key : "loc_map_none"))}</td>
+      <td>${esc(l.map_config?.key === "imported" ? t("loc_f_map") : t(l.map_config?.key ? "loc_map_"+l.map_config.key : "loc_map_none"))}</td>
       <td id="loc-st-${esc(l.slug)}">${esc(t("loc_no_data"))}</td>
       <td style="white-space:nowrap">
-        <button class="chip" style="margin-right:4px" onclick="switchToLocality('${esc(l.slug)}')">${esc(t("loc_open"))}</button>
-        ${list.length > 1 && !BUILTIN_LOC.includes(l.slug) ? `<button class="chip" style="color:var(--warn)" onclick="locDelete('${esc(l.slug)}','${esc(l.name)}')" title="${esc(t('loc_delete_tip'))}">✕</button>` : ""}
+        <button class="chip" style="margin-right:4px" onclick="switchToLocality(${jsq(l.slug)})">${esc(t("loc_open"))}</button>
+        <button class="chip" style="margin-right:4px" onclick="mapImportDialog(${jsq(l.slug)},${jsq(l.name)})" title="${esc(t('loc_map_tip'))}">${esc(t("loc_map_btn"))}</button>
+        <span id="loc-imp-${esc(l.slug)}">${importCell(MAP_IMPORTS[l.id])}</span>
+        ${list.length > 1 && !BUILTIN_LOC.includes(l.slug) ? `<button class="chip" style="color:var(--warn)" onclick="locDelete(${jsq(l.slug)},${jsq(l.name)})" title="${esc(t('loc_delete_tip'))}">✕</button>` : ""}
       </td>
     </tr>`).join("")}</tbody></table></div>`;
 
@@ -1714,9 +2051,10 @@ function renderLocalities(){
     e.preventDefault();
     const name = document.getElementById("loc-f-name").value.trim();
     const slug = document.getElementById("loc-f-slug").value.trim();
-    const map = document.getElementById("loc-f-map").value || null;
+    const country = (document.getElementById("loc-f-country")||{}).value || "CH";
+    const map = (document.getElementById("loc-f-map")||{}).value || null;
     try {
-      await api("api/localities", {slug, name, map}, "POST");
+      await api("api/localities", {slug, name, country, map}, "POST");
       const lr = await fetch("api/localities",{cache:"no-store"}); if(lr.ok) LOCALITIES = await lr.json();
       msg(t("loc_created")); formCard.classList.add("hide");
       document.getElementById("loc-f-name").value = ""; document.getElementById("loc-f-slug").value = "";
@@ -1727,6 +2065,122 @@ function renderLocalities(){
 }
 
 const BUILTIN_LOC = ["rive-claire", "geneve", "geneve-demo"];  // mirrors store.PROTECTED (server)
+// Admin map-import preferences: OSM footprints on/off, and which territories are available.
+async function renderMapConfig(){
+  const wrap = document.getElementById("cfg-toggles"); if (!wrap) return;
+  let s; try { s = await fetch("api/settings",{cache:"no-store"}).then(r=>r.json()); } catch(e){ return; }
+  const row = (key, label, hint) => `<label class="cfg-row"><input type="checkbox" data-cfg="${key}" ${s[key]?"checked":""}>
+    <span><b>${esc(label)}</b>${hint?`<br><span class="sub">${esc(hint)}</span>`:""}</span></label>`;
+  wrap.innerHTML = row("osm_footprints", t("cfg_osm"), t("cfg_osm_hint"))
+    + row("country_ch", t("cfg_country_ch"), "")
+    + row("country_fr", t("cfg_country_fr"), t("cfg_country_fr_hint"));
+  wrap.querySelectorAll("[data-cfg]").forEach(cb => cb.onchange = async () => {
+    const m = document.getElementById("cfg-msg");
+    try {
+      const r = await fetch("api/settings",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({[cb.dataset.cfg]: cb.checked})});
+      if (!r.ok) throw 0;
+      m.textContent = t("cfg_saved"); m.style.color = "var(--accent)";
+      populateCountrySelect(s = {...s, [cb.dataset.cfg]: cb.checked});
+    } catch(e){ m.textContent = t("cfg_err"); m.style.color = "var(--warn)"; cb.checked = !cb.checked; }
+  });
+  populateCountrySelect(s);
+}
+function populateCountrySelect(s){
+  const sel = document.getElementById("loc-f-country"); if (!sel) return;
+  const opts = [];
+  if (s.country_ch !== false) opts.push(`<option value="CH">${esc(t("country_ch_name"))}</option>`);
+  if (s.country_fr) opts.push(`<option value="FR">${esc(t("country_fr_name"))}</option>`);
+  sel.innerHTML = opts.join("") || `<option value="CH">${esc(t("country_ch_name"))}</option>`;
+}
+
+/* ---------------------------------------------------------------- 3D map import (Swiss geo platform) */
+let MAP_ZONE = null;   // {bbox:[xmin,ymin,xmax,ymax], label}
+function mapImportDialog(slug, name){
+  const modal = document.getElementById("login");
+  const fr = LANG==="fr";
+  const country = (LOCALITIES.find(l=>l.slug===slug)||{}).country || "CH";   // search on the right national platform
+  MAP_ZONE = null;
+  document.getElementById("login-in").innerHTML = `
+    <h2 style="margin-bottom:4px">${esc(t("mi_title"))}</h2>
+    <p class="sub" style="margin-bottom:12px">${esc(name)} — ${esc(t("mi_sub"))}</p>
+    <label style="display:block;margin-bottom:6px;font-size:.9rem">${esc(t("mi_search"))}
+      <input id="mi-q" type="text" placeholder="${esc(t("mi_search_ph"))}" style="display:block;width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px;margin-top:4px">
+    </label>
+    <div id="mi-results" style="max-height:160px;overflow:auto;margin-bottom:10px"></div>
+    <label style="display:block;margin-bottom:10px;font-size:.9rem">${esc(t("mi_scale"))}
+      <select id="mi-scale" style="display:block;width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px;margin-top:4px">
+        <option value="300">${esc(t("mi_scale_s"))}</option>
+        <option value="500" selected>${esc(t("mi_scale_m"))}</option>
+        <option value="1000">${esc(t("mi_scale_l"))}</option>
+        <option value="1500">${esc(t("mi_scale_xl"))}</option>
+        <option value="2500">${esc(t("mi_scale_xxl"))}</option>
+        <option value="3500">${esc(t("mi_scale_3xl"))}</option>
+        <option value="5000">${esc(t("mi_scale_4xl"))}</option>
+      </select>
+    </label>
+    <p id="mi-zone" class="sub" style="margin:0 0 10px"></p>
+    <div class="row" style="gap:8px">
+      <button id="mi-go" class="chip" style="background:var(--accent);color:#fff" disabled>${esc(t("mi_import"))}</button>
+      <button id="mi-cancel" class="chip">${esc(t("loc_f_cancel"))}</button>
+    </div>
+    <p id="mi-msg" style="margin-top:8px;font-size:.9rem"></p>`;
+  modal.classList.add("open");
+  document.getElementById("mi-cancel").onclick = () => modal.classList.remove("open");
+
+  const q = document.getElementById("mi-q"), res = document.getElementById("mi-results");
+  const go = document.getElementById("mi-go"), zoneEl = document.getElementById("mi-zone");
+  let timer;
+  const showZone = () => {
+    if (!MAP_ZONE) { go.disabled = true; zoneEl.textContent = ""; return; }
+    go.disabled = false;
+    const [x0,y0,x1,y1] = MAP_ZONE.bbox;
+    const span = Math.max(x1-x0, y1-y0);
+    zoneEl.textContent = t("mi_zone", {label: MAP_ZONE.label, m: Math.round(span)});
+    zoneEl.innerHTML += span > 2000 ? `<br><span class="notice" style="margin-top:4px">${esc(t("mi_big"))}</span>` : "";
+  };
+  const pickCentre = (cx, cy, label) => {
+    const half = +document.getElementById("mi-scale").value;
+    MAP_ZONE = {label, bbox: [cx-half, cy-half, cx+half, cy+half]};
+    showZone();
+  };
+  document.getElementById("mi-scale").onchange = () => { if (MAP_ZONE) { const [x0,y0,x1,y1]=MAP_ZONE.bbox; pickCentre((x0+x1)/2,(y0+y1)/2, MAP_ZONE.label); } };
+  q.oninput = () => {
+    clearTimeout(timer);
+    timer = setTimeout(async () => {
+      const text = q.value.trim(); if (text.length < 2) { res.innerHTML=""; return; }
+      try {
+        const list = await fetch(`api/geo/search?q=${encodeURIComponent(text)}&country=${country}`).then(r=>r.json());
+        res.innerHTML = (list||[]).filter(r=>r.x&&r.y).slice(0,8).map((r,i)=>
+          `<button class="chip" style="display:block;width:100%;text-align:left;margin:2px 0" data-cx="${r.x}" data-cy="${r.y}" data-label="${esc(r.label)}">${esc(r.label)}</button>`).join("")
+          || `<p class="sub">${esc(t("mi_noresult"))}</p>`;
+        res.querySelectorAll("[data-cx]").forEach(bq => bq.onclick = () => {
+          res.querySelectorAll("[data-cx]").forEach(x=>x.classList.remove("on")); bq.classList.add("on");
+          pickCentre(+bq.dataset.cx, +bq.dataset.cy, bq.dataset.label);
+        });
+      } catch(e){ res.innerHTML = `<p class="sub" style="color:var(--warn)">${esc(String(e))}</p>`; }
+    }, 300);
+  };
+  go.onclick = async () => {
+    if (!MAP_ZONE) return;
+    go.disabled = true; const msg = document.getElementById("mi-msg");
+    msg.textContent = t("mi_starting"); msg.style.color = "var(--muted)";
+    try {
+      // Kick off the import in the background: the server returns immediately, the page polls the progress.
+      const r = await fetch(`api/localities/${slug}/map/import`, {method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({bbox: MAP_ZONE.bbox.map(v=>Math.round(v)).join(","), name: MAP_ZONE.label})});
+      if (!r.ok) throw new Error((await r.json()).detail || r.status);
+      const lid = (LOCALITIES.find(l=>l.slug===slug)||{}).id;              // optimistic state so the UI reacts at once
+      if (lid != null) MAP_IMPORTS[lid] = {slug, name: MAP_ZONE.label, state:"running", pct:0, step:"queued"};
+      mapImportsSubscribe();                                               // poll until this import is done
+      markMapButton(); renderImportChip();
+      modal.classList.remove("open");                                     // non-blocking: close now, watch progress in the chip/list
+      toast("ok", t("imp_started", {name: MAP_ZONE.label}));
+      if (VIEW === "localites") renderLocalities();
+    } catch(e){ msg.style.color = "var(--warn)"; msg.textContent = t("mi_fail") + " " + e.message; go.disabled = false; }
+  };
+  setTimeout(()=>q.focus(), 50);
+}
+
 function locDelete(slug, name) {
   // Use the existing login modal as a confirmation dialog
   const modal = document.getElementById("login");
@@ -1785,8 +2239,29 @@ async function switchToLocality(slug) {
   LOC = LOCALITIES.find(l => l.slug === slug) || LOC;
   if (!LOC) return;
   try { localStorage.setItem("edm-locality", LOC.slug); } catch(e) {}
+  if (!MAP_LOADING) resetMap();   // drop the previous municipality's 3D map
   await loadData(); renderAll();
   location.hash = "#gestion";
+}
+// Is this municipality still present server-side? (guards against a deleted active municipality)
+async function localityExists(slug) {
+  try { const l = await fetch("api/localities",{cache:"no-store"}).then(r=>r.ok?r.json():[]); return l.some(x=>x.slug===slug); }
+  catch(e) { return true; }   // on a network hiccup, don't block the user
+}
+// Re-sync the municipality list and fall back to a valid active municipality.
+async function recoverLocality() {
+  try {
+    const list = await fetch("api/localities",{cache:"no-store"}).then(r=>r.ok?r.json():[]);
+    LOCALITIES = list;
+    if (!LOC || !list.some(l=>l.slug===LOC.slug)) {
+      LOC = list[0] || null;
+      if (LOC) { try { localStorage.setItem("edm-locality", LOC.slug); } catch(e){} }
+      else { try { localStorage.removeItem("edm-locality"); } catch(e){} }
+      if (!MAP_LOADING) resetMap();
+      await loadData();
+      renderAll();
+    }
+  } catch(e) {}
 }
 
 /* ---------------------------------------------------------------- data manager (staging + production) */
@@ -1855,16 +2330,29 @@ function renderData(){
       if (!inp.files?.length) return;
       const preview = document.getElementById("dm-preview");
       const slug = LOC.slug;
+      // Guard against a stale active municipality (e.g. it was deleted in another tab/session)
+      if (!(await localityExists(slug))) {
+        inp.value = "";
+        preview.innerHTML = `<p class="sub" style="color:var(--warn)">${esc(LANG==="fr"
+          ? "La municipalité active n'existe plus. Sélectionnez-en une autre."
+          : "The active municipality no longer exists. Pick another one.")}</p>`;
+        await recoverLocality();
+        return;
+      }
       preview.innerHTML = `<p class="sub">⏳ ${esc(inp.files[0].name)} → ${esc(LOC.name)}…</p>`;
       const fd = new FormData(); fd.append("file", inp.files[0]);
       try {
         const r = await fetch(`api/localities/${slug}/staging`, {method:"POST", body:fd});
-        if (!r.ok) throw new Error(await r.text());
+        if (!r.ok) {
+          const detail = (await r.json().catch(()=>({}))).detail || r.status;
+          if (r.status === 404) { await recoverLocality(); }
+          throw new Error(detail);
+        }
         const res = await r.json();
         preview.innerHTML = "";
         inp.value = "";
         await dmLoadStagings(res.staging_id);
-      } catch(e) { preview.innerHTML = `<p style="color:var(--warn)">${esc(String(e))}</p>`; }
+      } catch(e) { preview.innerHTML = `<p style="color:var(--warn)">${esc(String(e.message||e))}</p>`; }
     };
   }
 
@@ -1940,7 +2428,7 @@ async function dmOpenStaging(stagingId){
   const filesBtns = DM_STAGING.files.map(f => {
     const issues = Object.keys(qi[f.table_name]||{}).length;
     const icon = issues ? `<span class="pill p-warn">${issues}</span> ` : `<span class="pill p-ren">✓</span> `;
-    return `<button class="chip ${DM_TABLE===f.table_name?"on":""}" style="margin:2px" onclick="dmOpenStagingTable(${stagingId},'${esc(f.table_name)}')">${icon}${esc(f.table_name)} (${nf(f.row_count)})</button>`;
+    return `<button class="chip ${DM_TABLE===f.table_name?"on":""}" style="margin:2px" onclick="dmOpenStagingTable(${stagingId},${jsq(f.table_name)})">${icon}${esc(f.table_name)} (${nf(f.row_count)})</button>`;
   }).join("");
 
   document.getElementById("dm-viewer-title").innerHTML = `${LANG==="fr"?"Sas":"Staging"} #${stagingId} <span class="sub" style="font-weight:normal;font-size:.85rem">${esc(DM_STAGING.source)}</span>`;
@@ -2009,8 +2497,8 @@ async function dmOpenStagingTable(stagingId, tableName, page=1, anomaliesOnly=DM
       const issuePills = issues.map(iss=>`<span class="pill ${iss.kind==="rejected"?"p-fossil":"p-warn"}" style="font-size:.7rem">${esc(iss.code)}</span>`).join(" ");
       const cells = cols.map(c=>`<td style="white-space:nowrap;max-width:160px;overflow:hidden;text-overflow:ellipsis" title="${esc(String(row[c]??''))}">${esc(String(row[c]??''))}</td>`).join("");
       const actions = `<td style="white-space:nowrap">${issuePills}
-        <button class="chip" style="font-size:.7rem;margin-left:4px" onclick="dmEditStagingRow(${stagingId},'${esc(tableName)}',${rowIdx})">✏️</button>
-        <button class="chip" style="font-size:.7rem;color:var(--warn)" onclick="dmDeleteStagingRow(${stagingId},'${esc(tableName)}',${rowIdx})">✕</button></td>`;
+        <button class="chip" style="font-size:.7rem;margin-left:4px" onclick="dmEditStagingRow(${stagingId},${jsq(tableName)},${rowIdx})">✏️</button>
+        <button class="chip" style="font-size:.7rem;color:var(--warn)" onclick="dmDeleteStagingRow(${stagingId},${jsq(tableName)},${rowIdx})">✕</button></td>`;
       return `<tr style="${style}">${cells}${actions}</tr>`;
     }).join("");
     document.getElementById("dm-viewer-table").innerHTML = `<table><thead>${thead}</thead><tbody>${tbody}</tbody></table>`;
@@ -2018,13 +2506,13 @@ async function dmOpenStagingTable(stagingId, tableName, page=1, anomaliesOnly=DM
 
   const totalPages = Math.ceil(data.total / DM_PER);
   const pagerRow = document.getElementById("dm-pager");
-  const anomBtn = `<button class="chip ${anomaliesOnly?"on":""}" onclick="dmOpenStagingTable(${stagingId},'${esc(tableName)}',1,${!anomaliesOnly})" style="${issueCount&&!anomaliesOnly?"color:var(--warn)":""}">
+  const anomBtn = `<button class="chip ${anomaliesOnly?"on":""}" onclick="dmOpenStagingTable(${stagingId},${jsq(tableName)},1,${!anomaliesOnly})" style="${issueCount&&!anomaliesOnly?"color:var(--warn)":""}">
     ⚠️ ${issueCount} ${LANG==="fr"?"anomalie(s)":"anomaly(ies)"}${anomaliesOnly?" — "+t("dm_all_rows"):""}</button>`;
   const commitDiscard = `<button class="chip" onclick="dmCommitStaging(${stagingId})" style="background:var(--accent);color:#fff">✓ Commit</button>
     <button class="chip" onclick="dmDiscardStaging(${stagingId})" style="color:var(--warn)">✗</button>`;
-  const pageNav = !anomaliesOnly ? `${page>1?`<button class="chip" onclick="dmOpenStagingTable(${stagingId},'${esc(tableName)}',${page-1},false)">${esc(t("dm_prev"))}</button>`:""}
+  const pageNav = !anomaliesOnly ? `${page>1?`<button class="chip" onclick="dmOpenStagingTable(${stagingId},${jsq(tableName)},${page-1},false)">${esc(t("dm_prev"))}</button>`:""}
     <span class="sub" style="line-height:2">${page}/${totalPages}</span>
-    ${page<totalPages?`<button class="chip" onclick="dmOpenStagingTable(${stagingId},'${esc(tableName)}',${page+1},false)">${esc(t("dm_next"))}</button>`:""}` : "";
+    ${page<totalPages?`<button class="chip" onclick="dmOpenStagingTable(${stagingId},${jsq(tableName)},${page+1},false)">${esc(t("dm_next"))}</button>`:""}` : "";
   pagerRow.innerHTML = `${anomBtn}${commitDiscard}<div class="spacer"></div>${pageNav}`;
 }
 
@@ -2127,7 +2615,7 @@ function dmLoadTables(){
       ${tables.map(tbl => `<tr>
         <td><b>${esc(tbl.name)}</b></td>
         <td class="num">${nf(tbl.rows)}</td>
-        <td><button class="chip" onclick="dmOpenProductionTable('${esc(tbl.name)}')">${esc(t("dm_view_btn"))}</button></td>
+        <td><button class="chip" onclick="dmOpenProductionTable(${jsq(tbl.name)})">${esc(t("dm_view_btn"))}</button></td>
       </tr>`).join("")}
       </tbody></table></div>`;
     }).catch(() => {});
@@ -2159,16 +2647,16 @@ async function dmOpenProductionTable(tableName, page=1){
     else if (row.id_batiment) key = row.id_batiment;
     else if (row.id_installation) key = row.id_installation;
     else if (row.id_compteur) key = row.id_compteur;
-    const del = isCore&&key ? `<td><button class="chip" style="font-size:.75rem;color:var(--warn)" onclick="dmDeleteProductionRow('${esc(tableName)}','${esc(key)}')">${esc(t("dm_del_row"))}</button></td>` : (isCore?"<td></td>":"");
+    const del = isCore&&key ? `<td><button class="chip" style="font-size:.75rem;color:var(--warn)" onclick="dmDeleteProductionRow(${jsq(tableName)},${jsq(key)})">${esc(t("dm_del_row"))}</button></td>` : (isCore?"<td></td>":"");
     return `<tr>${cells}${del}</tr>`;
   }).join("");
   document.getElementById("dm-viewer-table").innerHTML = `<table><thead>${thead}</thead><tbody>${tbody}</tbody></table>`;
 
   const totalPages = Math.ceil(data.total / DM_PER);
   const pager = document.getElementById("dm-pager");
-  pager.innerHTML = `${page>1?`<button class="chip" onclick="dmOpenProductionTable('${esc(tableName)}',${page-1})">${esc(t("dm_prev"))}</button>`:""}
+  pager.innerHTML = `${page>1?`<button class="chip" onclick="dmOpenProductionTable(${jsq(tableName)},${page-1})">${esc(t("dm_prev"))}</button>`:""}
     <span class="sub" style="line-height:2">${page}/${totalPages}</span>
-    ${page<totalPages?`<button class="chip" onclick="dmOpenProductionTable('${esc(tableName)}',${page+1})">${esc(t("dm_next"))}</button>`:""}`;
+    ${page<totalPages?`<button class="chip" onclick="dmOpenProductionTable(${jsq(tableName)},${page+1})">${esc(t("dm_next"))}</button>`:""}`;
 
   const replaceInp = document.getElementById("dm-replace-input");
   replaceInp.onchange = async () => {
@@ -2197,7 +2685,7 @@ function renderUsers(){
     ROLES.map(r=>`<tr style="cursor:default"><td><b>${esc(t("role_"+r))}</b></td><td>${esc(t("rd_"+r))}</td></tr>`).join("") + `</tbody>`;
   fetch("api/users", {cache:"no-store"}).then(r => r.ok ? r.json() : Promise.reject(r)).then(list => {
     tb.innerHTML = `<thead><tr><th>${esc(t("u_h_user"))}</th><th>${esc(t("u_h_role"))}</th></tr></thead><tbody>` + list.map(u => {
-      const fixed = u.username === USER.username || u.username.startsWith("demo-") || (USER.demo && !u.demo);
+      const fixed = USER.demo || u.username === USER.username || u.username.startsWith("demo-");   // demo accounts: view-only
       const cell = fixed ? esc(t("role_"+u.role)) : `<select class="urole" data-u="${esc(u.username)}" aria-label="${esc(t("u_h_role"))}">${ROLES.map(r=>`<option value="${r}"${r===u.role?" selected":""}>${esc(t("role_"+r))}</option>`).join("")}</select>`;
       return `<tr style="cursor:default"><td><div class="tname">${esc(u.username)}</div>${u.demo?`<div class="tsub">${esc(t("u_demo"))}</div>`:""}</td><td>${cell}</td></tr>`;
     }).join("") + `</tbody>`;
@@ -2315,7 +2803,7 @@ function tourMaybe(){   // first visit only; not in automated checks, not on a d
   setTimeout(tourOffer, 1500);
 }
 
-const V = "52";
+const V = "67";
 (async () => {
   try {
     const c = await fetch("api/config.json?v="+V, {cache:"no-store"}).then(r => r.json());
@@ -2338,6 +2826,7 @@ const V = "52";
     }
   } catch (e) {}
   await loadData(); route(); tourMaybe();
+  mapImportsSubscribe();   // this user's 3D-map imports still running (already-logged-in session)
 })();
 </script>
 </body>

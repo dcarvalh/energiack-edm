@@ -16,6 +16,8 @@ from psycopg.types.json import Jsonb
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
 import import_rive_claire as rc  # noqa: E402  (build(), check(), read_guide(): shared with the static build)
+import fetch_swiss_map as geomap  # noqa: E402  (fetch(), geocode(): the national Swiss geo platform)
+import fetch_france_map as geomap_fr  # noqa: E402  (fetch(): the IGN Géoplateforme, for French zones)
 
 # dataset table -> (database table, key, columns in the source order)
 REF = {
@@ -42,6 +44,34 @@ def connect():
 def init(conn):
     conn.execute((Path(__file__).parent / "schema.sql").read_text(encoding="utf-8"))
     conn.commit()
+
+
+class Conflict(Exception):
+    """The change would clash with existing data (the API answers 409)."""
+
+
+# --- admin settings (map import preferences) ---
+
+SETTINGS_DEFAULTS = {"osm_footprints": True, "country_ch": True, "country_fr": False}
+
+
+def get_settings(conn):
+    """All admin settings, with defaults filled in."""
+    out = dict(SETTINGS_DEFAULTS)
+    for r in conn.execute("SELECT key, value FROM setting").fetchall():
+        out[r["key"]] = r["value"]
+    return out
+
+
+def set_settings(conn, updates):
+    """Upsert the given settings (only known keys)."""
+    with conn.cursor() as cur:
+        for k, v in updates.items():
+            if k in SETTINGS_DEFAULTS:
+                cur.execute("INSERT INTO setting (key, value) VALUES (%s, %s) "
+                            "ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value", (k, Jsonb(v)))
+    conn.commit()
+    return get_settings(conn)
 
 
 # --- locality helpers ---
@@ -324,3 +354,288 @@ def reimport_bundled(conn, locality_id):
     """Re-run the bundled Rive-Claire import from the guide file. Returns the import_run row dict."""
     T = rc.read_guide()
     return load(conn, T, "rive-claire (bundled guide, re-imported via API)", locality_id)
+
+
+# ── imported 3D map (Swiss geo platform / France IGN) ─────────────────────────
+
+def map_import(conn, locality_id, bbox, step=16, px=1.0, tiles=1, name=None, progress=None, osm=True, country="CH"):
+    """Fetch a zone from the national platform for `country` (CH: geo.admin.ch, FR: IGN), store it (replacing any
+    existing map), auto-match, return a summary. progress(pct, step) runs through the fetch and the save."""
+    src = geomap_fr if (country or "CH").upper() == "FR" else geomap
+    result = src.fetch(bbox, step=step, px=px, tiles=tiles, name=name, progress=progress, osm=osm)
+    if progress:
+        progress(97, "save")
+    with conn.transaction(), conn.cursor() as cur:
+        cur.execute("DELETE FROM map_import WHERE locality_id = %s", (locality_id,))
+        mid = cur.execute(
+            "INSERT INTO map_import (locality_id, bbox, meta, terrain, n_buildings) "
+            "VALUES (%s, %s, %s, %s, %s) RETURNING id",
+            (locality_id, ",".join(f"{v:.0f}" for v in bbox), Jsonb(result["meta"]),
+             result["terrain"], len(result["buildings"]))).fetchone()["id"]
+        cur.executemany(
+            "INSERT INTO map_building (map_import_id, egid, rings, h, z, attrs) VALUES (%s,%s,%s,%s,%s,%s)",
+            [(mid, b["egid"], Jsonb(b["rings"]), b["h"], b["z"],
+              Jsonb({"use": b["use"], "year": b["year"], "levels": b["levels"], "addr": b["addr"]}))
+             for b in result["buildings"]])
+        cur.executemany(
+            "INSERT INTO map_tile (map_import_id, i, j, jpg) VALUES (%s,%s,%s,%s)",
+            [(mid, i, j, jpg) for i, j, jpg in result["tiles"]])
+    if progress:
+        progress(99, "match")
+    matched = map_automatch(conn, locality_id)
+    n = len(result["buildings"])
+    return {"n": n, "matched": matched, "unmatched": n - matched, "bbox": bbox}
+
+
+def _ring_centroid_area(ring):
+    """Centroid (x, y) and |area| of a map-local ring (last point == first)."""
+    a = cx = cy = 0.0
+    for i in range(len(ring) - 1):
+        x0, y0 = ring[i]
+        x1, y1 = ring[i + 1]
+        cr = x0 * y1 - x1 * y0
+        a += cr; cx += (x0 + x1) * cr; cy += (y0 + y1) * cr
+    if a == 0:
+        xs = [p[0] for p in ring]; ys = [p[1] for p in ring]
+        return sum(xs) / len(xs), sum(ys) / len(ys), 0.0
+    a *= 0.5
+    return cx / (6 * a), cy / (6 * a), abs(a)
+
+
+def map_footprint_stats(conn, locality_id):
+    """Footprint coverage of a CH imported map: found (real OSM shape) / none (cell searched, no OSM building) /
+    pending (square, not yet searched), with the total. None for non-CH maps (France already has real footprints)."""
+    mi = conn.execute("SELECT id, meta FROM map_import WHERE locality_id = %s", (locality_id,)).fetchone()
+    if not mi or (mi["meta"].get("crs") != "EPSG:2056"):
+        return None
+    r = conn.execute(
+        "SELECT count(*) AS total, "
+        "count(*) FILTER (WHERE fp = 'found') AS found, "
+        "count(*) FILTER (WHERE fp = 'none') AS none, "
+        "count(*) FILTER (WHERE fp IS NULL OR fp = 'pending') AS pending "
+        "FROM map_building WHERE map_import_id = %s", (mi["id"],)).fetchone()
+    return {"total": r["total"], "found": r["found"], "none": r["none"], "pending": r["pending"]}
+
+
+def map_enhance_footprints(conn, locality_id, progress=None):
+    """Fetch real OSM footprints and replace each still-square block with its true shape, BIGGEST first. RESUMABLE:
+    only blocks still 'pending' (no footprint yet) are tried, so it can be re-run to continue after a partial OSM
+    outage. Each block ends 'found' (got a footprint), 'none' (its 1 km cell was searched but had no OSM building) or
+    stays 'pending' (cell unreachable this run, retried later). Swiss zones only. progress(pct, found, total). Returns found."""
+    mi = conn.execute("SELECT id, meta, bbox FROM map_import WHERE locality_id = %s", (locality_id,)).fetchone()
+    if not mi or (mi["meta"].get("crs") != "EPSG:2056"):
+        return 0
+    xmin, ymin = mi["meta"]["origin"]
+    bbox = tuple(float(v) for v in mi["bbox"].split(","))
+    rows = conn.execute(
+        "SELECT id, rings FROM map_building WHERE map_import_id = %s AND (fp IS NULL OR fp = 'pending')",
+        (mi["id"],)).fetchall()
+    items = []                                                # (area, id, E, N) in LV95, biggest first
+    for r in rows:
+        cx, cy, area = _ring_centroid_area(r["rings"][0])
+        items.append((area, r["id"], xmin + cx, ymin + cy))
+    items.sort(reverse=True)
+    total = len(items)
+    if not total:
+        if progress:
+            progress(100, 0, 0)
+        return 0
+
+    # Phase A — fetch the OSM footprints (the slow network part): report it as 0..55 %.
+    def fetch_progress(pct, step):
+        if progress:
+            progress(int(pct * 0.55), 0, total)
+    find, nf, fetched = geomap._osm_footprints(bbox, fetch_progress, 0, 100)
+    if not fetched:                                           # OSM entirely unreachable this run: nothing searched, keep pending
+        if progress:
+            progress(100, 0, total)
+        return 0
+
+    # Phase B — resolve each pending block, biggest first. Report 55..100 % + the running found count.
+    found, found_batch, none_batch = 0, [], []
+
+    def flush():
+        with conn.cursor() as cur:
+            if found_batch:
+                cur.executemany("UPDATE map_building SET rings = %s, fp = 'found' WHERE id = %s", found_batch)
+            if none_batch:
+                cur.executemany("UPDATE map_building SET fp = 'none' WHERE id = %s", [(i,) for i in none_batch])
+        conn.commit()
+        found_batch.clear(); none_batch.clear()
+
+    for k, (area, bid, e, n) in enumerate(items):
+        ring = find(e, n)
+        if ring:
+            ml = [[round(px - xmin, 1), round(py - ymin, 1)] for px, py in ring]
+            if ml[0] != ml[-1]:
+                ml.append(ml[0])
+            found_batch.append((Jsonb([ml]), bid))
+            found += 1
+        elif geomap.osm_cell(e, n) in fetched:               # cell was searched but no OSM building covers this point
+            none_batch.append(bid)
+        # else: cell not reached this run -> stays pending, retried next time
+        if len(found_batch) + len(none_batch) >= 100 or k == total - 1:
+            flush()
+            if progress:
+                progress(55 + int(45 * (k + 1) / total), found, total)
+    return found
+
+
+def map_automatch(conn, locality_id):
+    """Link map buildings to our sites by the federal EGID (stable across re-imports). Two durable sources:
+       1) a building row in our data carrying the same EGID -> that building's site
+       2) a saved manual match (map_match)                  -> its site  (wins over 1)
+    Returns the number of buildings matched."""
+    # 1) buildings in our dataset that already carry an EGID
+    conn.execute(
+        "UPDATE map_building mb SET id_site = b.id_site, match_kind = 'egid' "
+        "FROM map_import mi, building b "
+        "WHERE mb.map_import_id = mi.id AND mi.locality_id = %s "
+        "  AND b.locality_id = %s AND b.egid IS NOT NULL AND b.id_site IS NOT NULL AND mb.egid = b.egid::text",
+        (locality_id, locality_id))
+    # 2) saved manual matches override
+    conn.execute(
+        "UPDATE map_building mb SET id_site = mm.id_site, match_kind = 'manual' "
+        "FROM map_import mi, map_match mm "
+        "WHERE mb.map_import_id = mi.id AND mi.locality_id = %s "
+        "  AND mm.locality_id = %s AND mb.egid = mm.egid",
+        (locality_id, locality_id))
+    conn.commit()
+    n = conn.execute(
+        "SELECT count(*) AS n FROM map_building mb JOIN map_import mi ON mi.id = mb.map_import_id "
+        "WHERE mi.locality_id = %s AND mb.id_site IS NOT NULL", (locality_id,)).fetchone()["n"]
+    return n
+
+
+def map_get(conn, locality_id):
+    """Rebuild buildings.json (meta + buildings with id_site) for this locality, or None if no map."""
+    mi = conn.execute(
+        "SELECT id, meta, n_buildings FROM map_import WHERE locality_id = %s", (locality_id,)).fetchone()
+    if not mi:
+        return None
+    rows = conn.execute(
+        "SELECT id, egid, rings, h, z, attrs, id_site, match_kind, fp FROM map_building "
+        "WHERE map_import_id = %s ORDER BY id", (mi["id"],)).fetchall()
+    buildings = []
+    for r in rows:
+        a = r["attrs"] or {}
+        buildings.append({
+            "id": r["id"], "egid": r["egid"], "rings": r["rings"],
+            "h": float(r["h"]) if r["h"] is not None else 6.0,
+            "z": float(r["z"]) if r["z"] is not None else 0.0,
+            "use": a.get("use"), "year": a.get("year"), "levels": a.get("levels"), "addr": a.get("addr"),
+            "id_site": r["id_site"], "match_kind": r["match_kind"], "fp": r["fp"],   # footprint state: found | none | null(pending)
+        })
+    return {"meta": mi["meta"], "buildings": buildings}
+
+
+def map_terrain(conn, locality_id):
+    r = conn.execute("SELECT terrain FROM map_import WHERE locality_id = %s", (locality_id,)).fetchone()
+    return bytes(r["terrain"]) if r and r["terrain"] is not None else None
+
+
+def map_tile(conn, locality_id, i, j):
+    r = conn.execute(
+        "SELECT t.jpg FROM map_tile t JOIN map_import mi ON mi.id = t.map_import_id "
+        "WHERE mi.locality_id = %s AND t.i = %s AND t.j = %s", (locality_id, i, j)).fetchone()
+    return bytes(r["jpg"]) if r else None
+
+
+def map_set_site(conn, locality_id, building_id, id_site):
+    """Manual match: assign (or clear) the site of one map building, and persist it by EGID so it
+    survives a re-import (map_match). Clearing removes the saved match."""
+    r = conn.execute(
+        "UPDATE map_building mb SET id_site = %s, match_kind = %s "
+        "FROM map_import mi WHERE mb.map_import_id = mi.id AND mi.locality_id = %s AND mb.id = %s "
+        "RETURNING mb.egid",
+        (id_site, "manual" if id_site else None, locality_id, building_id)).fetchone()
+    if r is None:
+        return False
+    egid = r["egid"]
+    if egid:
+        if id_site:
+            conn.execute(
+                "INSERT INTO map_match (locality_id, egid, id_site) VALUES (%s, %s, %s) "
+                "ON CONFLICT (locality_id, egid) DO UPDATE SET id_site = EXCLUDED.id_site, at = now()",
+                (locality_id, egid, id_site))
+        else:
+            conn.execute("DELETE FROM map_match WHERE locality_id = %s AND egid = %s", (locality_id, egid))
+    conn.commit()
+    return True
+
+
+def _free_id(taken, make, start=1):
+    """The first id make(k), k = start, start+1, …, that is not in `taken`."""
+    k = start
+    while make(k) in taken:
+        k += 1
+    return make(k)
+
+
+def map_register_building(conn, locality_id, map_building_id, mode, id_site=None, site_name=None):
+    """Register a map block as a real building in this municipality, then match it durably by EGID.
+       mode='existing' -> add the building under an existing site (id_site required)
+       mode='new'      -> create a new site (site_name) with this one building
+    Never overwrites: new ids are always free ones, and a block already linked to a site, or whose EGID is already
+    in the building list, is refused (Conflict). Returns {id_site, id_batiment, egid, site_name}."""
+    if mode == "new" and not site_name:
+        raise ValueError("site_name required for a new site")
+    if mode != "new" and not id_site:
+        raise ValueError("id_site required for an existing site")
+    with conn.transaction(), conn.cursor() as cur:
+        # lock the map block, so a double click or two people at once cannot register it twice
+        mb = cur.execute(
+            "SELECT mb.egid, mb.attrs, mb.id_site FROM map_building mb JOIN map_import mi ON mi.id = mb.map_import_id "
+            "WHERE mi.locality_id = %s AND mb.id = %s FOR UPDATE OF mb", (locality_id, map_building_id)).fetchone()
+        if not mb:
+            raise LookupError("map building not found")
+        if mb["id_site"]:
+            raise Conflict(f"this building is already linked to site {mb['id_site']}")
+        egid = mb["egid"]
+        # building.egid is a number (Swiss EGID); a French RNB id is alphanumeric: matched through map_match only
+        egid_num = int(egid) if egid and str(egid).isdigit() else None
+        if egid_num is not None:
+            dup = cur.execute("SELECT id_batiment, id_site FROM building WHERE locality_id = %s AND egid = %s LIMIT 1",
+                              (locality_id, egid_num)).fetchone()
+            if dup:
+                raise Conflict(f"EGID {egid} is already building {dup['id_batiment']} of site {dup['id_site']}")
+        a = mb["attrs"] or {}
+        addr = a.get("addr") or (f"EGID {egid}" if egid else "Bâtiment")
+        rows = cur.execute("SELECT id_batiment, id_site, nom_site, typologie, pos FROM building WHERE locality_id = %s",
+                           (locality_id,)).fetchall()
+        taken = {r["id_batiment"] for r in rows}
+        pos = max((r["pos"] for r in rows), default=-1) + 1
+        if mode == "new":
+            sid = _free_id({r["id_site"] for r in rows}, lambda k: f"MAP{k:03d}")
+            typologie = "Autre"
+        else:
+            site = next((r for r in rows if r["id_site"] == id_site), None)
+            if not site:
+                raise LookupError("site not found")
+            sid, typologie, site_name = id_site, site["typologie"], site["nom_site"]
+        n_site = sum(r["id_site"] == sid for r in rows)
+        id_batiment = _free_id(taken, lambda k: f"{sid}-B{k}", n_site + 1)
+        cur.execute(
+            "INSERT INTO building (locality_id, id_batiment, id_site, nom_site, quartier, typologie, nom_batiment, "
+            "annee_construction, sre_m2, niveaux, egid, pos) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+            (locality_id, id_batiment, sid, site_name, a.get("quartier"), typologie, addr, a.get("year"),
+             None, a.get("levels"), egid_num, pos))   # sre_m2 blank: the GWR area is a footprint, not an SRE
+        # durable match + colour the block now
+        if egid:
+            cur.execute(
+                "INSERT INTO map_match (locality_id, egid, id_site) VALUES (%s,%s,%s) "
+                "ON CONFLICT (locality_id, egid) DO UPDATE SET id_site = EXCLUDED.id_site, at = now()",
+                (locality_id, egid, sid))
+        cur.execute(
+            "UPDATE map_building SET id_site = %s, match_kind = 'manual' WHERE id = %s", (sid, map_building_id))
+    return {"id_site": sid, "id_batiment": id_batiment, "egid": egid, "site_name": site_name}
+
+
+def map_delete(conn, locality_id):
+    conn.execute("DELETE FROM map_import WHERE locality_id = %s", (locality_id,))
+    conn.commit()
+
+
+def geocode(text, country="CH"):
+    """Place name -> candidate zones, searched on the right national platform (CH: geo.admin.ch, FR: BAN)."""
+    return geomap.geocode_fr(text) if (country or "CH").upper() == "FR" else geomap.geocode(text)

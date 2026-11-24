@@ -8,8 +8,10 @@ import { computeBoundsTree, acceleratedRaycast } from "./vendor/three-mesh-bvh.m
 THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
 
-const V = "20";
-const GREY = 0xb9bfbb, SITE_COL = 0x1f6feb;   // SITE_COL: buildings linked to a site of the municipality
+const V = "39";
+const GREY = 0xb9bfbb, SITE_COL = 0x1f6feb;   // SITE_COL: buildings linked to a site of the municipality (legend swatch)
+const SEL_COL = 0xff2bbf;   // selected/clicked building: a vivid magenta outline rim
+const SITEHI = 0x2a9df4;    // the other blocks of the selected building's site: a thinner blue outline rim
 const RAMP = {
   idc:   [0x2e9e6e, 0x9cc95a, 0xf0b33c, 0xe0663a, 0xb8322a],
   solar: [0xfdf1c7, 0xf8d66d, 0xf1b52c, 0xd98b0b],
@@ -82,17 +84,18 @@ function layers(t, nf) {
 function layersRC(t, nf) {
   const yr = t("m_yr"), heatKeys = ["fossil", "district", "heatpump", "wood", "electric"], mwh = v => `${nf(v / 1000)} MWh/${yr}`;
   return {
-    // approximate heat index, same unit and classes as the Geneva IDC layer so the two maps read the same way
-    idc: { cls: b => b.rc.mj_m2 == null ? -1 : bucket(b.rc.mj_m2, [350, 450, 600, 800]), ramp: RAMP.idc,
-           labels: ["< 350", "350–450", "450–600", "600–800", "≥ 800"], unit: "MJ/m²·" + yr, val: b => b.rc.mj_m2 == null ? null : `${nf(b.rc.mj_m2)} MJ/m²` },
-    heat: { cls: b => b.rc.heat ? heatKeys.indexOf(b.rc.heat) : -1, ramp: heatKeys.map(k => HEAT[k]),
-            labels: heatKeys.map(k => t("m_heat_" + k)), val: b => b.rc.heat ? t("m_heat_" + b.rc.heat) : null },
-    solar: { cls: b => b.rc.pv_kwh ? bucket(b.rc.pv_kwh, [50000, 100000, 150000]) : -1, ramp: RAMP.solar,
-             labels: ["< 50", "50–100", "100–150", "≥ 150"], unit: "MWh/" + yr, val: b => b.rc.pv_kwh ? mwh(b.rc.pv_kwh) : null },
-    elec: { cls: b => b.rc.elec_kwh ? bucket(b.rc.elec_kwh, [25000, 75000, 150000]) : -1, ramp: RAMP.elec,
-            labels: ["< 25", "25–75", "75–150", "≥ 150"], unit: "MWh/" + yr, val: b => b.rc.elec_kwh ? mwh(b.rc.elec_kwh) : null },
-    water: { cls: b => b.rc.water_m3 ? bucket(b.rc.water_m3, [500, 1500, 4000]) : -1, ramp: RAMP.water,
-             labels: ["< 500", "500–1 500", "1 500–4 000", "≥ 4 000"], unit: "m³/" + yr, val: b => b.rc.water_m3 ? `${nf(b.rc.water_m3)} m³/${yr}` : null },
+    // approximate heat index, same unit and classes as the Geneva IDC layer so the two maps read the same way.
+    // b.rc may be null (imported map: building not matched to a site) -> class -1 (no data).
+    idc: { cls: b => b.rc?.mj_m2 == null ? -1 : bucket(b.rc.mj_m2, [350, 450, 600, 800]), ramp: RAMP.idc,
+           labels: ["< 350", "350–450", "450–600", "600–800", "≥ 800"], unit: "MJ/m²·" + yr, val: b => b.rc?.mj_m2 == null ? null : `${nf(b.rc.mj_m2)} MJ/m²` },
+    heat: { cls: b => b.rc?.heat ? heatKeys.indexOf(b.rc.heat) : -1, ramp: heatKeys.map(k => HEAT[k]),
+            labels: heatKeys.map(k => t("m_heat_" + k)), val: b => b.rc?.heat ? t("m_heat_" + b.rc.heat) : null },
+    solar: { cls: b => b.rc?.pv_kwh ? bucket(b.rc.pv_kwh, [50000, 100000, 150000]) : -1, ramp: RAMP.solar,
+             labels: ["< 50", "50–100", "100–150", "≥ 150"], unit: "MWh/" + yr, val: b => b.rc?.pv_kwh ? mwh(b.rc.pv_kwh) : null },
+    elec: { cls: b => b.rc?.elec_kwh ? bucket(b.rc.elec_kwh, [25000, 75000, 150000]) : -1, ramp: RAMP.elec,
+            labels: ["< 25", "25–75", "75–150", "≥ 150"], unit: "MWh/" + yr, val: b => b.rc?.elec_kwh ? mwh(b.rc.elec_kwh) : null },
+    water: { cls: b => b.rc?.water_m3 ? bucket(b.rc.water_m3, [500, 1500, 4000]) : -1, ramp: RAMP.water,
+             labels: ["< 500", "500–1 500", "1 500–4 000", "≥ 4 000"], unit: "m³/" + yr, val: b => b.rc?.water_m3 ? `${nf(b.rc.water_m3)} m³/${yr}` : null },
   };
 }
 const LAYER_KEYS = ["idc", "heat", "solar", "elec", "water"];
@@ -108,7 +111,7 @@ export async function publicBuildings(dir, egids, lang) {
 }
 
 export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
-  const { t, nf, esc } = api, RC = cfg.key === "rc", DIR = cfg.dir;
+  const { t, nf, esc } = api, RC = cfg.key === "rc", IMP = cfg.key === "imported", RCLIKE = RC || IMP, DIR = cfg.dir;
   const tr = s => (api.lang() === "en" && EN[s]) || s;
   root.innerHTML = `
     <div class="m3-stage"><div class="m3-loading"><div class="m3-spin"></div><span>${esc(t("m_loading"))}</span></div></div>
@@ -118,6 +121,7 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
         <div class="m3-title"></div><div class="m3-sub"></div>
         <div class="m3-search"><input type="search" autocomplete="off"><div class="m3-results hide"></div></div>
         <div class="chips m3-layers"></div>
+        <div class="seg m3-mfilter hide"></div>
         <div class="m3-legend"></div>
       </div>
     </div>
@@ -130,25 +134,34 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
   const data = await fetch(DIR + "buildings.json?v=" + V).then(r => r.json());
   loading("m_loading_scene");
   const M = data.meta, B = data.buildings, [W, H] = M.size, { nx, ny, scale, step } = M.terrain, NT = M.tiles || 1;
-  if (RC && api.heatIndex) for (const b of B) {            // heat index from the app's own figures (one calculation for table, site page and map)
+  // heat index from the app's own figures (table, site page and map share one calculation)
+  const enrichHeat = b => {
+    if (!b.rc || !api.heatIndex) return;
     const x = api.heatIndex(b.site, b.rc.year);
     b.rc.mj_m2 = x && x.hi != null ? Math.round(x.hi) : null; b.rc.hi_est = !!(x && x.hiEst);
+  };
+  // Imported map: attach each matched building to its site's figures (same shape as the RC map's b.rc).
+  if (IMP && api.siteData) for (const b of B) {
+    b.site = b.id_site || null;
+    b.rc = b.id_site ? (api.siteData(b.id_site) || null) : null;
   }
-  const SITES = (!RC && api.sites) || {};                   // EGID -> the municipality's site that owns the building (plan item 16)
+  if (RCLIKE) for (const b of B) enrichHeat(b);
+  const SITES = (!RC && !IMP && api.sites) || {};           // EGID -> the municipality's site that owns the building (plan item 16; built-in maps)
   let NLINK = 0;
-  if (!RC) for (const b of B) { const s = SITES[b.egid]; if (s) { b.site = s.id; b.siteName = s.name; b.sheet = s.b; b.nb = s.nb; NLINK++; } }
+  if (!RC && !IMP) for (const b of B) { const s = SITES[b.egid]; if (s) { b.site = s.id; b.siteName = s.name; b.sheet = s.b; b.nb = s.nb; NLINK++; } }
   const [terr, imgs] = await Promise.all([
     fetch(DIR + "terrain.bin?v=" + V).then(r => r.arrayBuffer()).then(b => new Int16Array(b)),
-    Promise.all(Array.from({ length: NT * NT }, (_, k) => new Promise((res, rej) => {
+    Promise.all(Array.from({ length: NT * NT }, (_, k) => new Promise((res) => {
       const i = k % NT, j = Math.floor(k / NT), im = new Image();
-      im.onload = () => res({ i, j, im }); im.onerror = rej; im.src = `${DIR}aerial_${i}_${j}.jpg?v=${V}`;
+      // a single missing/corrupt tile must not blow up the whole map (big zones have many tiles): fall back to a blank
+      im.onload = () => res({ i, j, im }); im.onerror = () => res({ i, j, im: null }); im.src = `${DIR}aerial_${i}_${j}.jpg?v=${V}`;
     }))),
   ]);
   await new Promise(r => setTimeout(r, 30));   // let the "building the scene" text paint
   const T0 = performance.now();
 
   // ---------------------------------------------------------------- scene
-  const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+  const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance", stencil: true });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(40, 1, 10, 40000);
@@ -175,8 +188,10 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
     const p = g.attributes.position;
     for (let r = 0; r <= segY; r++) for (let c = 0; c <= segX; c++) p.setY(r * (segX + 1) + c, hAt(j * segY + r, i * segX + c));
     g.computeVertexNormals();
-    const tex = new THREE.Texture(im); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = renderer.capabilities.getMaxAnisotropy(); tex.needsUpdate = true;
-    const m = new THREE.MeshLambertMaterial({ map: tex }); groundMat.push(m);
+    let m;
+    if (im) { const tex = new THREE.Texture(im); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = renderer.capabilities.getMaxAnisotropy(); tex.needsUpdate = true; m = new THREE.MeshLambertMaterial({ map: tex }); }
+    else m = new THREE.MeshLambertMaterial({ color: 0xcfd6cf });   // tile image unavailable: neutral ground, not a broken texture
+    groundMat.push(m);
     scene.add(new THREE.Mesh(g, m));
   }
   // plinth: a clean base under the map edge, like a physical model
@@ -226,10 +241,61 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
   const colors = new Float32Array(P.length);
   bg.setAttribute("color", new THREE.BufferAttribute(colors, 3));
   bg.computeVertexNormals();
-  bg.computeBoundsTree();
+  // indirect BVH: do NOT reorder the geometry triangles, so hit.faceIndex stays in our original order
+  // and tri2b[faceIndex] maps to the correct building (a reordered index silently picks the wrong block).
+  bg.computeBoundsTree({ indirect: true });
   const bMat = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });
   const bMesh = new THREE.Mesh(bg, bMat);
   scene.add(bMesh);
+  // Selection outline: a coloured rim around the block WITHOUT recolouring it (keeps its data/metric colour).
+  // It is drawn ON TOP of everything (depth test off) so no other block or the ground can hide it. To stay a rim
+  // and not a filled blob, the block's own pixels are first written to the stencil buffer, then the inflated hull
+  // is drawn everywhere EXCEPT those pixels. Selected block -> thick magenta; its site-mates -> a thinner blue rim.
+  function hullGeo(biList, thickness) {
+    // enforce outward (front) winding per triangle so side:BackSide renders only the far faces = a clean silhouette rim
+    // (the building mesh mixes winding — roofs vs walls — which would otherwise fill the whole shell).
+    const out = [], Pp = bg.attributes.position.array, nrm = new THREE.Vector3(), e1 = new THREE.Vector3(), e2 = new THREE.Vector3();
+    for (const bi of biList) {
+      const [s, e] = ranges[bi], c = centers[bi];
+      let rad = 0; for (let k = s; k < e; k++) rad += Math.hypot(Pp[3*k]-c.x, Pp[3*k+1]-c.y, Pp[3*k+2]-c.z);
+      rad = rad / Math.max(1, e - s) || 1;
+      const f = 1 + thickness / rad;                       // scale from the block centroid -> ~uniform rim width
+      const sv = k => [c.x + (Pp[3*k]-c.x)*f, c.y + (Pp[3*k+1]-c.y)*f, c.z + (Pp[3*k+2]-c.z)*f];
+      for (let k = s; k + 2 < e; k += 3) {
+        const a = sv(k), b = sv(k+1), d = sv(k+2);
+        e1.set(b[0]-a[0], b[1]-a[1], b[2]-a[2]); e2.set(d[0]-a[0], d[1]-a[1], d[2]-a[2]); nrm.crossVectors(e1, e2);
+        const outward = nrm.x*((a[0]+b[0]+d[0])/3 - c.x) + nrm.y*((a[1]+b[1]+d[1])/3 - c.y) + nrm.z*((a[2]+b[2]+d[2])/3 - c.z);
+        if (outward >= 0) out.push(...a, ...b, ...d); else out.push(...a, ...d, ...b);
+      }
+    }
+    const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(out, 3)); return g;
+  }
+  // mask: write the block's pixels into the stencil (no colour, no depth). rim: draw the inflated hull on top of
+  // everything, but only where the stencil was NOT set -> a rim that nothing can occlude and that never fills the block.
+  const maskMat = ref => new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false, depthTest: false, side: THREE.DoubleSide,
+    stencilWrite: true, stencilRef: ref, stencilFunc: THREE.AlwaysStencilFunc, stencilZPass: THREE.ReplaceStencilOp });
+  const rimMat = (color, ref) => new THREE.MeshBasicMaterial({ color, depthWrite: false, depthTest: false, side: THREE.DoubleSide,
+    stencilWrite: true, stencilRef: ref, stencilFunc: THREE.NotEqualStencilFunc });
+  const siteMask = new THREE.Mesh(new THREE.BufferGeometry(), maskMat(2));
+  const siteRim  = new THREE.Mesh(new THREE.BufferGeometry(), rimMat(SITEHI, 2));
+  const selMask  = new THREE.Mesh(new THREE.BufferGeometry(), maskMat(1));
+  const selRim   = new THREE.Mesh(new THREE.BufferGeometry(), rimMat(SEL_COL, 1));
+  const rimObjs = [siteMask, siteRim, selMask, selRim];
+  rimObjs.forEach((m, k) => { m.visible = false; m.frustumCulled = false; m.renderOrder = 10 + k; scene.add(m); });
+  const SEL_T = 5.0, SITE_T = 2.4;                         // rim thickness (m): selected thick, site-mates thinner
+  function setGroup(mask, rim, biList, thickness) {
+    mask.geometry.dispose(); rim.geometry.dispose();
+    mask.geometry = biList.length ? hullGeo(biList, 0) : new THREE.BufferGeometry();          // the block itself -> stencil
+    rim.geometry  = biList.length ? hullGeo(biList, thickness) : new THREE.BufferGeometry();  // inflated hull -> rim
+    mask.visible = rim.visible = biList.length > 0;
+  }
+  const siteOf = b => IMP ? b.id_site : (b.site || null);   // RC: b.site · built-in GE: linked site · imported: id_site
+  function updateOutlines() {
+    setGroup(selMask, selRim, SEL >= 0 && !isHidden(SEL) ? [SEL] : [], SEL_T);
+    let mates = [];
+    if (SEL >= 0) { const sid = siteOf(B[SEL]); if (sid != null) for (let i = 0; i < B.length; i++) if (i !== SEL && siteOf(B[i]) === sid && !isHidden(i)) mates.push(i); }
+    setGroup(siteMask, siteRim, mates, SITE_T);
+  }
   // trees (Rive-Claire scenery, generated): one instanced mesh, not pickable
   let treeMesh = null;
   if (M.trees && M.trees.length) {
@@ -246,40 +312,79 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
 
   // ---------------------------------------------------------------- colouring + class filter
   const ONLY0 = NLINK ? "site" : null;   // a municipality with linked sites opens with only them lit
-  let LAYER = "idc", SEL = -1, HOV = -1, ONLY = ONLY0;   // ONLY = isolated class index, "nd" for no data, "site" for linked buildings
+  let LAYER = "idc", SEL = -1, HOV = -1, ONLY = ONLY0;   // ONLY = class index, "nd" no data, "un" unmatched (imported), "site" linked
+  let MFILTER = "all";                                   // imported map: "all" | "matched" | "unmatched"
   const col = new THREE.Color(), white = new THREE.Color(0xffffff), ghost = new THREE.Color();
-  const L = () => (RC ? layersRC : layers)(t, nf)[LAYER];
+  const WARN = 0xe0893a;                                 // imported map: a building not yet matched to a site
+  const L = () => (RCLIKE ? layersRC : layers)(t, nf)[LAYER];
+  const unmatched = bi => IMP && !B[bi].id_site;
+  const anyFilter = () => ONLY !== null || (IMP && MFILTER !== "all");
+  function isHidden(bi, lay = L()) {                     // currently filtered out of view (ghosted) -> not pickable
+    const c = lay.cls(B[bi]), un = unmatched(bi);
+    const mfHidden = IMP && (MFILTER === "matched" ? un : MFILTER === "unmatched" ? !un : false);
+    return mfHidden || (ONLY !== null && (ONLY === "site" ? !B[bi].site : ONLY === "un" ? !un : ONLY === "nd" ? (un || c !== -1) : c !== ONLY));
+  }
   function paint(bi, lay = L()) {
     const c = lay.cls(B[bi]);
-    const hidden = ONLY !== null && (ONLY === "site" ? !B[bi].site : ONLY === "nd" ? c !== -1 : c !== ONLY);
-    if (hidden) col.copy(ghost); else col.setHex(c < 0 ? GREY : lay.ramp[c]);
-    if (bi === SEL) col.lerp(white, 0.6); else if (bi === HOV) col.lerp(white, 0.35);
+    const un = unmatched(bi);
+    const hidden = isHidden(bi, lay);
+    if (hidden) col.copy(ghost);                           // selection/site are shown by outline rims, not by recolouring
+    else if (un) col.setHex(WARN);
+    else col.setHex(c < 0 ? GREY : lay.ramp[c]);
+    if (bi === HOV) col.lerp(white, 0.35);
     const [s, e] = ranges[bi];
     for (let k = s; k < e; k++) { colors[3 * k] = col.r; colors[3 * k + 1] = col.g; colors[3 * k + 2] = col.b; }
   }
-  function paintAll() { const lay = L(); for (let i = 0; i < B.length; i++) paint(i, lay); flush(); }
+  function paintAll() { const lay = L(); for (let i = 0; i < B.length; i++) paint(i, lay); updateOutlines(); flush(); }
   function flush() { bg.attributes.color.needsUpdate = true; request(); }
 
   // ---------------------------------------------------------------- UI
+  const CH_IMP = IMP && M.crs === "EPSG:2056";    // Swiss imported map: real building footprints come from OSM, lazily
+  function fpStats() {
+    let found = 0, none = 0, pending = 0;
+    for (const b of B) { if (b.fp === "found") found++; else if (b.fp === "none") none++; else pending++; }
+    return { found, none, pending, total: B.length };
+  }
+  function fpLegend() {                           // footprint coverage: found / searched-no-building / not-yet-searched + a resolve button
+    const s = fpStats();
+    const line = (colour, label, n) => `<span class="m3-fp-k"><i style="background:${hex(colour)}"></i>${esc(label)} <b>${nf(n)}</b></span>`;
+    return `<div class="m3-fp"><div class="m3-h">${esc(t("m_fp_title"))} · ${nf(s.found)} / ${nf(s.total)}</div>`
+      + `<div class="m3-fp-rows">${line(0x2a9d5a, t("m_fp_found"), s.found)}${line(WARN, t("m_fp_pending"), s.pending)}${line(GREY, t("m_fp_none"), s.none)}</div>`
+      + (api.resolveFootprints && s.pending > 0 ? `<button class="chip m3-fp-btn" data-fpresolve>${esc(t("m_fp_resolve", { n: nf(s.pending) }))}</button>` : "")
+      + `</div>`;
+  }
   function legendHtml() {
-    const lay = L(), counts = new Array(lay.labels.length).fill(0); let nd = 0;
-    for (const b of B) { const c = lay.cls(b); if (c < 0) nd++; else counts[c]++; }
+    const lay = L(), counts = new Array(lay.labels.length).fill(0); let nd = 0, un = 0;
+    for (let i = 0; i < B.length; i++) { if (unmatched(i)) { un++; continue; } const c = lay.cls(B[i]); if (c < 0) nd++; else counts[c]++; }
     const item = (key, colour, label, n) => `<button class="m3-key ${ONLY === key ? "on" : ""} ${ONLY !== null && ONLY !== key ? "off" : ""}" data-cls="${key}"><i style="background:${hex(colour)}"></i><span>${esc(label)}</span><em>${nf(n)}</em></button>`;
-    return `<div class="m3-unit">${esc(t((RC ? "m_lg_rc_" : "m_lg_") + LAYER))}${lay.unit ? ` · ${esc(lay.unit)}` : ""}${lay.sim ? ` <span class="pill p-warn">${esc(t("m_sim"))}</span>` : ""}</div>`
-      + `<div class="m3-keys">${lay.labels.map((l, i) => item(i, lay.ramp[i], l, counts[i])).join("")}${item("nd", GREY, t("m_nodata"), nd)}</div>`
+    return `<div class="m3-unit">${esc(t((RCLIKE ? "m_lg_rc_" : "m_lg_") + LAYER))}${lay.unit ? ` · ${esc(lay.unit)}` : ""}${lay.sim ? ` <span class="pill p-warn">${esc(t("m_sim"))}</span>` : ""}</div>`
+      + `<div class="m3-keys">${lay.labels.map((l, i) => item(i, lay.ramp[i], l, counts[i])).join("")}${item("nd", GREY, t("m_nodata"), nd)}${IMP ? item("un", WARN, t("m_unmatched"), un) : ""}</div>`
       + (NLINK ? `<div class="m3-keys">${item("site", SITE_COL, t("m_sites"), NLINK)}</div>` : "")
-      + `<div class="m3-fhint">${esc(ONLY === null ? t("m_filter_hint") : t("m_filter_clear"))}</div>`;
+      + `<div class="m3-fhint">${esc(ONLY === null ? t("m_filter_hint") : t("m_filter_clear"))}</div>`
+      + (CH_IMP ? fpLegend() : "");
   }
   function ui() {
-    root.querySelector(".m3-title").textContent = t(RC ? "m_map_title_rc" : "m_map_title");
-    root.querySelector(".m3-sub").textContent = RC ? t("m_sub_rc", { n: nf(B.length), s: nf(new Set(B.map(b => b.site)).size), y: M.year }) : t("m_sub", { n: nf(B.length) });
-    root.querySelector(".m3-search input").placeholder = t(RC ? "m_search_rc" : "m_search");
-    root.querySelector(".m3-layers").innerHTML = LAYER_KEYS.map(k => `<button class="chip ${k === LAYER ? "on" : ""}" data-ml="${k}">${esc(t(RC && k === "idc" ? "m_l_hi" : "m_l_" + k))}</button>`).join("");
+    // Title = the current municipality; for an imported map the picked zone is shown only small, in the subtitle.
+    root.querySelector(".m3-title").textContent = IMP ? (api.locName || t("m_map_title_imp")) : t(RC ? "m_map_title_rc" : "m_map_title");
+    const nMatched = IMP ? B.filter(b => b.id_site).length : 0;
+    const sub = root.querySelector(".m3-sub");
+    if (IMP) sub.innerHTML = esc(t("m_sub_imp", { n: nf(B.length), m: nf(nMatched), u: nf(B.length - nMatched) }))
+      + (M.area ? ` <span class="m3-zone">· ${esc(M.area)}</span>` : "");
+    else sub.textContent = RC ? t("m_sub_rc", { n: nf(B.length), s: nf(new Set(B.map(b => b.site)).size), y: M.year }) : t("m_sub", { n: nf(B.length) });
+    root.querySelector(".m3-search input").placeholder = t(RCLIKE ? "m_search_rc" : "m_search");
+    root.querySelector(".m3-layers").innerHTML = LAYER_KEYS.map(k => `<button class="chip ${k === LAYER ? "on" : ""}" data-ml="${k}">${esc(t(RCLIKE && k === "idc" ? "m_l_hi" : "m_l_" + k))}</button>`).join("");
+    const mf = root.querySelector(".m3-mfilter");
+    if (mf) {
+      mf.classList.toggle("hide", !IMP);
+      if (IMP) mf.innerHTML = [["all", "m_mf_all"], ["matched", "m_mf_matched"], ["unmatched", "m_mf_unmatched"]]
+        .map(([k, key]) => `<button data-mf="${k}" class="${MFILTER === k ? "on" : ""}">${esc(t(key))}</button>`).join("");
+    }
     root.querySelector(".m3-legend").innerHTML = legendHtml();
     root.querySelector(".m3-hint").textContent = matchMedia("(pointer:coarse)").matches ? t("m_hint_touch") : t("m_hint");
     const tips = { pan: "m_t_pan", orbit: "m_t_orbit", in: "m_t_in", out: "m_t_out", rl: "m_t_rl", rr: "m_t_rr", top: isTop() ? "m_t_tilt" : "m_t_top", north: "m_north", full: isFull() ? "m_t_fullx" : "m_t_full", home: "m_reset" };
     for (const [k, v] of Object.entries(tips)) { const el = root.querySelector(`[data-tool="${k}"]`); el.title = t(v); el.setAttribute("aria-label", t(v)); }
-    root.querySelector(".m3-attr").textContent = RC ? t("m_attr_rc", { k: nf(M.scale || 1, 1) }) : t("m_attr");
+    const osmCredit = IMP && M.sources && /OpenStreetMap/.test(M.sources.buildings || "") ? " · © OpenStreetMap contributors (ODbL)" : "";
+    root.querySelector(".m3-attr").textContent = (IMP ? t("m_attr_imp") : RC ? t("m_attr_rc", { k: nf(M.scale || 1, 1) }) : t("m_attr")) + osmCredit;
     if (SEL >= 0) panel(SEL);
   }
   function row(label, value, sim) { return value == null || value === "" ? "" : `<div class="m3-row"><span>${esc(label)}</span><b>${value}${sim ? ` <span class="pill p-warn">${esc(t("m_sim"))}</span>` : ""}</b></div>`; }
@@ -303,8 +408,40 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
         ${row(t("m_p_pvprod"), mwh(r.pv_kwh))}${row(t("m_l_water"), r.water_m3 ? nf(r.water_m3) + " m³" : null)}</div>
       <div class="m3-src">${esc(b.site)} · ${esc(t("m_src_rc"))}</div>`;
   }
+  function panelIMP(b) {
+    const r = b.rc, yr = t("m_yr"), hc = r && r.heat ? hex(HEAT[r.heat]) : null, mwh = v => v ? nf(v / 1000) + " MWh" : null;
+    const title = b.addr || (b.egid ? "EGID " + b.egid : t("m_map_title_imp"));
+    const head = `<div class="row"><div style="min-width:0;flex:1"><div class="tsub">${esc(tr(b.use) || "EGID " + (b.egid || "–"))}</div><h2 style="margin:2px 0 0">${esc(title)}</h2></div><button class="x m3-close" aria-label="close">×</button></div>
+      <div class="m3-sec">${row(t("m_p_year"), b.year)}${row(t("m_p_levels"), b.levels)}${row(t("m_p_height"), nf(b.h, 1) + " m")}</div>`;
+    // matched: show the site's figures + a link to the site page; unmatched: a match affordance (wired in index.html via api.match)
+    const siteData = api.siteName ? api.siteName(b.id_site) : b.id_site;
+    const body = b.id_site && r
+      ? `<div class="m3-sec"><div class="m3-h">${esc(t("m_imp_matched"))}</div>
+           <span class="pill p-ren">${esc(siteData || b.id_site)}</span>
+           <div class="m3-acts" style="margin-top:8px"><a class="btn alt" href="#site/${esc(b.id_site)}">${esc(t("m_open_site"))}</a>
+             ${api.canMatch ? `<button class="btn alt m3-unmatch">${esc(t("m_imp_unmatch"))}</button>` : ""}</div></div>
+         <div class="m3-sec"><div class="m3-h">${esc(t("m_p_measured", { y: r.year }))}</div>
+           ${row(t("m_p_hi"), r.mj_m2 == null ? esc(t("m_na")) : `<span class="pill ${r.mj_m2 >= 800 ? "p-fossil" : r.mj_m2 >= 450 ? "p-warn" : "p-ren"}">${nf(r.mj_m2)} MJ/m²</span> ≈ ${nf(r.mj_m2 / 3.6)} kWh/m²`)}
+           ${row(t("m_l_heat"), r.heat ? `<span class="pill" style="background:${hc}22;color:${hc}">${esc(t("m_heat_" + r.heat))}</span>` : null)}
+           ${row(t("m_p_heatkwh"), mwh(r.heat_kwh))}${row(t("m_l_elec"), mwh(r.elec_kwh))}${row(t("m_p_pvprod"), mwh(r.pv_kwh))}${row(t("m_l_water"), r.water_m3 ? nf(r.water_m3) + " m³" : null)}</div>`
+      : `<div class="m3-sec"><span class="pill p-warn">${esc(t("m_unmatched"))}</span>
+           <div class="mut" style="font-size:12px;margin-top:6px">${esc(t("m_imp_unmatched_hint"))}</div>
+           ${api.canMatch ? `<div class="m3-acts" style="margin-top:8px"><button class="btn m3-match">${esc(t("m_imp_match_btn"))}</button>
+             <button class="btn alt m3-register">${esc(t("m_imp_register_btn"))}</button></div>` : ""}</div>`;
+    return head + body + `<div class="m3-src">EGID ${esc(b.egid || "–")} · ${esc(t("m_attr_imp"))}</div>`;
+  }
   function panel(bi) {
     const b = B[bi], el = root.querySelector(".m3-panel"), yr = t("m_yr");
+    if (IMP) {
+      el.innerHTML = panelIMP(b); el.classList.remove("hide");
+      el.querySelector(".m3-close").onclick = () => select(-1);
+      const mb = el.querySelector(".m3-match"), um = el.querySelector(".m3-unmatch"), rg = el.querySelector(".m3-register");
+      const applyMatch = s => { b.id_site = s; b.match_kind = "manual"; b.rc = s ? (api.siteData(s) || null) : null; enrichHeat(b); paintAll(); flush(); ui(); panel(bi); };
+      if (mb) mb.onclick = () => api.matchBuilding && api.matchBuilding(b, applyMatch);
+      if (rg) rg.onclick = () => api.registerBuilding && api.registerBuilding(b, applyMatch);
+      if (um) um.onclick = () => api.setMatch && api.setMatch(b.id, null, () => { b.id_site = null; b.rc = null; paintAll(); flush(); ui(); panel(bi); });
+      return;
+    }
     const site = b.site ? `<div class="m3-sec"><div class="m3-h">${esc(t("m_site_of"))}</div><b>${esc(b.siteName)}</b> <span class="mut">· ${esc(b.site)}</span>
       <div class="m3-acts">${b.sheet ? `<a class="btn" href="#fiche/${esc(b.sheet)}">${esc(t("fs_title"))}</a>` : ""}<a class="btn ${b.sheet ? "alt" : ""}" href="#site/${esc(b.site)}">${esc(t("m_open_site"))}</a></div></div>` : "";
     const r = b.site && api.siteYear ? api.siteYear(b.site) : null, mwh = v => v ? nf(v / 1000) + " MWh" : null;
@@ -331,10 +468,10 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
     el.querySelector(".m3-close").onclick = () => select(-1);
   }
   function select(bi, fly) {
-    const prev = SEL; SEL = bi;
-    if (prev >= 0) paint(prev);
-    if (bi >= 0) { paint(bi); panel(bi); if (fly) flyTo(centers[bi]); } else root.querySelector(".m3-panel").classList.add("hide");
-    flush(); placeLabels();
+    SEL = bi;
+    updateOutlines();                                     // selection + site shown as outline rims; no recolouring
+    if (bi >= 0) { panel(bi); if (fly) flyTo(centers[bi]); } else root.querySelector(".m3-panel").classList.add("hide");
+    request(); placeLabels();
   }
 
   // search by address
@@ -351,9 +488,11 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
 
   const life = new AbortController();   // root outlives this map (same element for the next municipality): drop its listener in destroy()
   root.addEventListener("click", e => {
+    const fpb = e.target.closest("[data-fpresolve]"); if (fpb) { fpb.disabled = true; fpb.textContent = t("m_fp_resolving"); api.resolveFootprints && api.resolveFootprints(); return; }
     const l = e.target.closest("[data-ml]"); if (l) { LAYER = l.dataset.ml; ONLY = ONLY0; ui(); paintAll(); return; }
+    const mf = e.target.closest("[data-mf]"); if (mf) { MFILTER = mf.dataset.mf; ui(); paintAll(); return; }
     const k = e.target.closest("[data-cls]");
-    if (k) { const v = ["nd", "site"].includes(k.dataset.cls) ? k.dataset.cls : +k.dataset.cls; ONLY = ONLY === v ? null : v; root.querySelector(".m3-legend").innerHTML = legendHtml(); paintAll(); return; }
+    if (k) { const v = ["nd", "site", "un"].includes(k.dataset.cls) ? k.dataset.cls : +k.dataset.cls; ONLY = ONLY === v ? null : v; root.querySelector(".m3-legend").innerHTML = legendHtml(); paintAll(); return; }
     const r = e.target.closest("[data-bi]"); if (r) { results.classList.add("hide"); input.value = B[+r.dataset.bi].addr; select(+r.dataset.bi, true); return; }
     const tb = e.target.closest("[data-tool]"); if (!tb) return;
     const tool = tb.dataset.tool;
@@ -430,11 +569,21 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
   function pick(ev) {
     const r = renderer.domElement.getBoundingClientRect(), t1 = performance.now();
     ndc.set(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1);
+    camera.updateMatrixWorld();                           // ensure the ray uses the camera exactly as last rendered
     ray.setFromCamera(ndc, camera);
-    const hit = ray.intersectObject(bMesh, false)[0];
+    let bi = -1;
+    if (!anyFilter()) {                                   // fast path: nearest hit (unchanged for RC/GE and unfiltered)
+      const hit = ray.intersectObject(bMesh, false)[0];
+      bi = hit ? tri2b[hit.faceIndex] : -1;
+    } else {                                              // a filter is active: skip ghosted buildings, pick the first visible one
+      ray.firstHitOnly = false;
+      const hits = ray.intersectObject(bMesh, false);
+      ray.firstHitOnly = true;
+      const lay = L();
+      for (const h of hits) { const b = tri2b[h.faceIndex]; if (b >= 0 && !isHidden(b, lay)) { bi = b; break; } }
+    }
     lastPickMs = performance.now() - t1;
-    // the BVH reorders the triangle index: map back through it to the original triangle (3 own vertices each)
-    return hit ? tri2b[Math.floor(bg.index.array[hit.faceIndex * 3] / 3)] : -1;
+    return bi;   // indirect BVH keeps faceIndex in our order, so tri2b[faceIndex] (-> bi) is already the right building
   }
   let down = null;
   renderer.domElement.tabIndex = 0;
@@ -519,7 +668,9 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
     const c = box.getCenter(new THREE.Vector3()), S = Math.max(600, (box.max.x - box.min.x), (box.max.z - box.min.z)) * 1.25;
     HOME = { pos: new THREE.Vector3(c.x - S * 0.18, S * 0.55, c.z + S * 0.8), target: new THREE.Vector3(c.x, 0, c.z) };
   }
-  camera.position.copy(HOME.pos); controls.target.copy(HOME.target); controls.update();
+  if (cfg.restoreCam) { camera.position.fromArray(cfg.restoreCam.pos); controls.target.fromArray(cfg.restoreCam.target); }
+  else { camera.position.copy(HOME.pos); controls.target.copy(HOME.target); }
+  controls.update();
   theme(); setMode("pan"); ui();
   window.__m3 = { buildMs, lastPick: () => lastPickMs, n: B.length, cam: () => { const s = sph(); return [Math.round(s.radius), +s.phi.toFixed(3), +s.theta.toFixed(3), Math.round(controls.target.x), Math.round(controls.target.z)]; } };   // read by the headless check
   function destroy() {   // before switching map: free the GL context and the page-level listeners
@@ -541,5 +692,6 @@ export async function initMap(root, api, cfg = { key: "ge", dir: "map/" }) {
     if (hits[0] !== SEL) { SEL = hits[0]; paintAll(); }
     request();
   }
-  return { relabel: () => ui(), theme, destroy, count: B.length, focusSite };
+  return { relabel: () => ui(), theme, destroy, count: B.length, focusSite,
+           cam: () => ({ pos: camera.position.toArray(), target: controls.target.toArray() }) };
 }

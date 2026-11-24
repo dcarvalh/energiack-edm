@@ -4,7 +4,8 @@
 #   2. data.json: as technique, equal to a fresh static build (tools/import_rive_claire.py); anonymous, the same without
 #      raw readings and the quality report
 #   3. importing the same dataset again adds 0 rows
-#   4. roles (issue #15): password login, demo logins, what each role is refused, role changes by an admin
+#   4. roles (issue #15): password login, demo logins (view-only: every write refused), what each role is refused,
+#      role changes by a real admin
 #   5. several municipalities: create one, upload the fictional Geneva ZIP to staging, commit, read it next to
 #      Rive-Claire (unchanged), delete it
 # Usage: tools/check_stack.sh [--keep]     (--keep leaves the stack running on http://127.0.0.1:18088/)
@@ -75,20 +76,22 @@ as technique "$URL/api/readings?meter=S01-EL" | grep -q '"mois":"2021-01"'
 as elu "$URL/api/me" | grep -q '"role":"elu"'
 as admin "$URL/api/users" | grep -q '"username":"a.martin"'
 put() { code -b "$TMP/$1" -X PUT -H 'content-type: application/json' -d "{\"role\":\"$3\"}" "$URL/api/users/$2"; }
-[ "$(put admin c.rochat technique)" = 200 ]                    # demo admin re-assigns a fictional staff account
-[ "$(put admin demo-public admin)" = 403 ]                     # one-click demo accounts keep their role
-[ "$(put admin demo-admin public)" = 403 ]                     # nobody changes their own role
-[ "$(put technique c.rochat elu)" = 403 ]                      # only admins change roles
+[ "$(put admin c.rochat technique)" = 403 ]                    # demo accounts are view-only, even the demo admin
+[ "$(put admin demo-public admin)" = 403 ]
+[ "$(put technique c.rochat elu)" = 403 ]
 [ "$(code -H 'content-type: application/json' -d '{"username":"demo-admin","password":"!"}' "$URL/api/login")" = 401 ]
 PW="check-$(od -An -N8 -tx1 /dev/urandom | tr -d ' \n')"
 echo "$PW" | dc exec -T api python -m server.cli adduser check --role admin --password-stdin >/dev/null
 [ "$(code -H 'content-type: application/json' -d '{"username":"check","password":"wrong-password"}' "$URL/api/login")" = 401 ]
 post -c "$TMP/real" -d "{\"username\":\"check\",\"password\":\"$PW\"}" "$URL/api/login" | grep -q '"role":"admin"'
+echo "$PW" | dc exec -T api python -m server.cli adduser check-tech --role technique --password-stdin >/dev/null
+post -c "$TMP/rtech" -d "{\"username\":\"check-tech\",\"password\":\"$PW\"}" "$URL/api/login" | grep -q '"role":"technique"'
 [ "$(put admin check public)" = 403 ]                          # a demo admin cannot touch real accounts
+[ "$(put real c.rochat technique)" = 200 ]                     # a real admin re-assigns a fictional staff account
 [ "$(put real c.rochat elu)" = 200 ]
-as real -X POST "$URL/api/logout" >/dev/null
-[ "$(as real "$URL/api/me")" = null ]
-[ "$(code -b "$TMP/real" "$URL/api/users")" = 401 ]
+[ "$(put real demo-public admin)" = 403 ]                      # one-click demo accounts keep their role
+[ "$(put real check public)" = 403 ]                           # nobody changes their own role
+[ "$(put rtech c.rochat technique)" = 403 ]                    # only admins change roles
 
 echo "5. several municipalities"
 L="$URL/api/localities"
@@ -99,24 +102,31 @@ curl -fsS "$L" | grep -q '"dir":"map/"' || { echo "Geneva has no map"; exit 1; }
 curl -fsS "$L" | grep -q '"slug":"geneve-demo".*"simulated":true' || { echo "Genève (démo) not listed as simulated"; exit 1; }
 as technique --compressed "$URL/api/data.json?locality=geneve-demo" -o "$TMP/gdemo.json"
 "$PY" -c 'import json, sys; a, b = (json.load(open(f, encoding="utf-8")) for f in sys.argv[1:]); assert a == b, "Genève (démo) differs from prototype/data-geneve-demo.json: " + ", ".join(k for k in b if a.get(k) != b[k])' "$TMP/gdemo.json" prototype/data-geneve-demo.json
-[ "$(code -b "$TMP/admin" -H 'content-type: application/json' -d '{"slug":"x","name":"X","map":"nope"}' "$L")" = 422 ]
+[ "$(code -b "$TMP/real" -H 'content-type: application/json' -d '{"slug":"x","name":"X","map":"nope"}' "$L")" = 422 ]
 NEW='{"slug":"test-fict","name":"Test (fictional)"}'
-[ "$(code -b "$TMP/technique" -H 'content-type: application/json' -d "$NEW" "$L")" = 403 ]         # admins only
-post -b "$TMP/admin" -d "$NEW" "$L" | grep -q '"slug":"test-fict"'
+[ "$(code -b "$TMP/rtech" -H 'content-type: application/json' -d "$NEW" "$L")" = 403 ]             # admins only
+[ "$(code -b "$TMP/admin" -H 'content-type: application/json' -d "$NEW" "$L")" = 403 ]             # demo: view-only
+post -b "$TMP/real" -d "$NEW" "$L" | grep -q '"slug":"test-fict"'
 [ "$(code "$L/test-fict/staging")" = 401 ]
 [ "$(code -b "$TMP/elu" "$L/test-fict/staging")" = 403 ]
-[ "$(code -b "$TMP/technique" -F "file=@README.md" "$L/test-fict/staging")" = 422 ]                   # not a ZIP
-as technique -F "file=@geneve/geneve-energy-data.zip" "$L/test-fict/staging" -o "$TMP/staged.json"
+[ "$(code -b "$TMP/rtech" -F "file=@README.md" "$L/test-fict/staging")" = 422 ]                       # not a ZIP
+[ "$(code -b "$TMP/technique" -F "file=@geneve/geneve-energy-data.zip" "$L/test-fict/staging")" = 403 ]  # demo: view-only
+as rtech -F "file=@geneve/geneve-energy-data.zip" "$L/test-fict/staging" -o "$TMP/staged.json"
 sid=$("$PY" -c 'import json, sys; d = json.load(open(sys.argv[1])); assert len(d["files"]) == 10 and not d["unrecognised"], d; print(d["staging_id"])' "$TMP/staged.json")
 if curl -fsS "$L" | grep -q '"slug":"test-fict"'; then echo "a municipality without data is listed to visitors"; exit 1; fi
-as technique -X POST "$L/test-fict/staging/$sid/commit" | grep -q '"added":8061'
-[ "$(code -b "$TMP/technique" -X POST "$L/test-fict/staging/$sid/commit")" = 422 ]                     # already committed
+[ "$(code -b "$TMP/technique" -X POST "$L/test-fict/staging/$sid/commit")" = 403 ]                 # demo: view-only
+as rtech -X POST "$L/test-fict/staging/$sid/commit" | grep -q '"added":8061'
+[ "$(code -b "$TMP/rtech" -X POST "$L/test-fict/staging/$sid/commit")" = 422 ]                     # already committed
 as technique --compressed "$URL/api/data.json?locality=test-fict" -o "$TMP/geneve.json"
 "$PY" -c 'import json, sys; d = json.load(open(sys.argv[1])); n = len(d["sites"]); assert n == 40, n' "$TMP/geneve.json"
 as technique --compressed "$URL/api/data.json?locality=rive-claire" | cmp -s - "$TMP/full.json" || { echo "Rive-Claire changed after the Geneva import"; exit 1; }
-[ "$(code -b "$TMP/technique" -X DELETE "$L/test-fict")" = 403 ]
-[ "$(code -b "$TMP/admin" -X DELETE "$L/test-fict")" = 200 ]
+[ "$(code -b "$TMP/rtech" -X DELETE "$L/test-fict")" = 403 ]
+[ "$(code -b "$TMP/admin" -X DELETE "$L/test-fict")" = 403 ]                                          # demo: view-only
+[ "$(code -b "$TMP/real" -X DELETE "$L/test-fict")" = 200 ]
 [ "$(code -b "$TMP/technique" "$URL/api/data.json?locality=test-fict")" = 404 ]
 as technique --compressed "$URL/data.json" | cmp -s - "$TMP/full.json" || { echo "Rive-Claire changed after deleting Geneva"; exit 1; }
+as real -X POST "$URL/api/logout" >/dev/null
+[ "$(as real "$URL/api/me")" = null ]
+[ "$(code -b "$TMP/real" "$URL/api/users")" = 401 ]
 
 echo "stack check OK"
