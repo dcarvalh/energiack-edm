@@ -49,8 +49,9 @@ cannot use (`ACCESS` in `prototype/index.html`, mirroring `server/auth.py`). On 
 
 **Demo accounts** (`DEMO_LOGIN=1` in `.env`, for a public demo with fictional data only): the login dialog shows one
 button per role (`demo-admin`, `demo-technique`, `demo-elu`, `demo-public`; no password, roles fixed), and three
-fictional staff accounts (`a.martin`, `c.rochat`, `l.favre`) for the demo admin to re-assign. All are reset at every
-start. A demo admin cannot change real accounts. Never turn it on with real data.
+fictional staff accounts (`a.martin`, `c.rochat`, `l.favre`). All are reset at every start. Demo accounts are
+view-only: the server refuses every change they send (import, delete, 3D map, roles). Changes need a real account
+(`server.cli adduser`). Never turn it on with real data.
 
 Checks: `tools/check_stack.sh` (API, every role) and, on a running stack, `tools/check_roles.py <url>` (the app as each
 role, FR/EN, phone) and `CHECK_ROLE=technique tools/check_page.py <url>`.

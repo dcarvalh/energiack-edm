@@ -242,6 +242,11 @@ or commune (see #11 hand-over); add or remove buildings by clicking the map; sha
 municipalities (e.g. commune → canton; accounts already get a role per municipality). Every "to check" in the table above is from memory, not
 verified: check it before building a non-Geneva pack.
 
+**3D-map import, later (from the PR #73 review, 24 Nov):** today the real footprints come from the public
+OpenStreetMap Overpass servers, asked one at a time (fair use), cached per 1 km cell. To stop depending on them:
+(1) an offline OpenStreetMap extract for Switzerland (e.g. a Geofabrik download, refreshed now and then) read on our
+server; (2) swisstopo building shapes as an alternative source for Swiss zones. Licence of each to check first.
+
 **Ideas, not planned:** consumption breaks after renovations, synergies between buildings, price scenarios, indirect CO₂,
 DE/IT, place Rive-Claire in a recognisable Geneva neighbourhood on the map.
 

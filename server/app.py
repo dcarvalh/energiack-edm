@@ -11,6 +11,10 @@ admin      POST /api/localities/{slug}/import           import ZIP or reload dem
            DELETE /api/localities/{slug}/data/{table}/{key}  delete one row (key = natural id)
            POST /api/localities/{slug}/data/{table}/replace  replace one table with a new CSV
 admin      GET  /api/users  PUT /api/users/{username}
+technique, GET  /api/geo/search, POST|DELETE /api/localities/{slug}/map…   imported 3D map (fetch, match, footprints)
+admin      GET  /api/map/jobs                           the map downloads this user started (polled while one runs)
+
+Demo accounts (one-click logins) are view-only: every write is refused (demo_readonly), whatever their role.
 
 Roles: server/auth.py. The web server sends /data.json to /api/data.json.
 """
@@ -19,13 +23,31 @@ import json
 import os
 
 from fastapi import Depends, FastAPI, File, HTTPException, Request, Response, UploadFile
-from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from . import auth, mapjobs, store
 
 DEMO = os.environ.get("DEMO_LOGIN", "0") == "1"
-app = FastAPI(title="openEDM API", version="2", docs_url=None, redoc_url=None, openapi_url="/api/openapi.json")
+SESSION_ROUTES = {"/api/login", "/api/logout", "/api/demo-login"}   # writes a demo visitor still needs
+
+
+def demo_readonly(request: Request):
+    """Demo accounts (one-click logins, any role) are view-only: they see everything and change nothing, anywhere.
+    Applied to every route, so a new write route is covered without remembering to add it. Real accounts are not
+    restricted. Reads never touch the database here."""
+    if request.method in ("GET", "HEAD", "OPTIONS") or request.url.path in SESSION_ROUTES:
+        return
+    token = request.cookies.get(auth.COOKIE)
+    if not token:
+        return
+    with store.connect() as conn:
+        u = auth.user_for(conn, token)
+    if u and u.get("demo"):
+        raise HTTPException(403, "demo accounts are view-only: sign in with a real account to make changes")
+
+
+app = FastAPI(title="openEDM API", version="2", docs_url=None, redoc_url=None, openapi_url="/api/openapi.json",
+              dependencies=[Depends(demo_readonly)])
 _cache = {}                                            # (locality_id, full): bool -> {run, body, etag}; rebuilt after import
 
 
@@ -50,13 +72,6 @@ def need(*roles):
             raise HTTPException(403, "your role does not give access to this")
         return u
     return check
-
-
-def builtin_readonly(slug: str, u=Depends(user)):
-    """Demo accounts (one-click logins, any role) cannot write to the built-in municipalities: the public demo must stay
-    as it is. They can still create their own municipality and try imports there; real accounts are not restricted."""
-    if u.get("demo") and slug in store.PROTECTED:
-        raise HTTPException(403, "the built-in demo data is read-only for demo accounts: create your own municipality to try imports")
 
 
 class Login(BaseModel):
@@ -197,7 +212,7 @@ def delete_locality(slug: str, u=Depends(need("admin")), conn=Depends(db)):
     return {"deleted": slug}
 
 
-@app.post("/api/localities/{slug}/import", dependencies=[Depends(builtin_readonly)])
+@app.post("/api/localities/{slug}/import")
 async def import_locality(slug: str, file: UploadFile = File(None),
                            u=Depends(need(*auth.FULL)), conn=Depends(db)):
     loc = store.locality_by_slug(conn, slug)
@@ -302,22 +317,15 @@ def map_import(slug: str, body: MapImport, u=Depends(need(*auth.FULL)), conn=Dep
     span = max(xmax - xmin, ymax - ymin)
     if span > MAX_SPAN_M:
         raise HTTPException(422, f"zone too large (max {MAX_SPAN_M} m per side)")
+    if not 0.25 <= body.px <= 10:
+        raise HTTPException(422, "px must be between 0.25 and 10 m per pixel")
     tiles = max(1, min(round(span / 1000), 10))           # ~1 km aerial block per tile, so large zones stay detailed
     osm = bool(store.get_settings(conn).get("osm_footprints", True))   # admin preference: real OSM footprints on/off
-    # The fetch is slow: run it in the background and report progress over SSE instead of blocking the request.
-    started = mapjobs.start(loc["id"], slug, bbox, tiles, body.px, body.name, osm=osm, country=loc.get("country") or "CH")
+    # The fetch is slow: run it in the background; the page that started it asks GET /api/map/jobs for progress.
+    started = mapjobs.start(loc["id"], u["id"], slug, bbox, tiles, body.px, body.name, osm=osm, country=loc.get("country") or "CH")
     if not started:
         raise HTTPException(409, "an import is already running for this locality")
     return {"state": "started", "slug": slug}
-
-
-@app.get("/api/localities/{slug}/map/import/status")
-def map_import_status(slug: str, u=Depends(current), conn=Depends(db)):
-    """Current import job for one locality (running | done | error), or idle."""
-    loc = store.locality_by_slug(conn, slug)
-    if not loc:
-        raise HTTPException(404, "locality not found")
-    return mapjobs.get(loc["id"]) or {"state": "idle"}
 
 
 @app.get("/api/localities/{slug}/map/footprints")
@@ -332,23 +340,22 @@ def map_footprints_stats(slug: str, u=Depends(current), conn=Depends(db)):
 @app.post("/api/localities/{slug}/map/footprints")
 def map_footprints_resolve(slug: str, u=Depends(need(*auth.FULL)), conn=Depends(db)):
     """(Re-)run OSM footprint resolution for an existing CH map in the background. Resumable: continues on the blocks
-    still waiting for a footprint. Progress arrives over the same SSE stream as an import (fp_pct, fp_n, fp_total)."""
+    still waiting for a footprint. Progress: GET /api/map/jobs, as for an import (fp_pct, fp_n, fp_total)."""
     loc = store.locality_by_slug(conn, slug)
     if not loc:
         raise HTTPException(404, "locality not found")
     if store.map_footprint_stats(conn, loc["id"]) is None:
         raise HTTPException(422, "no Swiss imported map to resolve footprints for")
-    if not mapjobs.start_footprints(loc["id"], slug, loc.get("name") or slug):
+    if not mapjobs.start_footprints(loc["id"], u["id"], slug, loc.get("name") or slug):
         raise HTTPException(409, "a job is already running for this locality")
     return {"state": "started", "slug": slug}
 
 
-@app.get("/api/map/jobs/stream")
-def map_jobs_stream(u=Depends(current), conn=Depends(db)):
-    """Server-Sent Events: push 3D-map import progress for every locality the user can see. One event per change."""
-    lids = [l["id"] for l in store.localities(conn, u)]
-    return StreamingResponse(mapjobs.sse_stream(lids), media_type="text/event-stream",
-                             headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no", "Connection": "keep-alive"})
+@app.get("/api/map/jobs")
+def map_jobs(u=Depends(need(*auth.FULL))):
+    """The 3D-map downloads this user started, by locality id: only the person who started one sees its progress.
+    The page asks every few seconds while one runs, then stops (no connection kept open)."""
+    return mapjobs.mine(u["id"])
 
 
 @app.get("/api/localities/{slug}/map/buildings.json")
@@ -408,6 +415,8 @@ def map_register(slug: str, building_id: int, body: MapRegister, u=Depends(need(
         res = store.map_register_building(conn, loc["id"], building_id, body.mode, body.id_site, body.site_name)
     except LookupError as e:
         raise HTTPException(404, str(e))
+    except store.Conflict as e:
+        raise HTTPException(409, str(e))
     except ValueError as e:
         raise HTTPException(422, str(e))
     _cache.clear()
@@ -437,7 +446,7 @@ def _load_csv_detect():
     return csv_detect
 
 
-@app.post("/api/localities/{slug}/staging", dependencies=[Depends(builtin_readonly)])
+@app.post("/api/localities/{slug}/staging")
 async def staging_upload(slug: str, file: UploadFile = File(...),
                           u=Depends(need(*auth.FULL)), conn=Depends(db)):
     """Upload a ZIP → create a staged import with quality check. No production write."""
@@ -555,7 +564,7 @@ def staging_anomalies(slug: str, staging_id: int, table: str,
     return {"total": len(result), "rows": result}
 
 
-@app.put("/api/localities/{slug}/staging/{staging_id}/files/{table}/{row_idx}", dependencies=[Depends(builtin_readonly)])
+@app.put("/api/localities/{slug}/staging/{staging_id}/files/{table}/{row_idx}")
 def staging_update_row(slug: str, staging_id: int, table: str, row_idx: int,
                         body: dict, u=Depends(need(*auth.FULL)), conn=Depends(db)):
     loc = _get_loc(slug, conn)
@@ -565,7 +574,7 @@ def staging_update_row(slug: str, staging_id: int, table: str, row_idx: int,
     return {"updated": row_idx}
 
 
-@app.delete("/api/localities/{slug}/staging/{staging_id}/files/{table}/{row_idx}", dependencies=[Depends(builtin_readonly)])
+@app.delete("/api/localities/{slug}/staging/{staging_id}/files/{table}/{row_idx}")
 def staging_delete_row(slug: str, staging_id: int, table: str, row_idx: int,
                         u=Depends(need(*auth.FULL)), conn=Depends(db)):
     loc = _get_loc(slug, conn)
@@ -575,7 +584,7 @@ def staging_delete_row(slug: str, staging_id: int, table: str, row_idx: int,
     return {"deleted": row_idx}
 
 
-@app.post("/api/localities/{slug}/staging/{staging_id}/check", dependencies=[Depends(builtin_readonly)])
+@app.post("/api/localities/{slug}/staging/{staging_id}/check")
 def staging_check(slug: str, staging_id: int, u=Depends(need(*auth.FULL)), conn=Depends(db)):
     """Re-run quality checks on the staged data."""
     loc = _get_loc(slug, conn)
@@ -585,7 +594,7 @@ def staging_check(slug: str, staging_id: int, u=Depends(need(*auth.FULL)), conn=
     return report
 
 
-@app.post("/api/localities/{slug}/staging/{staging_id}/commit", dependencies=[Depends(builtin_readonly)])
+@app.post("/api/localities/{slug}/staging/{staging_id}/commit")
 def staging_commit(slug: str, staging_id: int, u=Depends(need(*auth.FULL)), conn=Depends(db)):
     """Move staged data to production. Invalidates data cache."""
     loc = _get_loc(slug, conn)
@@ -597,7 +606,7 @@ def staging_commit(slug: str, staging_id: int, u=Depends(need(*auth.FULL)), conn
     return dict(result)
 
 
-@app.delete("/api/localities/{slug}/staging/{staging_id}", dependencies=[Depends(builtin_readonly)])
+@app.delete("/api/localities/{slug}/staging/{staging_id}")
 def staging_discard(slug: str, staging_id: int, u=Depends(need(*auth.FULL)), conn=Depends(db)):
     """Discard a staged import without touching production."""
     loc = _get_loc(slug, conn)
@@ -731,7 +740,7 @@ def locality_data_rows(slug: str, table: str, page: int = 1, per_page: int = 50,
     raise HTTPException(404, f"unknown table '{table}'")
 
 
-@app.delete("/api/localities/{slug}/data/{table}/{key}", dependencies=[Depends(builtin_readonly)])
+@app.delete("/api/localities/{slug}/data/{table}/{key}")
 def delete_data_row(slug: str, table: str, key: str,
                     u=Depends(need(*auth.FULL)), conn=Depends(db)):
     """Delete one row. key = natural id (id_batiment, id_compteur, etc.) or 'meter:mois' for mesures."""
@@ -754,7 +763,7 @@ def delete_data_row(slug: str, table: str, key: str,
     return {"deleted": key}
 
 
-@app.post("/api/localities/{slug}/data/{table}/replace", dependencies=[Depends(builtin_readonly)])
+@app.post("/api/localities/{slug}/data/{table}/replace")
 async def replace_table(slug: str, table: str, file: UploadFile = File(...),
                          u=Depends(need(*auth.FULL)), conn=Depends(db)):
     """Replace one table's data for this locality with a new CSV file."""

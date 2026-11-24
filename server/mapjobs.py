@@ -1,8 +1,9 @@
 """Background 3D-map import jobs.
 
 A map import (fetch from geo.admin.ch + store + auto-match) is slow (tens of seconds to minutes), so it runs in a
-daemon thread instead of blocking the request. Progress is kept in memory (one job per locality) and pushed to clients
-over Server-Sent Events. Single-process only — fine for this prototype; a multi-worker deploy would need shared state.
+daemon thread instead of blocking the request. Progress is kept in memory (one job per locality). Only the user who
+started a job sees it: their page asks `GET /api/map/jobs` every few seconds while it runs (no connection kept open).
+Single-process only — fine for this prototype; a multi-worker deploy would need shared state.
 """
 import json
 import threading
@@ -10,7 +11,7 @@ import time
 
 from . import store
 
-JOBS = {}                     # locality_id -> {slug, name, state, pct, step, n, matched, unmatched, error, started, updated}
+JOBS = {}                     # locality_id -> {user, slug, name, state, pct, step, n, matched, unmatched, error, started, updated}
 _LOCK = threading.Lock()
 
 
@@ -21,28 +22,23 @@ def _set(lid, **kw):
         j["updated"] = time.time()
 
 
-def get(lid):
+def busy(j):
+    return bool(j) and (j.get("state") == "running" or j.get("fp") == "running")
+
+
+def mine(user_id):
+    """The jobs this user started, keyed by locality id (without the user id)."""
     with _LOCK:
-        return dict(JOBS[lid]) if lid in JOBS else None
+        return {lid: {k: v for k, v in j.items() if k != "user"} for lid, j in JOBS.items() if j.get("user") == user_id}
 
 
-def running(lid):
-    with _LOCK:
-        return (JOBS.get(lid) or {}).get("state") == "running"
-
-
-def snapshot(lids):
-    with _LOCK:
-        return {lid: dict(JOBS[lid]) for lid in lids if lid in JOBS}
-
-
-def start(locality_id, slug, bbox, tiles, px, name, osm=True, country="CH"):
+def start(locality_id, user_id, slug, bbox, tiles, px, name, osm=True, country="CH"):
     """Launch the import in a daemon thread and return at once. False if one is already running for this locality."""
-    name = " ".join((name or "").split())[:120]              # strip newlines/control chars so the SSE JSON stays valid
+    name = " ".join((name or "").split())[:120]              # one line, bounded length
     with _LOCK:
-        if (JOBS.get(locality_id) or {}).get("state") == "running":
+        if busy(JOBS.get(locality_id)):                      # also wait for a previous job's footprint phase
             return False
-        JOBS[locality_id] = {"slug": slug, "name": name, "state": "running", "pct": 0, "step": "queued",
+        JOBS[locality_id] = {"user": user_id, "slug": slug, "name": name, "state": "running", "pct": 0, "step": "queued",
                              "started": time.time(), "updated": time.time()}
 
     is_ch = (country or "CH").upper() == "CH"
@@ -83,14 +79,14 @@ def start(locality_id, slug, bbox, tiles, px, name, osm=True, country="CH"):
     return True
 
 
-def start_footprints(locality_id, slug, name=""):
+def start_footprints(locality_id, user_id, slug, name=""):
     """Re-run just the OSM footprint resolution for an existing (CH) map, in the background. Resumable: it only tries
     blocks still 'pending', so it continues where a partial OSM outage left off. False if a job is already running."""
     with _LOCK:
         j = JOBS.get(locality_id) or {}
-        if j.get("state") == "running" or j.get("fp") == "running":
+        if busy(j):
             return False
-        JOBS[locality_id] = {"slug": slug, "name": name or j.get("name") or slug, "state": "done", "pct": 100,
+        JOBS[locality_id] = {"user": user_id, "slug": slug, "name": name or j.get("name") or slug, "state": "done", "pct": 100,
                              "step": "done", "fp": "running", "fp_pct": 0, "fp_n": 0, "fp_total": 0,
                              "started": time.time(), "updated": time.time()}
 
@@ -110,25 +106,3 @@ def start_footprints(locality_id, slug, name=""):
     threading.Thread(target=run, daemon=True, name=f"mapfp-{slug}").start()
     return True
 
-
-def sse_stream(lids):
-    """Yield Server-Sent Events for the given localities' jobs: one event whenever a job changes, plus heartbeats.
-    Runs until the client disconnects (the generator is then dropped). lids is captured once at subscription time."""
-    sent = {}                                        # locality_id -> last 'updated' timestamp pushed
-    # initial state so a client that connects mid-import (or after) sees it immediately
-    for lid, j in snapshot(lids).items():
-        sent[lid] = j["updated"]
-        yield f"data: {json.dumps({'locality_id': lid, **j})}\n\n"
-    last_beat = time.time()
-    while True:
-        changed = False
-        for lid, j in snapshot(lids).items():
-            if sent.get(lid) != j["updated"]:
-                sent[lid] = j["updated"]
-                changed = True
-                yield f"data: {json.dumps({'locality_id': lid, **j})}\n\n"
-        now = time.time()
-        if not changed and now - last_beat > 15:
-            last_beat = now
-            yield ": heartbeat\n\n"                   # keep the connection alive through proxies
-        time.sleep(1)

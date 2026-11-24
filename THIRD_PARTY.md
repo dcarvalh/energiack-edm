@@ -12,6 +12,7 @@ The project's own code is under the MIT licence (`LICENSE`). Everything below ke
 | Imported 3D maps: buildings + EGID (GWR), terrain (swissALTI3D), aerial (SWISSIMAGE) | fetched at import by `tools/fetch_swiss_map.py`, stored per locality | swisstopo / BFS, geo.admin.ch | Free geodata (OGD), « © swisstopo / BFS » |
 | Imported 3D maps: building footprints (optional, when enabled) | same | OpenStreetMap contributors | **ODbL**, « © OpenStreetMap contributors » — must be shown wherever the map is displayed |
 | Imported 3D maps (France): buildings + RNB id (BD TOPO), aerial (BD ORTHO), terrain (RGE ALTI) | fetched at import by `tools/fetch_france_map.py`, stored per locality | IGN Géoplateforme (data.geopf.fr) | Open licence (Etalab / Licence Ouverte), « © IGN / Géoplateforme » |
+| French place search in the 3D-map import dialog (place name → zone) | queried live by `tools/fetch_swiss_map.py` (`geocode`), nothing stored | Base Adresse Nationale (api-adresse.data.gouv.fr) | Licence Ouverte / Etalab 2.0 |
 
 Electricity and water per building on the Geneva map are **simulated** (flagged `sim` in the data and on screen).
 Costs in CHF are **assumed prices**, not in the dataset, and labelled "estimated" in the app.

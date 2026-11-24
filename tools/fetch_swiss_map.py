@@ -20,6 +20,7 @@ import json
 import math
 import os
 import struct
+import threading
 import time
 import urllib.parse
 import urllib.request
@@ -92,24 +93,28 @@ def _pt_in_ring(x, y, ring):
     return c
 
 
-def _overpass_race(q, timeout, deadline):
-    """Ask EVERY Overpass mirror at once and return the elements of the first that answers. Most public mirrors are
-    down or slow from any given host, and trying them one by one wastes a full timeout on each dead one before reaching
-    the single live one — racing them means a cell costs the live mirror's latency, not the sum of the dead timeouts."""
+OVERPASS_SLOTS = threading.BoundedSemaphore(2)   # at most 2 Overpass calls at once from this server, all imports together
+_overpass_live = 0                               # index of the mirror that answered last: asked first next time
+
+
+def _overpass_ask(q, timeout, deadline):
+    """Ask the Overpass mirrors ONE AT A TIME, starting with the one that answered last, and return the elements of the
+    first that answers (None if none does before the deadline). Public mirrors are shared, volunteer-run services with
+    a fair-use policy (about 2 requests at a time): asking all of them at once for every cell gets a server blocked."""
+    global _overpass_live
     url_q = "?data=" + urllib.parse.quote(q)
-    ex = concurrent.futures.ThreadPoolExecutor(max_workers=len(OVERPASS))
-    try:
-        futs = [ex.submit(_get, ep + url_q, False, timeout) for ep in OVERPASS]
-        budget = max(1.0, min(timeout + 5, deadline - time.monotonic()))
-        for fut in concurrent.futures.as_completed(futs, timeout=budget):
+    with OVERPASS_SLOTS:
+        for k in range(len(OVERPASS)):
+            left = deadline - time.monotonic()
+            if left < 5:
+                return None                                      # out of budget: the rest stay squares, retried later
+            i = (_overpass_live + k) % len(OVERPASS)
             try:
-                return fut.result().get("elements", [])          # first mirror to answer wins
+                elements = _get(OVERPASS[i] + url_q, False, min(timeout, left)).get("elements", [])
             except Exception:
-                continue                                         # this mirror failed; wait for the next to complete
-    except Exception:
-        pass                                                     # as_completed timed out: all mirrors too slow this round
-    finally:
-        ex.shutdown(wait=False)                                  # don't block on the dead mirrors' lingering sockets
+                continue                                         # this mirror is down or slow: try the next one
+            _overpass_live = i
+            return elements
     return None
 
 
@@ -146,7 +151,7 @@ def _osm_footprints(bbox, progress=None, p0=0, p1=0):
         c1 = _lv95_to_wgs(cx + 1000, cy + 1000)
         south, west, north, east = min(c0[1], c1[1]), min(c0[0], c1[0]), max(c0[1], c1[1]), max(c0[0], c1[0])
         q = f'[out:json][timeout:25];way["building"]({south:.6f},{west:.6f},{north:.6f},{east:.6f});out geom;'
-        elements = _overpass_race(q, OSM_CALL_S, deadline)    # all mirrors at once; first to answer wins
+        elements = _overpass_ask(q, OSM_CALL_S, deadline)     # one mirror at a time, the last live one first
         if elements is None:
             return (cx, cy), None                              # fetch failed -> NOT cached, retried next time, counts as not searched
         rings = [[[round(x, 1), round(y, 1)] for x, y in (_wgs_to_lv95(p["lon"], p["lat"]) for p in w["geometry"])]
@@ -163,7 +168,7 @@ def _osm_footprints(bbox, progress=None, p0=0, p1=0):
     rings = []                                                # (bx0, by0, bx1, by1, ring_lv95)
     fetched = set()                                           # cells actually obtained (cache or live) this call
     done = 0
-    with concurrent.futures.ThreadPoolExecutor(max_workers=min(4, len(cells))) as ex:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=min(2, len(cells))) as ex:   # cached cells are instant; live calls share OVERPASS_SLOTS
         for cell, cell_rings in ex.map(fetch_cell, list(enumerate(cells))):
             done += 1
             _report(progress, p0 + (p1 - p0) * done / len(cells), "footprints")

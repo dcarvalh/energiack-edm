@@ -2,9 +2,9 @@
 
 Fictional commune of 25,000 inhabitants, 5 neighbourhoods (Centre, Les Crêts, Bois-Joli, Prés-Verts, La Gravière).
 Sites and readings are simulated; the climate is real (Genève-Cointrin). Licence **CC BY 4.0**: may be published, cite
-« Energ-IA Transition, Energ-IACK 2026 ». Source: `data/rive-claire/` in this
+« Energ-IA Transition, Energ-IACK 2026 ». Source: `rive-claire/` in this
 repo (copied from the organisers). The 11 CSV are a base64 zip inside `EIAK-RC-Guide-Donnees-vf.html`, also extracted to
-`data/rive-claire/csv/`; the Excel workbook has the same tables.
+`rive-claire/csv/`; the Excel workbook has the same tables.
 CSV: UTF-8 with BOM, `;` separator, decimal point, months as text `YYYY-MM`.
 
 ## Scale

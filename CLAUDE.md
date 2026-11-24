@@ -51,7 +51,7 @@ What it does and how to run it: `README.md`. Team plan, decisions and next steps
   `tools/make_map.py`). Same schema; `map3d.js` branches on `cfg.key === "rc"`/`"imported"`. `initMap` returns `destroy()`, called when the municipality changes.
 - Imported maps (`map_config.key === "imported"`, served per-municipality by the API from the DB, not a folder): the admin picks a zone (Localités › Carte 3D…) and the server fetches a real map at import time —
   Switzerland `tools/fetch_swiss_map.py` (GWR buildings + swissALTI3D + SWISSIMAGE, EGID, EPSG:2056) or France `tools/fetch_france_map.py` (BD TOPO + RGE ALTI + BD ORTHO, RNB, EPSG:2154). Runs in a background
-  thread (`server/mapjobs.py`, progress over SSE `/api/map/jobs/stream`); matched to sites by EGID/RNB (`store.map_automatch`); real OSM footprints are a best-effort overlay cached per 1 km cell on a host volume
+  thread (`server/mapjobs.py`, progress only to the person who started it, polled from `GET /api/map/jobs` while it runs; no open stream); matched to sites by EGID/RNB (`store.map_automatch`); real OSM footprints are a best-effort overlay cached per 1 km cell on a host volume
   (`OSM_CACHE_DIR`, Overpass mirrors raced). Fetchers are pure stdlib and copied into the image; map endpoints send `Cache-Control: no-store`.
 - Site ↔ map building: optional `egid` column in `batiments` (`build()` emits it only when set). `index.html` passes `sites` (EGID → site) to `initMap`; the site page reads the public attributes with `publicBuildings()` from `map3d.js`.
 - Never build straight into `prototype/`: `--out` a scratch folder, test it, then copy.

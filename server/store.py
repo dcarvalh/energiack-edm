@@ -46,6 +46,10 @@ def init(conn):
     conn.commit()
 
 
+class Conflict(Exception):
+    """The change would clash with existing data (the API answers 409)."""
+
+
 # --- admin settings (map import preferences) ---
 
 SETTINGS_DEFAULTS = {"osm_footprints": True, "country_ch": True, "country_fr": False}
@@ -560,55 +564,62 @@ def map_set_site(conn, locality_id, building_id, id_site):
     return True
 
 
+def _free_id(taken, make, start=1):
+    """The first id make(k), k = start, start+1, …, that is not in `taken`."""
+    k = start
+    while make(k) in taken:
+        k += 1
+    return make(k)
+
+
 def map_register_building(conn, locality_id, map_building_id, mode, id_site=None, site_name=None):
     """Register a map block as a real building in this municipality, then match it durably by EGID.
        mode='existing' -> add the building under an existing site (id_site required)
        mode='new'      -> create a new site (site_name) with this one building
-    Returns {id_site, id_batiment, egid}."""
-    mb = conn.execute(
-        "SELECT mb.egid, mb.attrs FROM map_building mb JOIN map_import mi ON mi.id = mb.map_import_id "
-        "WHERE mi.locality_id = %s AND mb.id = %s", (locality_id, map_building_id)).fetchone()
-    if not mb:
-        raise LookupError("map building not found")
-    egid = mb["egid"]
-    a = mb["attrs"] or {}
-    addr = a.get("addr") or (f"EGID {egid}" if egid else "Bâtiment")
-    levels = a.get("levels")
-    year = a.get("year")
-    sre = None  # GWR area is footprint, not SRE; leave blank (user can edit in the Data module)
-
+    Never overwrites: new ids are always free ones, and a block already linked to a site, or whose EGID is already
+    in the building list, is refused (Conflict). Returns {id_site, id_batiment, egid, site_name}."""
+    if mode == "new" and not site_name:
+        raise ValueError("site_name required for a new site")
+    if mode != "new" and not id_site:
+        raise ValueError("id_site required for an existing site")
     with conn.transaction(), conn.cursor() as cur:
+        # lock the map block, so a double click or two people at once cannot register it twice
+        mb = cur.execute(
+            "SELECT mb.egid, mb.attrs, mb.id_site FROM map_building mb JOIN map_import mi ON mi.id = mb.map_import_id "
+            "WHERE mi.locality_id = %s AND mb.id = %s FOR UPDATE OF mb", (locality_id, map_building_id)).fetchone()
+        if not mb:
+            raise LookupError("map building not found")
+        if mb["id_site"]:
+            raise Conflict(f"this building is already linked to site {mb['id_site']}")
+        egid = mb["egid"]
+        # building.egid is a number (Swiss EGID); a French RNB id is alphanumeric: matched through map_match only
+        egid_num = int(egid) if egid and str(egid).isdigit() else None
+        if egid_num is not None:
+            dup = cur.execute("SELECT id_batiment, id_site FROM building WHERE locality_id = %s AND egid = %s LIMIT 1",
+                              (locality_id, egid_num)).fetchone()
+            if dup:
+                raise Conflict(f"EGID {egid} is already building {dup['id_batiment']} of site {dup['id_site']}")
+        a = mb["attrs"] or {}
+        addr = a.get("addr") or (f"EGID {egid}" if egid else "Bâtiment")
+        rows = cur.execute("SELECT id_batiment, id_site, nom_site, typologie, pos FROM building WHERE locality_id = %s",
+                           (locality_id,)).fetchall()
+        taken = {r["id_batiment"] for r in rows}
+        pos = max((r["pos"] for r in rows), default=-1) + 1
         if mode == "new":
-            if not site_name:
-                raise ValueError("site_name required for a new site")
-            # next free site id in this locality: Gnn / Snn style -> use "M" prefix to avoid clashes
-            n = cur.execute("SELECT count(*) AS n FROM building WHERE locality_id = %s", (locality_id,)).fetchone()["n"]
-            sid = f"MAP{n + 1:03d}"
+            sid = _free_id({r["id_site"] for r in rows}, lambda k: f"MAP{k:03d}")
             typologie = "Autre"
-            pos = n
         else:
-            if not id_site:
-                raise ValueError("id_site required for an existing site")
-            sid = id_site
-            exist = cur.execute(
-                "SELECT nom_site, typologie, quartier, max(pos) OVER () AS maxpos FROM building "
-                "WHERE locality_id = %s AND id_site = %s LIMIT 1", (locality_id, sid)).fetchone()
-            if not exist:
+            site = next((r for r in rows if r["id_site"] == id_site), None)
+            if not site:
                 raise LookupError("site not found")
-            typologie = exist["typologie"]
-            site_name = exist["nom_site"]
-            pos = (exist["maxpos"] or 0) + 1
-
-        # a free building id under this site
-        k = cur.execute("SELECT count(*) AS n FROM building WHERE locality_id = %s AND id_site = %s",
-                        (locality_id, sid)).fetchone()["n"]
-        id_batiment = f"{sid}-B{k + 1}"
+            sid, typologie, site_name = id_site, site["typologie"], site["nom_site"]
+        n_site = sum(r["id_site"] == sid for r in rows)
+        id_batiment = _free_id(taken, lambda k: f"{sid}-B{k}", n_site + 1)
         cur.execute(
             "INSERT INTO building (locality_id, id_batiment, id_site, nom_site, quartier, typologie, nom_batiment, "
-            "annee_construction, sre_m2, niveaux, egid, pos) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) "
-            "ON CONFLICT (locality_id, id_batiment) DO UPDATE SET egid = EXCLUDED.egid",
-            (locality_id, id_batiment, sid, site_name, a.get("quartier") or (None if mode == "new" else None),
-             typologie, addr, year, sre, levels, egid, pos))
+            "annee_construction, sre_m2, niveaux, egid, pos) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+            (locality_id, id_batiment, sid, site_name, a.get("quartier"), typologie, addr, a.get("year"),
+             None, a.get("levels"), egid_num, pos))   # sre_m2 blank: the GWR area is a footprint, not an SRE
         # durable match + colour the block now
         if egid:
             cur.execute(

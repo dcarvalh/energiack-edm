@@ -52,12 +52,10 @@ with sync_playwright() as p:
                 if raw != (role in ("technique", "admin")):
                     problems.append(f"{tag}: raw readings shown={raw}")
                 if role == "admin":
-                    page.goto(f"{URL}?lang={lang}#utilisateurs"); page.wait_for_selector("#u-table select")
+                    page.goto(f"{URL}?lang={lang}#utilisateurs"); page.wait_for_selector("#u-table tbody tr")
                     page.screenshot(path=str(OUT / f"roles-{dev}-{lang}-users.png"), full_page=True)
-                    page.select_option("select[data-u='l.favre']", "elu"); page.wait_for_timeout(500)
-                    if not page.inner_text("#u-msg").strip() or page.locator("select[data-u='demo-elu']").count():
-                        problems.append(f"{tag}: users page role change")
-                    page.select_option("select[data-u='l.favre']", "public"); page.wait_for_timeout(300)
+                    if "l.favre" not in page.inner_text("#u-table") or page.locator("#u-table select").count():
+                        problems.append(f"{tag}: users page: the demo admin sees every account and changes none")
                 ow = page.evaluate("document.documentElement.scrollWidth - innerWidth")
                 if ow > 1:
                     problems.append(f"{tag}: horizontal overflow {ow}px")
