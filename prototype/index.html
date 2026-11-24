@@ -149,6 +149,7 @@ th .ar{opacity:.5;margin-left:3px}
 .demo-roles{display:grid;gap:8px;margin-top:4px}
 .demo-roles button{text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:9px 12px;cursor:pointer;color:var(--text)}
 .demo-roles button:hover{border-color:var(--muted)}
+.demo-roles .write{margin-top:6px;border-style:dashed}
 .demo-roles b{display:block;font-size:13.5px;font-weight:600} .demo-roles span{font-size:12.5px;color:var(--muted)}
 .acct{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted)} .acct b{color:var(--text);font-weight:600}
 .acct .chip{display:inline-flex;align-items:center;gap:6px}
@@ -655,6 +656,7 @@ fr:{
   login_pw:"Mot de passe", login_go:"Se connecter", login_err:"Nom ou mot de passe incorrect, ou compte bloqué quelques minutes. Pas de mot de passe ? Demandez-le aux développeurs.",
   login_need:"« {p} » est réservé aux rôles : {r}.", login_demo:"Comptes de démonstration",
   login_demo_sub:"Un clic, sans mot de passe : essayez chaque rôle sur la commune fictive.",
+  login_write:"Administrateur·rice (accès complet)", login_write_sub:"Peut tout modifier. Mot de passe requis : demandez-le aux développeurs.",
   role_admin:"Administrateur·rice", role_technique:"Service technique", role_elu:"Élu·e", role_public:"Public",
   rd_admin:"Tout, plus l'attribution des rôles", rd_technique:"Gestion, qualité des données, relevés bruts et exports CSV",
   rd_elu:"Gestion et indicateurs, sans relevés bruts ni exports", rd_public:"Pages publiques seulement",
@@ -859,6 +861,7 @@ en:{
   login_pw:"Password", login_go:"Log in", login_err:"Wrong username or password, or account locked for a few minutes. No password? Ask the developers.",
   login_need:"“{p}” is for these roles: {r}.", login_demo:"Demo accounts",
   login_demo_sub:"One click, no password: try each role on the fictional municipality.",
+  login_write:"Administrator (full access)", login_write_sub:"Can change everything. Needs a password: ask the developers.",
   role_admin:"Administrator", role_technique:"Technical staff", role_elu:"Elected official", role_public:"Public",
   rd_admin:"Everything, plus assigning roles", rd_technique:"Manage, data quality, raw readings and CSV exports",
   rd_elu:"Manage and indicators, no raw readings or exports", rd_public:"Public pages only",
@@ -1984,6 +1987,7 @@ function renderAcct(){
   const a = document.getElementById("login-btn"); if (a) a.onclick = () => openLogin();
   const b = document.getElementById("logout-btn"); if (b) b.onclick = () => api("api/logout").catch(()=>{}).then(() => setUser(null));
 }
+const WRITE_ADMIN = "admin-write";   // real admin account (created on the server, password from the developers)
 function openLogin(want){
   const need = want && ACCESS[want] ? t("login_need", {p:t(NAVKEY[want]), r:ACCESS[want].map(r=>t("role_"+r)).join(", ")}) : "";
   document.getElementById("login-in").innerHTML = `
@@ -1993,11 +1997,14 @@ function openLogin(want){
       <label class="field">${esc(t("login_pw"))}<input name="p" type="password" autocomplete="current-password" required></label>
       <p class="err" id="lerr"></p><button class="btn" type="submit">${esc(t("login_go"))}</button></form>
     ${SERVER.demo ? `<h2 style="margin-top:20px">${esc(t("login_demo"))}</h2><p class="sub">${esc(t("login_demo_sub"))}</p>
-      <div class="demo-roles">${ROLES.map(r=>`<button data-demo="${r}"><b>${esc(t("role_"+r))}</b><span>${esc(t("rd_"+r))}</span></button>`).join("")}</div>` : ""}`;
+      <div class="demo-roles">${ROLES.map(r=>`<button data-demo="${r}"><b>${esc(t("role_"+r))}</b><span>${esc(t("rd_"+r))}</span></button>`).join("")}
+      <button type="button" class="write" id="l-write"><b>${esc(t("login_write"))}</b><span>${esc(t("login_write_sub"))}</span></button></div>` : ""}`;
   document.getElementById("login").classList.add("open");
   document.getElementById("lx").onclick = closeLogin;
   document.getElementById("lf").onsubmit = (e) => { e.preventDefault(); const f = e.target;
     api("api/login", {username:f.u.value, password:f.p.value}).then(u => setUser(u, want)).catch(() => { document.getElementById("lerr").textContent = t("login_err"); }); };
+  const w = document.getElementById("l-write");   // the real admin account with write rights: fills the name, asks for the password
+  if (w) w.onclick = () => { const f = document.getElementById("lf"); f.u.value = WRITE_ADMIN; f.p.value = ""; f.p.focus(); };
   document.querySelectorAll("[data-demo]").forEach(b => b.onclick = () => api("api/demo-login", {role:b.dataset.demo}).then(u => setUser(u, want)).catch(() => {}));
 }
 function closeLogin(){ document.getElementById("login").classList.remove("open"); }
@@ -2803,7 +2810,7 @@ function tourMaybe(){   // first visit only; not in automated checks, not on a d
   setTimeout(tourOffer, 1500);
 }
 
-const V = "68";
+const V = "69";
 (async () => {
   try {
     const c = await fetch("api/config.json?v="+V, {cache:"no-store"}).then(r => r.json());
