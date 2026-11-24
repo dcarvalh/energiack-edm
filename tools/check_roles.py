@@ -1,6 +1,6 @@
 """Headless check of logins and roles (issue #15) on the server stack (compose.yaml with DEMO_LOGIN=1).
 
-For a visitor and each demo role: which menu items show, which pages open, whether the site page shows raw readings,
+The full-access admin button (fills the name, logs nobody in); for a visitor and each demo role: which menu items show, which pages open, whether the site page shows raw readings,
 the Users page (admin), logout; the login dialog in FR and EN at desktop and phone width. Screenshots in OUTDIR.
 Usage: .venv/bin/python tools/check_roles.py http://127.0.0.1:18088/ [OUTDIR]
 """
@@ -29,6 +29,12 @@ with sync_playwright() as p:
             errs = []
             page.on("pageerror", lambda e: errs.append(str(e)))
             page.on("console", lambda m: m.type == "error" and errs.append(m.text))
+            page.goto(f"{URL}?lang={lang}#accueil"); page.wait_for_timeout(600)
+            page.click("#login-btn"); page.click("#l-write"); page.wait_for_timeout(200)   # fills the name, logs nobody in
+            if page.input_value("#lf input[name=u]") != "admin-write" or not page.locator("#login.open").count() \
+                    or page.locator("#logout-btn").count() or page.evaluate("document.activeElement.name") != "p":
+                problems.append(f"{dev} {lang}: full-access admin button")
+            page.keyboard.press("Escape")
             for role in SEES:
                 tag = f"{dev} {lang} {role or 'visitor'}"
                 page.goto(f"{URL}?lang={lang}#accueil"); page.wait_for_timeout(600)
