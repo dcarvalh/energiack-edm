@@ -652,7 +652,7 @@ fr:{
   loc_delete_ok:"Localité supprimée.", loc_delete_err:"Erreur lors de la suppression.",
   loc_delete_mismatch:"Nom incorrect — suppression annulée.",
   nav_users:"Utilisateurs", login:"Se connecter", logout:"Se déconnecter", login_title:"Connexion", login_user:"Nom d'utilisateur",
-  login_pw:"Mot de passe", login_go:"Se connecter", login_err:"Nom ou mot de passe incorrect, ou compte bloqué quelques minutes.",
+  login_pw:"Mot de passe", login_go:"Se connecter", login_err:"Nom ou mot de passe incorrect, ou compte bloqué quelques minutes. Pas de mot de passe ? Demandez-le aux développeurs.",
   login_need:"« {p} » est réservé aux rôles : {r}.", login_demo:"Comptes de démonstration",
   login_demo_sub:"Un clic, sans mot de passe : essayez chaque rôle sur la commune fictive.",
   role_admin:"Administrateur·rice", role_technique:"Service technique", role_elu:"Élu·e", role_public:"Public",
@@ -856,7 +856,7 @@ en:{
   loc_delete_ok:"Locality deleted.", loc_delete_err:"Delete failed.",
   loc_delete_mismatch:"Name mismatch — deletion cancelled.",
   nav_users:"Users", login:"Log in", logout:"Log out", login_title:"Log in", login_user:"Username",
-  login_pw:"Password", login_go:"Log in", login_err:"Wrong username or password, or account locked for a few minutes.",
+  login_pw:"Password", login_go:"Log in", login_err:"Wrong username or password, or account locked for a few minutes. No password? Ask the developers.",
   login_need:"“{p}” is for these roles: {r}.", login_demo:"Demo accounts",
   login_demo_sub:"One click, no password: try each role on the fictional municipality.",
   role_admin:"Administrator", role_technique:"Technical staff", role_elu:"Elected official", role_public:"Public",
@@ -2803,7 +2803,7 @@ function tourMaybe(){   // first visit only; not in automated checks, not on a d
   setTimeout(tourOffer, 1500);
 }
 
-const V = "67";
+const V = "68";
 (async () => {
   try {
     const c = await fetch("api/config.json?v="+V, {cache:"no-store"}).then(r => r.json());

@@ -16,6 +16,7 @@ export POSTGRES_PASSWORD="check-$(od -An -N8 -tx1 /dev/urandom | tr -d ' \n')"
 export HTTP_BIND=127.0.0.1:18089 HTTPS_BIND=127.0.0.1:18444 SITE_ADDRESS=:80 SEED_DEMO=1 DEMO_LOGIN=1
 URL=http://127.0.0.1:18089
 TMP=$(mktemp -d)
+mkdir "$TMP/osm-cache"; export OSM_CACHE_HOST="$TMP/osm-cache"   # ours, not root-made by Docker: rm -rf can clean it
 PY=${PYTHON:-python3}
 dc() { docker compose --env-file /dev/null "$@"; }
 old() { (cd "$TMP/base" && dc "$@"); }                  # same project name, so the same database volume
